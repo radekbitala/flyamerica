@@ -1,4 +1,4 @@
-import { FA_EMAIL, FA_PHONE } from "@/lib/email";
+import { FA_EMAIL, FA_PHONE } from "@/lib/site";
 
 // Dočasná úvodní stránka. Veřejné stránky z klikacího modelu se převedou
 // v další fázi.

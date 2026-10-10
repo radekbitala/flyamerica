@@ -23,7 +23,12 @@ export function LoginForm() {
     });
 
     if (result?.error) {
-      setError("Nesprávný e-mail nebo heslo.");
+      // Kód "rate_limited" posílá authorize() v src/lib/auth.ts.
+      setError(
+        result.code === "rate_limited"
+          ? "Příliš mnoho neúspěšných pokusů. Zkuste to znovu za 15 minut."
+          : "Nesprávný e-mail nebo heslo.",
+      );
       setLoading(false);
     } else {
       router.push("/admin");

@@ -38,7 +38,13 @@ export default async function AdminDashboardLayout({
         <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
       </main>
 
-      <Toaster position="top-right" richColors closeButton />
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        containerAriaLabel="Oznámení"
+        toastOptions={{ closeButtonAriaLabel: "Zavřít oznámení" }}
+      />
       <Suspense fallback={null}>
         <ToastOnParam />
       </Suspense>

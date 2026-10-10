@@ -60,7 +60,8 @@ const OPTIONS: sanitizeHtml.IOptions = {
   // Relativní odkazy (/denik, #kotva) projdou, schémata jen tato.
   allowedSchemes: ["http", "https", "mailto", "tel"],
   allowedSchemesByTag: {
-    img: ["http", "https"],
+    // http by prohlížeč na https webu zablokoval.
+    img: ["https"],
     iframe: ["https"],
   },
   allowProtocolRelative: false,

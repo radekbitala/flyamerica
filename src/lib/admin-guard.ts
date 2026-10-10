@@ -23,7 +23,8 @@ export class AdminAuthError extends Error {
  * Přihlášený administrátor, nebo null.
  *
  * Kromě session ověřuje i řádek v admin_users: smazaný účet přestane fungovat
- * hned, ne až za 30 dní, kdy vyprší JWT. Kontroluje se id, ne jen existence
+ * hned, ne až za 30 dní, kdy vyprší JWT. Stejně tak přihlášení vydané před
+ * změnou hesla (jiná session_version). Kontroluje se id, ne jen existence
  * session, protože auth() při chybě konfigurace vrací objekt s chybou místo
  * null. cache() zajistí jeden dotaz na požadavek, i když se volá v layoutu
  * i ve stránce.
@@ -34,12 +35,18 @@ export const getAdmin = cache(async (): Promise<AdminUser | null> => {
   if (typeof id !== "string" || id === "") return null;
 
   const [user] = await db
-    .select({ id: adminUsers.id, email: adminUsers.email, name: adminUsers.name })
+    .select({
+      id: adminUsers.id,
+      email: adminUsers.email,
+      name: adminUsers.name,
+      sessionVersion: adminUsers.sessionVersion,
+    })
     .from(adminUsers)
     .where(eq(adminUsers.id, id))
     .limit(1);
 
-  return user ?? null;
+  if (!user || user.sessionVersion !== session?.sessionVersion) return null;
+  return { id: user.id, email: user.email, name: user.name };
 });
 
 /**
@@ -48,14 +55,29 @@ export const getAdmin = cache(async (): Promise<AdminUser | null> => {
  * netýká. Proto každá z nich volá requireAdmin() sama (hlídá to ESLint
  * pravidlo local/require-admin).
  *
- * V API routě:
- *   const admin = await requireAdmin().catch(() => null);
- *   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+ * V akci volané z formuláře nebo v API routě (viz signedOutAsNull):
+ *   const admin = await requireAdmin().catch(signedOutAsNull);
+ *   if (!admin) return { status: "error", formError: SESSION_EXPIRED_MESSAGE };
  */
 export async function requireAdmin(): Promise<AdminUser> {
   const admin = await getAdmin();
   if (!admin) throw new AdminAuthError();
   return admin;
+}
+
+export const SESSION_EXPIRED_MESSAGE =
+  "Přihlášení vypršelo. Přihlaste se v nové záložce a zkuste to tady znovu.";
+
+/**
+ * Pro .catch() u requireAdmin(). Vypršelé přihlášení vrátí null, akce pak
+ * vrátí hlášku a rozepsaný článek nebo poznámka ve formuláři zůstane. Bez
+ * toho by výjimka nahradila formulář chybovou stránkou a text by se ztratil.
+ * Jiná chyba (třeba výpadek databáze) letí dál, aby se nehlásila jako
+ * vypršelé přihlášení.
+ */
+export function signedOutAsNull(error: unknown): null {
+  if (error instanceof AdminAuthError) return null;
+  throw error;
 }
 
 /**

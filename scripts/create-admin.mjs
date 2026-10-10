@@ -6,6 +6,7 @@
  *
  * Zeptá se na e-mail, jméno a heslo (heslo se při psaní nezobrazuje).
  * Heslo uloží jen jako bcrypt hash (cost 12). Nic z toho nevypisuje.
+ * U existujícího účtu změní heslo a odhlásí všechna jeho přihlášení.
  */
 import readline from "node:readline/promises";
 import postgres from "postgres";
@@ -77,18 +78,21 @@ async function main() {
   const sql = postgres(url, { max: 1, prepare: false, onnotice: () => {} });
   try {
     // xmax = 0 znamená, že řádek vznikl teď, ne že se aktualizoval.
+    // Vyšší session_version odhlásí všechna zařízení přihlášená starým
+    // heslem (třeba po úniku hesla nebo ztraceném notebooku).
     const [row] = await sql`
       insert into admin_users (email, name, password_hash)
       values (${email}, ${name}, ${passwordHash})
       on conflict (email) do update
         set name = excluded.name,
             password_hash = excluded.password_hash,
+            session_version = admin_users.session_version + 1,
             updated_at = now()
       returning (xmax = 0) as inserted`;
     console.log(
       row.inserted
         ? "Účet je založený."
-        : "Účet s tímto e-mailem už existoval, jméno a heslo jsou změněné.",
+        : "Účet s tímto e-mailem už existoval, jméno a heslo jsou změněné. Přihlášení se starým heslem přestala platit.",
     );
   } finally {
     await sql.end();

@@ -41,7 +41,29 @@ export const adminUsers = pgTable("admin_users", {
     .defaultNow()
     .$onUpdate(() => new Date()),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  /**
+   * Zvyšuje se při změně hesla (scripts/create-admin.mjs). Přihlášení nese
+   * verzi z doby přihlášení a requireAdmin() ji porovnává, takže po změně
+   * hesla přestanou platit všechna dřívější přihlášení.
+   */
+  sessionVersion: integer("session_version").notNull().default(1),
 }).enableRLS();
+
+/**
+ * Pokusy o přihlášení podle otisku IP (src/lib/login-limit.ts). Úspěšné
+ * přihlášení záznamy své IP smaže, zůstávají jen neúspěšné pokusy.
+ */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ipHash: varchar("ip_hash", { length: 64 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("login_attempts_ip_hash_created_at_idx").on(table.ipHash, table.createdAt)],
+).enableRLS();
 
 // ---------------------------------------------------------------------------
 // Deník
@@ -179,6 +201,9 @@ export const inquiries = pgTable(
     /** Odkud o nás ví (výběr z formuláře). */
     referralSource: varchar("referral_source", { length: 100 }),
     message: text("message"),
+    // Formulář souhlas nesbírá (rozhodnutí 10. 10. 2026, viz
+    // src/lib/inquiries/schema.ts). Sloupce zůstávají pro případ, že by se
+    // zaškrtávátko vrátilo.
     consent: boolean("consent").notNull().default(false),
     consentAt: timestamp("consent_at", { withTimezone: true }),
 

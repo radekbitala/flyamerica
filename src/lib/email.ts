@@ -1,5 +1,5 @@
 import "server-only";
-import { SITE_URL } from "@/lib/site";
+import { FA_EMAIL, FA_PHONE, SITE_URL } from "@/lib/site";
 
 /**
  * Odesílání e-mailů přes HTTP API Resendu.
@@ -15,15 +15,14 @@ import { SITE_URL } from "@/lib/site";
  *   NOTIFY_TO       kam chodí upozornění na nové poptávky (Honza)
  */
 
-export const FA_EMAIL = "flywithme@seznam.cz";
-export const FA_PHONE = "+420 602 214 719";
-
 interface SendArgs {
   to: string;
   subject: string;
   html: string;
   text: string;
   replyTo?: string;
+  /** Popis do logu bez osobních údajů (předmět obsahuje jméno). */
+  logLabel: string;
 }
 
 export function isEmailConfigured(): boolean {
@@ -35,12 +34,12 @@ export function isEmailConfigured(): boolean {
 }
 
 /** Vrací true, když e-mail odešel, false, když Resend není nastavený. */
-async function send({ to, subject, html, text, replyTo }: SendArgs): Promise<boolean> {
+async function send({ to, subject, html, text, replyTo, logLabel }: SendArgs): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
 
   if (!apiKey || !from) {
-    console.warn(`[email] Resend není nastavený, neodesláno: "${subject}"`);
+    console.warn(`[email] Resend není nastavený, neodesláno: ${logLabel}`);
     return false;
   }
 
@@ -61,7 +60,11 @@ async function send({ to, subject, html, text, replyTo }: SendArgs): Promise<boo
   });
 
   if (!res.ok) {
-    throw new Error(`Resend odpověděl ${res.status}: ${await res.text()}`);
+    // Jen stav a typ chyby: text odpovědi může obsahovat adresu příjemce
+    // a chyba končí v logu.
+    const body = (await res.json().catch(() => null)) as { name?: unknown } | null;
+    const kind = typeof body?.name === "string" ? ` (${body.name})` : "";
+    throw new Error(`Resend odpověděl ${res.status}${kind}: ${logLabel}`);
   }
   return true;
 }
@@ -92,7 +95,7 @@ function rowsHtml(rows: [string, string][]): string {
   return `<table cellpadding="0" cellspacing="0">${rows
     .map(
       ([k, v]) =>
-        `<tr><td style="padding:5px 18px 5px 0;color:#4E5862;vertical-align:top;white-space:nowrap">${esc(k)}</td><td style="padding:5px 0"><strong>${esc(v)}</strong></td></tr>`,
+        `<tr><td style="padding:5px 18px 5px 0;color:#4E5862;vertical-align:top;white-space:nowrap">${esc(k)}</td><td style="padding:5px 0;white-space:pre-line"><strong>${esc(v)}</strong></td></tr>`,
     )
     .join("")}</table>`;
 }
@@ -141,45 +144,74 @@ export async function sendInquiryNotification(d: InquiryEmailData): Promise<bool
 
   const callback = d.kind === "callback";
   const rows = inquiryRows(d);
+  const adminUrl = `${SITE_URL}/admin/poptavky/${d.id}`;
+  const subject = callback
+    ? `Zavolat zpět: ${d.name}`
+    : `Poptávka: ${d.packageLabel ?? "bez balíčku"} - ${d.name}`;
 
   return send({
     to,
     replyTo: d.email ?? undefined,
-    subject: callback ? `Zavolat zpět: ${d.name}` : `Nová poptávka: ${d.name}`,
+    subject,
+    logLabel: `upozornění na poptávku ${d.id}`,
     html: layout(
       `<h1 style="margin:0 0 20px;font-size:20px">${callback ? "Žádost o zavolání" : "Nová poptávka"}</h1>
        ${rowsHtml(rows)}
-       <p style="margin:24px 0 0"><a href="${SITE_URL}/admin/poptavky" style="color:#1D252D;font-weight:600">Otevřít v administraci</a></p>
+       <p style="margin:24px 0 0"><a href="${adminUrl}" style="color:#1D252D;font-weight:600">Otevřít v administraci</a></p>
        ${d.email ? `<p style="margin:12px 0 0;font-size:13px;color:#4E5862">Odpovědí na tento e-mail píšete rovnou tazateli.</p>` : ""}`,
     ),
-    text: rows.map(([k, v]) => `${k}: ${v}`).join("\n"),
+    text: [
+      callback ? "Žádost o zavolání" : "Nová poptávka",
+      "",
+      ...rows.map(([k, v]) => `${k}: ${v}`),
+      "",
+      `Otevřít v administraci: ${adminUrl}`,
+    ].join("\n"),
   });
 }
 
-/** Potvrzení tazateli, že poptávka dorazila. Bez e-mailu (zavolání) se nic neposílá. */
+/**
+ * Potvrzení tazateli, že poptávka dorazila. Bez e-mailu (zavolání) se nic
+ * neposílá.
+ *
+ * Formulář může vyplnit kdokoli s cizí adresou. Aby přes něj nešel na
+ * libovolnou adresu poslat vlastní text z naší domény, potvrzení nenese
+ * nic, co návštěvník napsal: oslovení je bez jména a kopie údajů obsahuje
+ * jen volby z nabídky formuláře (ne termín, telefon ani zprávu).
+ */
 export async function sendInquiryConfirmation(d: InquiryEmailData): Promise<boolean> {
   if (!d.email) return false;
 
-  const rows = inquiryRows(d).filter(([k]) => k !== "Jméno" && k !== "E-mail");
+  const rows = inquiryRows({
+    id: d.id,
+    kind: d.kind,
+    name: "",
+    licence: d.licence,
+    packageLabel: d.packageLabel,
+    pilotCount: d.pilotCount,
+    companions: d.companions,
+    referralSource: d.referralSource,
+  });
 
   return send({
     to: d.email,
     replyTo: FA_EMAIL,
-    subject: "Poptávku máme - FLY America",
+    subject: "Děkujeme za poptávku - FLY America",
+    logLabel: `potvrzení poptávky ${d.id}`,
     html: layout(
       `<h1 style="margin:0 0 16px;font-size:20px">Děkujeme, poptávka je odeslaná.</h1>
-       <p style="margin:0 0 16px">Dobrý den, ${esc(d.name)},</p>
+       <p style="margin:0 0 16px">Dobrý den,</p>
        <p style="margin:0 0 16px">Honza se vám ozve na e-mail <strong>${esc(d.email)}</strong>.
-         Kdybyste chtěli něco doplnit, stačí odpovědět na tento e-mail.</p>
-       ${rows.length ? rowsHtml(rows) : ""}`,
+         Kdybyste chtěli něco doplnit, odpovězte na tento e-mail nebo napište na
+         <a href="mailto:${FA_EMAIL}" style="color:#1D252D">${FA_EMAIL}</a>.</p>
+       ${rows.length ? `<p style="margin:0 0 8px">Co jste ve formuláři vybrali:</p>${rowsHtml(rows)}` : ""}`,
     ),
     text: [
-      `Dobrý den, ${d.name},`,
+      `Dobrý den,`,
       ``,
       `děkujeme, poptávka je odeslaná. Honza se vám ozve na e-mail ${d.email}.`,
-      `Kdybyste chtěli něco doplnit, stačí odpovědět na tento e-mail.`,
-      ``,
-      ...rows.map(([k, v]) => `${k}: ${v}`),
+      `Kdybyste chtěli něco doplnit, odpovězte na tento e-mail nebo napište na ${FA_EMAIL}.`,
+      ...(rows.length ? [``, `Co jste ve formuláři vybrali:`, ...rows.map(([k, v]) => `${k}: ${v}`)] : []),
       ``,
       `FLY America, Jan Čermák`,
       `${FA_EMAIL}, ${FA_PHONE}`,
