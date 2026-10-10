@@ -264,6 +264,8 @@ async function testDenik(page, { databaseUrl } = {}) {
       page.waitForResponse(isAction),
       page.getByRole("button", { name: "Uložit koncept" }).click(),
     ]);
+    // Přesměrování po uložení nechat doběhnout, goto by ho přerušilo.
+    await page.waitForLoadState("networkidle");
     await page.goto(editUrl);
     assert((await titleField.inputValue()) === edited, "Upravený název se neuložil.");
     assert(
@@ -340,7 +342,9 @@ test("vypršelé přihlášení neztratí rozepsaný článek", async (page, cre
     await login(second, credentials);
     await second.close();
     await page.getByRole("button", { name: "Uložit koncept" }).click();
-    await page.waitForURL(/\/admin\/posts\/[0-9a-f-]{36}\/edit/);
+    await page.getByText("Koncept uložen").waitFor();
+    // Hláška z adresy zmizí až po dokončení navigace (ToastOnParam).
+    await page.waitForURL(/\/admin\/posts\/[0-9a-f-]{36}\/edit$/);
     await editor.getByText(text).waitFor();
   } finally {
     if (credentials.databaseUrl) {
@@ -470,6 +474,9 @@ async function main() {
         await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
         console.log(`SELHALO  ${name}\n         ${error instanceof Error ? error.message : error}\n         snímek: ${path.relative(ROOT, shot)}`);
       } finally {
+        // Dobíhající navigaci (třeba odstranění ?toast= z adresy) nechat
+        // doběhnout, jinak by dev server hlásil přerušený stream.
+        await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
         await context.close();
       }
     }
