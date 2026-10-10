@@ -1,0 +1,11 @@
+/* Napojení písem z next/font (src/lib/fonts.ts) na proměnné z fa-tokeny.css.
+   next/font pojmenovává rodiny po svém (Turbopack lokální písmo podle názvu
+   konstanty, webpack s hashem), na názvy z tokenů se proto spoléhat nedá.
+   Stabilní jsou proměnné --font-*, které next/font nastaví třídami na <html>.
+   fa-tokeny.css se nemění, proměnné se přepisují tady. :root:root má vyšší
+   specificitu než :root v tokenech, na pořadí CSS tak nezáleží. */
+:root:root {
+  --fa-sans: var(--font-overpass), system-ui, sans-serif;
+  --fa-mono: var(--font-overpass-mono), ui-monospace, monospace;
+  --fa-serif: var(--font-source-serif), Georgia, serif;
+}

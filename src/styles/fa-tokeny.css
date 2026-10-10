@@ -1,0 +1,34 @@
+/* FLY America - tokeny barev a písma
+   Jediný zdroj pravdy pro logo, systém i web. Paleta „Sodíková noc“ podle finálního loga d (10. 10. 2026).
+   Kontrasty podle WCAG 2.1, změřené proti Papíru #F5F2EC, Bílé #FFFFFF a Grafitu #1D252D. */
+
+:root {
+  /* ---------- Značka (z loga, beze změny) ---------- */
+  --fa-grafit: #1D252D;          /* tabule, text, hlavička, patička. Orient. Pantone 433 C. Na Papíru 13,87 : 1 */
+  --fa-zluta: #F1BE48;           /* Sodíková žlutá: linka a FLY v logu, na webu jen na tmavém. Orient. Pantone 142 C. Na grafitu 9,00 : 1, na Papíru 1,54 : 1 (nikdy text) */
+  --fa-papir: #F5F2EC;           /* podklad webu, nadpisy na tmavém */
+  --fa-papir-tlumeny: #E4DED3;   /* AMERICA na tmavém (11,58 : 1), vlasové linky na světlém (1,20 : 1) */
+  --fa-bila: #FFFFFF;            /* AMERICA přes fotku, karty a pole formuláře na Papíru */
+
+  /* ---------- Odvozené od žluté a tmavé plochy (jen web, jen na tmavém) ---------- */
+  --fa-zluta-svit: #F5CB64;      /* Žlutá rozsvícená: hover směrové tabule. Grafit na ní 10,05 : 1 */
+  --fa-asfalt: #2A3239;          /* vyvýšená plocha na grafitu (karta, rozbalené menu) */
+
+  /* ---------- Neutrální (jen web a dokumenty), odstín grafitu 210° ---------- */
+  --fa-seda-100: #ECE9E4;        /* jemná plocha na Papíru */
+  --fa-seda-200: #DBDAD6;        /* vlasové linky a rámečky karet na Papíru */
+  --fa-seda-600: #4E5862;        /* vedlejší text na světlém a každý text pod 14 px. Papír 6,49 : 1, Bílá 7,25 : 1 */
+  --fa-seda-500: #5E6873;        /* popisky od 14 px, rámeček pole formuláře. Papír 5,07 : 1, Bílá 5,67 : 1 */
+  --fa-seda-400: #A5ADB6;        /* vedlejší text na tmavém a každý text pod 14 px na tmavém. Grafit 6,83 : 1 */
+  --fa-seda-300: #C1C7CD;        /* menu a běžný text na tmavém. Grafit 9,09 : 1 */
+  --fa-bridlice: #3E454C;        /* vlasové linky na tmavém. Grafit 1,59 : 1 */
+
+  /* ---------- Funkční ---------- */
+  --fa-chyba: #B42318;           /* chyby formuláře na světlém. Papír 5,88 : 1 */
+  --fa-chyba-tma: #F97066;       /* chyby na tmavém. Grafit 5,56 : 1 */
+
+  /* ---------- Písmo ---------- */
+  --fa-sans: 'Overpass', system-ui, sans-serif;            /* systém, nadpisy, menu, tabule */
+  --fa-mono: 'Overpass Mono', ui-monospace, monospace;     /* jen kódy letišť a čísla */
+  --fa-serif: 'Source Serif 4', Georgia, serif;            /* jen když mluví Honza */
+}

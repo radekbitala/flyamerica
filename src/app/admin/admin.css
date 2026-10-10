@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Barvy administrace z palety FLY America (fa-tokeny.css načítá layout).
+   Názvy tokenů jsou stejné jako v administraci Stříbřenky, aby šly její
+   komponenty převzít beze změny tříd. */
+:root {
+  --background: var(--fa-papir);
+  --foreground: var(--fa-grafit);
+  --accent: var(--fa-grafit);
+  --accent-dark: var(--fa-asfalt);
+  --accent-ink: var(--fa-grafit);
+  --text-secondary: var(--fa-seda-600);
+  --warm-gray: var(--fa-seda-100);
+  --warm-gray-dark: var(--fa-seda-200);
+  /* Rámeček pole formuláře, s kontrastem aspoň 3 : 1 proti bílé. */
+  --field: var(--fa-seda-500);
+  /* Chyby a varování (ve Stříbřence lososová). */
+  --salmon: var(--fa-chyba);
+  --yellow: var(--fa-zluta);
+  --yellow-dark: var(--fa-zluta-svit);
+  /* Paleta značky zelenou nemá, jen pro štítek Publikováno. */
+  --green: #2F6B4A;
+  --green-light: #D3E6DA;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+  --color-accent-ink: var(--accent-ink);
+  --color-text-secondary: var(--text-secondary);
+  --color-warm-gray: var(--warm-gray);
+  --color-warm-gray-dark: var(--warm-gray-dark);
+  --color-field: var(--field);
+  --color-salmon: var(--salmon);
+  --color-yellow: var(--yellow);
+  --color-yellow-dark: var(--yellow-dark);
+  --color-green: var(--green);
+  --color-green-light: var(--green-light);
+  --color-white: #FFFFFF;
+  --font-sans: var(--font-overpass), system-ui, sans-serif;
+  /* Serif je v systému jen pro Honzovy texty, v administraci tedy v editoru článků. */
+  --font-serif: var(--font-source-serif), Georgia, serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
