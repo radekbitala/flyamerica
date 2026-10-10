@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { faSans, faMono, faSerif } from "@/lib/fonts";
+import { webFontVariables } from "@/lib/fonts";
+import { THEME_COLOR } from "@/lib/site";
 import { ArrowSymbol } from "@/components/web/ArrowSymbol";
 import { NotFoundContent } from "@/components/web/NotFoundContent";
+import { SiteHeader } from "@/components/web/SiteHeader";
+import { SiteFooter } from "@/components/web/SiteFooter";
 import "@/styles/fa-tokeny.css";
 import "@/styles/web.css";
 import "@/styles/fonts.css";
@@ -9,20 +12,29 @@ import "@/styles/fonts.css";
 // Web a administrace mají každý svůj kořenový layout, takže pro adresu,
 // která neodpovídá žádné stránce, není layout, do kterého by se 404
 // vykreslila. Next proto vrací tuhle samostatnou stránku i s <html> a
-// vlastními styly. Vypadá jako web, i pro neznámé adresy pod /admin.
+// vlastními styly. Vypadá jako web (hlavička a patička jako v layoutu (web)),
+// i pro neznámé adresy pod /admin.
 export const metadata: Metadata = {
   title: "Stránka nenalezena - FLY America",
 };
 
+export const viewport = {
+  themeColor: THEME_COLOR,
+};
+
 export default function GlobalNotFound() {
   return (
-    <html
-      lang="cs"
-      className={`${faSans.variable} ${faMono.variable} ${faSerif.variable}`}
-    >
+    <html lang="cs" className={webFontVariables}>
       <body>
         <ArrowSymbol />
-        <NotFoundContent />
+        <a className="skip" href="#obsah">
+          Přeskočit na obsah
+        </a>
+        <SiteHeader />
+        <main id="obsah">
+          <NotFoundContent />
+        </main>
+        <SiteFooter />
       </body>
     </html>
   );

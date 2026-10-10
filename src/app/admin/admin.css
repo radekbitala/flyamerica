@@ -41,7 +41,7 @@
   --color-white: #FFFFFF;
   --font-sans: var(--font-overpass), system-ui, sans-serif;
   /* Serif je v systému jen pro Honzovy texty, v administraci tedy v editoru článků. */
-  --font-serif: var(--font-source-serif), Georgia, serif;
+  --font-serif: var(--font-source-serif-latin), var(--font-source-serif-latin-ext), Georgia, serif;
 }
 
 body {

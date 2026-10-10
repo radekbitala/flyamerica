@@ -1,11 +1,20 @@
-/* Napojení písem z next/font (src/lib/fonts.ts) na proměnné z fa-tokeny.css.
-   next/font pojmenovává rodiny po svém (Turbopack lokální písmo podle názvu
-   konstanty, webpack s hashem), na názvy z tokenů se proto spoléhat nedá.
-   Stabilní jsou proměnné --font-*, které next/font nastaví třídami na <html>.
-   fa-tokeny.css se nemění, proměnné se přepisují tady. :root:root má vyšší
-   specificitu než :root v tokenech, na pořadí CSS tak nezáleží. */
+/* Napojení písem z next/font (src/lib/fonts.ts) na aliasy z web.css.
+   web.css (kopie z modelu, neupravuje se) skládá --f-sans, --f-mono a --f-serif z rodin 'Overpass', 'Overpass Mono'
+   a 'Source Serif 4' ze svých @font-face. Tady se místo nich dosadí rodiny z next/font (Turbopack je pojmenuje
+   po svém, stabilní jsou jen proměnné --font-*, které next/font nastaví třídami na <html>). Náhradní písma se
+   stejnými rozměry ('Overpass Fallback' atd.) zůstávají z web.css hned za webovým písmem, pořadí jako v modelu.
+   Rodiny z @font-face ve web.css tím nikdo nepoužije a prohlížeč jejich soubory nestahuje.
+   :root:root má vyšší specificitu než :root ve web.css, na pořadí CSS tak nezáleží. */
 :root:root {
-  --fa-sans: var(--font-overpass), system-ui, sans-serif;
-  --fa-mono: var(--font-overpass-mono), ui-monospace, monospace;
-  --fa-serif: var(--font-source-serif), Georgia, serif;
+  --f-sans: var(--font-overpass), 'Overpass Fallback', system-ui, sans-serif;
+  --f-mono: var(--font-overpass-mono-latin), var(--font-overpass-mono-latin-ext), 'Overpass Mono Fallback', ui-monospace, monospace;
+  --f-serif: var(--font-source-serif-latin), var(--font-source-serif-latin-ext), 'Source Serif Fallback', Georgia, serif;
+}
+
+/* Na mobilu má serif 18 px a optická velikost mění šířku textu, model proto používá jiné náhradní písmo
+   (web.css, část 11). Stejná podmínka jako tam. */
+@media (max-width: 600px) {
+  :root:root {
+    --f-serif: var(--font-source-serif-latin), var(--font-source-serif-latin-ext), 'Source Serif Fallback 18', Georgia, serif;
+  }
 }

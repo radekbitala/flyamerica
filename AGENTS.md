@@ -15,6 +15,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Honzova role je v našich textech vždy "mentor", nikdy "instruktor".
 - Web a administrace mají oddělené kořenové layouty: `src/app/(web)` (CSS z `src/styles`, bez Tailwindu) a `src/app/admin` (Tailwind). Styly se nemíchají.
 - `src/styles/fa-tokeny.css` a `src/styles/web.css` jsou kopie z klikacího modelu a neupravují se.
+- Veřejné stránky: hlavičku, patičku a `<main id="obsah">` dodává layout `(web)`, stránka vrací jen obsah. Metadata každé stránky přes `pageMetadata()` (`src/lib/metadata.ts`), fotky přes `Figure`/`Photo` a `src/data/photos.ts`, text článků z databáze přes `czechNbsp()` (`src/lib/typography.ts`). Přehled v README, část Veřejný web.
 - Každá server action a API routa administrace volá hned na začátku `await requireAdmin()` (`src/lib/admin-guard.ts`). Hlídá to ESLint pravidlo `local/require-admin`.
 - HTML článků se před uložením čistí přes `sanitizePostHtml()` (`src/lib/sanitize.ts`), po každé změně článku se volá `revalidatePublicPosts()` (`src/lib/posts-cache.ts`).
 - Soubory `.env*` se nečtou, nevypisují ani necommitují. Lokální testovací hodnoty zapisuje jen `scripts/local-db.mjs` do `.env.development.local`.

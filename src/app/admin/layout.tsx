@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { faSans, faSerif } from "@/lib/fonts";
+import { adminFontVariables } from "@/lib/fonts";
 import "@/styles/fa-tokeny.css";
 import "./admin.css";
 
@@ -19,7 +19,7 @@ export default function AdminRootLayout({
   return (
     <html
       lang="cs"
-      className={`${faSans.variable} ${faSerif.variable} h-full antialiased`}
+      className={`${adminFontVariables} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>

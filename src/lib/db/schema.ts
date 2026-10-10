@@ -77,6 +77,12 @@ export interface GalleryItem {
   width: number;
   height: number;
   caption: string;
+  /**
+   * Popis pro nevidomé, když se liší od popisku (u článků ze starého webu
+   * titulek z galerie, viz migrace). Chybí-li, web použije caption. Jen typ
+   * v jsonb, migrace databáze není potřeba.
+   */
+  alt?: string;
   /** Malý data URL náhled pro rozmazaný placeholder. */
   blur?: string;
 }

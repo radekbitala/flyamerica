@@ -2,7 +2,7 @@
 
 Nový web flyamerica.cz: veřejné stránky (balíčky, tipy na výlety, deník, kontakt s poptávkovým formulářem) a administrace pro deník a poptávky. Honza Čermák létá jako mentor s českými piloty na Floridě.
 
-Stav: základ projektu. Veřejné stránky se převedou z klikacího modelu (`../prototyp`) v další fázi, zatím je na úvodu dočasná stránka. Administrace má přihlášení, přehled, deník a poptávky. Serverová část poptávek je hotová, formulář na webu přijde s převodem stránky Kontakt.
+Stav: administrace (přihlášení, přehled, deník, poptávky) a serverová část poptávek jsou hotové. Veřejný web má společný základ (styly a písma z klikacího modelu `../prototyp`, hlavička, patička, komponenty, fotky, metadata, data deníku, pevné mezery), stránky se na něj převádějí z modelu. Na úvodu je zatím dočasná stránka.
 
 ## Stack
 
@@ -12,7 +12,7 @@ Stav: základ projektu. Veřejné stránky se převedou z klikacího modelu (`..
 - Obrázky deníku: Supabase Storage (bucket `denik`)
 - E-maily: Resend přes HTTP API
 - Administrace: Tailwind 4, Tiptap 3 (editor článků), sonner, lucide-react
-- Veřejný web: CSS z klikacího modelu (`src/styles`), bez Tailwindu
+- Veřejný web: CSS z klikacího modelu (`src/styles`), bez Tailwindu, písma lokálně přes `next/font/local`, fotky přes `next/image` (AVIF a WebP)
 - Testy: lokální Postgres (embedded-postgres), e2e přes playwright-core a systémový Chrome
 
 ## Struktura
@@ -30,7 +30,10 @@ src/
     favicon.ico, icon.png, apple-icon.png
   components/
     admin/                 komponenty administrace
-    web/                   komponenty webu
+    web/                   komponenty webu (hlavička, patička, záhlaví, výzva, fotky), viz Veřejný web
+  data/
+    photos.ts              fotky stránek z modelu: název -> src, rozměry, alt
+    redirects.json         přesměrování starých adres (načte next.config.ts)
   lib/
     db/schema.ts           databázové schéma (tabulky, enumy, RLS)
     db/index.ts            připojení k databázi (vytvoří se až při prvním dotazu)
@@ -38,23 +41,32 @@ src/
     admin-guard.ts         requireAdmin(), requireAdminPage(), signedOutAsNull()
     login-limit.ts         omezení pokusů o přihlášení podle otisku IP
     email.ts               e-maily přes Resend
-    site.ts                název, adresa a kontakt webu
+    site.ts                název, adresa (SITE_URL) a kontakt webu
+    metadata.ts            pageMetadata(): titulek, popis, canonical, og a twitter stránky
+    public-posts.ts        deník pro veřejný web (jen publikované, cache s tagem)
+    typography.ts          czechNbsp(): pevné mezery podle pravidla R4 z modelu
+    dates.ts               data jako v modelu („21. 12. 2023“, pražský čas)
     inquiries/             poptávky: volby formuláře, zod schéma, ochrana proti spamu, dotazy administrace
     supabase/admin.ts      úložiště obrázků (servisní klíč, jen server)
     sanitize.ts            čištění HTML článků
     post-form.ts           deník: zod schéma formuláře článku, limity, adresa z názvu
     post-files.ts          deník: fotky článku v úložišti (kontrola adres, úklid)
     posts-cache.ts         obnovení veřejných stránek po změně článku
-    fonts.ts               písma (Overpass lokálně, Overpass Mono a Source Serif 4 z Google při buildu)
+    fonts.ts               písma přes next/font/local (soubory z modelu)
   types/next-auth.d.ts     verze přihlášení v session (Auth.js)
   styles/                  fa-tokeny.css a web.css z klikacího modelu (neupravovat), fonts.css
-  fonts/                   Overpass (OFL)
+  fonts/                   WOFF2 z modelu: Overpass, Overpass Mono, Source Serif 4 (OFL)
+public/
+  img/                     fotky stránek (největší varianta z modelu)
+  logo/                    logo do hlavičky (pixelové SVG 32 a 24 px)
+  og/                      náhledy odkazu 1200 x 630
 drizzle/                   SQL migrace
 scripts/
   local-db.mjs             lokální databáze pro vývoj a testy
   create-admin.mjs         založení účtu do administrace
   e2e.mjs                  e2e testy
   test-inquiry-action.mjs  test validace poptávky bez serveru a databáze
+  test-typography.mjs      test pevných mezer (texty z modelu)
 eslint-rules/              vlastní pravidlo local/require-admin
 ```
 
@@ -75,8 +87,9 @@ Hodnoty patří do Vercelu (produkce) nebo do `.env.development.local` (lokáln�
 | `NOTIFY_TO` | kam chodí upozornění na nové poptávky |
 | `IP_HASH_SALT` | sůl pro otisk IP u poptávek a přihlášení (omezení četnosti, samotná IP se neukládá). Bez ní poslouží `AUTH_SECRET` |
 | `DB_POOL_MAX` | volitelně: počet spojení do databáze (výchozí 10 v produkci, 1 při vývoji) |
+| `NEXT_PUBLIC_SITE_URL` | volitelně: adresa webu pro canonical, og:url a náhledy odkazu, výchozí `https://flyamerica.cz`. Hlavní doména (s www, nebo bez) ještě není rozhodnutá. Vkládá se při buildu |
 
-Bez `RESEND_*` a `NOTIFY_TO` se e-maily jen zalogují, poptávka se uloží i tak. Build projde úplně bez proměnných, databáze ani úložiště se při importu nepřipojují.
+Bez `RESEND_*` a `NOTIFY_TO` se e-maily jen zalogují, poptávka se uloží i tak. Build projde úplně bez proměnných, databáze ani úložiště se při importu nepřipojují. Stránky s články deníku se pak nevygenerují při buildu, ale až při návštěvě (viz Veřejný web, Deník).
 
 ## Lokální vývoj
 
@@ -100,7 +113,62 @@ npm run build
 npx next dev -p 3201        # s běžící lokální databází
 npm run e2e                 # e2e testy proti http://localhost:3201 (systémový Chrome)
 node scripts/test-inquiry-action.mjs   # validace poptávky, bez serveru a databáze
+node scripts/test-typography.mjs       # pevné mezery, bez serveru a databáze
 ```
+
+Fotky deníku z migrace lokálně (dokud nejsou v Supabase), adresy `http://127.0.0.1:8816/<slug>/<soubor>` povolí `next/image` jen při `next dev`:
+
+```bash
+python3 -m http.server 8816 --bind 127.0.0.1 --directory ../migrace/storage
+```
+
+## Veřejný web
+
+Vzor vzhledu a obsahu je klikací model `../prototyp` (HTML stránek, `css/web.css`, `_PRAVIDLA.md`, `DESIGN.md`). Stránky přebírají jeho HTML struktury, třídy a texty doslova, Honzovy texty včetně pevných mezer a značek `[doplnit: …]`. Adresy jsou bez `.html`: `/`, `/balicek-florida-week`, `/balicek-grand-tour`, `/tipy-na-vylety`, `/o-honzovi`, `/denik`, `/denik/[slug]`, `/kontakt`, `/zasady-zpracovani-osobnich-udaju`.
+
+### Layout a komponenty
+
+Layout `src/app/(web)/layout.tsx` vykreslí symbol šipky, odkaz „Přeskočit na obsah“, hlavičku, `<main id="obsah">` a patičku. Stránka vrací jen obsah `<main>` (záhlaví a sekce), hlavičku ani patičku nevkládá. Odkazy v rámci webu přes `next/link`.
+
+| Komponenta | Props | Použití |
+| --- | --- | --- |
+| `SiteHeader` | žádné | v layoutu. Logo (SVG v křivkách, 32 px, pod 601 px 24 px přes `<picture>`), menu s `aria-current` podle cesty (`page` na stránce sekce, `true` na detailu), tichá výzva „Poptat termín“, mobilní menu |
+| `MobileMenu` | `logo: ReactNode` | jediná klientská komponenta, jen uvnitř `SiteHeader`. Chování z `prototyp/js/web.js`: Escape zavře menu a vrátí fokus na tlačítko, odkaz v menu a šířka nad 960 px ho zavřou, tichá výzva se schová, když je pod hlavičkou vidět `main .fa-dir` nebo `main #poptavka`, na stránkách balíčků vede na `/kontakt?balicek=…#poptavka` |
+| `SiteFooter` | žádné | v layoutu, texty doslova z modelu |
+| `PageHead` | `title`, `label?`, `crumbs?`, `perex?`, `perexVoice?`, `children?` | záhlaví podstránky (`.page-head`). Stránka sekce `label`, detail `crumbs`. `perexVoice` = perex Honzova článku v serifu. `children` pod perex (`.dn-by`, `.kt-tel`) |
+| `Crumbs` | `href`, `label`, `current` | drobečky s polohovou tabulí (`.crumbs` a `.fa-loc`), samostatně pro záhlaví balíčku `.pk-head` |
+| `CtaSection` | `id?` | výzva „Napište, kdy chcete letět.“ na konci stránky, na úvodu `id="poptat"` |
+| `Figure` | `photo`, `sizes`, `className?`, `style?`, `caption?`, `credit?`, `priority?`, `alt?`, `blurDataURL?` | fotka s popiskem. Popisek je výchozí alt s pevnými mezerami, `credit` přidá „Foto: archiv FLY America“, `priority` pro první fotku stránky (bez líného načítání, `fetchPriority="high"`) |
+| `Photo` | `photo`, `sizes`, `priority?`, `alt?`, `className?`, `style?`, `blurDataURL?` | fotka bez popisku (dlaždice, karty, portrét) |
+| `ArrowSymbol`, `Arrow` | žádné | symbol `#arr` (v layoutu) a šipka `<svg><use href="#arr"/></svg>` v odkazech a tabulích |
+
+Pomocné moduly: `src/components/web/nav.ts` (`NAV_ITEMS`, `inquiryHref(balicek?)`, `packageFromPath()`), `src/lib/site.ts` (kontakt, `FA_PHONE_HREF`), `src/lib/dates.ts` (`formatDate`, `isoDate`, `yearOf`).
+
+### Fotky
+
+`public/img` má od každé fotky použité v modelu jen největší variantu (název bez velikosti, `img/cedar-key-letecky-800.jpg` v modelu = `/img/cedar-key-letecky.jpg`), menší velikosti a AVIF/WebP dělá `next/image`. `src/data/photos.ts` je převedený `prototyp/img/_seznam.tsv`: klíč je název bez přípony, hodnota `{ src, width, height, alt }`. `alt` je popisek z archivu doslova, viditelný popisek je stejný text s pevnými mezerami. `sizes` se přebírá z HTML modelu, pro velkou fotku podstránky je `PAGE_PHOTO_SIZES`. Šířky obrázků (`deviceSizes`, `imageSizes`) jsou v `next.config.ts` podle modelu. Úvodní fotka s jinými variantami pro mobil (`<picture>` v modelu) jde přes `getImageProps()`.
+
+### Metadata
+
+Každá stránka skládá metadata přes `pageMetadata({ title, description, path, absoluteTitle?, ogImage?, article? })` ze `src/lib/metadata.ts`: titulek „Název - FLY America“, stejný `og:title` a `og:description`, canonical a `og:url` s adresou stránky, náhled odkazu 1200 x 630 (`/og/og-image.jpg`, u článků `ogImage: "photo"` = `/og/og-image-foto.jpg`) a `twitter:card` `summary_large_image`. Next slučuje metadata jen do první úrovně, stránka s vlastním `openGraph` by jinak přišla o obrázek z layoutu. Adresy doplní `metadataBase` = `SITE_URL`.
+
+### Písma
+
+Všechna tři písma jsou soubory z modelu (`src/fonts`, WOFF2 jen se znaky latin a latin-ext) přes `next/font/local` (`src/lib/fonts.ts`), nic se nestahuje z Google Fonts. Overpass je jediné přednačtené písmo. Overpass Mono a Source Serif 4 mají latin a latin-ext v samostatných souborech, každá podmnožina je vlastní rodina s `unicode-range` a v CSS jdou za sebou. `src/styles/fonts.css` je dosadí do aliasů `--f-sans`, `--f-mono` a `--f-serif` z `web.css`.
+
+Náhradní písma (`adjustFontFallback`) next/font negeneruje, používají se ruční z modelu (`web.css`, část 1): `Overpass Fallback` z Arialu zvlášť pro váhy 400, 600 a 700, `Source Serif Fallback` z Georgie (na mobilu `Source Serif Fallback 18`) a `Overpass Mono Fallback` z Courier New. Porovnání 11. 10. 2026 na 9 stránkách modelu v Chrome (výška stránky bez webových písem proti výšce s nimi): s ručními náhradními písmy rozdíl 0-66 px na 1440 px a 0-60 px na 375 px, s `adjustFontFallback` (Arial a Times New Roman, jedno náhradní písmo na rodinu) až 103 px na 1440 px a až 340 px na 375 px. Android Arial, Georgii ani Courier New nemá, tam text po načtení písma poskočit může (ověřit na telefonu, `_PRAVIDLA.md`, část 4).
+
+### Pevné mezery
+
+`czechNbsp(html)` a `czechNbspText(text)` ze `src/lib/typography.ts` doplní pevné mezery podle pravidla R4 z `prototyp/_PRAVIDLA.md`: za jednopísmennými předložkami a spojkami, mezi číslem a jednotkou nebo počítaným slovem, v tisících a telefonu, u dat a v celcích (Key West, St. Augustine, Cessna 182), s výjimkou pro označení za slovem (bodu A, Saturn V). Mění jen druh mezery a jen v textu, nikdy v atributech a značkách. Text článků z databáze se prožene `czechNbsp()` při vykreslení. Statické texty stránek mají pevné mezery rovnou z modelu (`&nbsp;` v JSX). Test: `node scripts/test-typography.mjs`.
+
+### Deník
+
+`src/lib/public-posts.ts` (jen na serveru): `getPublishedPosts()`, `getLatestPublishedPosts(n)`, `getPublishedPostBySlug(slug)`, `getAdjacentPosts(slug)` (`{ newer, older }`) a `getPublishedSlugs()` pro `generateStaticParams`. Jen články se stavem `published`, nejnovější první. Výsledky jsou v cache Next.js (`unstable_cache`) s tagem `PUBLIC_POSTS_TAG`. Po každé změně článku ho administrace zneplatní přes `revalidatePublicPosts()` (`src/lib/posts-cache.ts`, `revalidateTag` s `expire: 0` a obnova cest `/`, `/denik`, `/denik/[slug]`), takže Honza po uložení hned vidí novou verzi. Bez `DATABASE_URL` se stránka s články při buildu nevygeneruje (`connection()`) a `getPublishedSlugs()` vrátí prázdné pole. `content` je HTML vyčištěné při uložení, galerie zastupuje značka `<p data-gallery="ID"></p>`, fotka galerie má volitelné `alt` (`GalleryItem` v `src/lib/db/schema.ts`), chybí-li, platí `caption`.
+
+### Přesměrování
+
+`next.config.ts` načte `src/data/redirects.json` (pole ve tvaru `redirects` z next.config, např. `{ "source": "/", "has": [...], "destination": "/denik/…", "statusCode": 301 }`) při buildu. Zatím je prázdné, naplní ho převod deníku (`../migrace/redirects.vercel.json`).
 
 ## Poptávky
 
@@ -188,4 +256,4 @@ where email = 'jmeno@example.cz';
    Drizzle si aplikované migrace pamatuje v tabulce `drizzle.__drizzle_migrations`. Migrace proto nespouštět ručně v SQL editoru, jinak by je `drizzle-kit migrate` zkusil spustit znovu.
 3. Založit admina (viz výše).
 4. Vercel: připojit repozitář, nastavit proměnné prostředí z tabulky výše. `AUTH_SECRET` vygenerovat např. `openssl rand -base64 32`. Pro `DATABASE_URL` aplikace použít pooler Supabase, kód počítá s `prepare: false`.
-5. Build stáhne písma z Google Fonts (jednou, při buildu). Prohlížeč návštěvníka nic z Googlu nenačítá.
+5. Písma jsou v repozitáři (`src/fonts`), build ani prohlížeč nic z Google Fonts nestahují.

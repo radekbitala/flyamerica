@@ -84,6 +84,9 @@ const galleryItemSchema = z.object({
     .string()
     .trim()
     .max(POST_LIMITS.caption, "Popisek fotky je příliš dlouhý."),
+  // Administrace alt neupravuje, ale fotky převedené ze starého webu ho mají
+  // (GalleryItem.alt). Bez něj by ho zod při uložení článku zahodil.
+  alt: z.string().trim().max(POST_LIMITS.caption).optional().catch(undefined),
   blur,
 });
 
