@@ -217,7 +217,9 @@ export const inquiries = pgTable(
     internalNote: text("internal_note"),
 
     // Otisk IP (sha256 se solí IP_HASH_SALT) kvůli omezení četnosti.
-    // Samotnou IP neukládáme, k vyřízení poptávky ji nepotřebujeme.
+    // Samotnou IP neukládáme, k vyřízení poptávky ji nepotřebujeme. Otisk
+    // i user agent se po TRACE_RETENTION_DAYS (src/lib/inquiries/spam.ts)
+    // mažou, viz submitInquiry a zásady zpracování osobních údajů.
     ipHash: varchar("ip_hash", { length: 64 }),
     userAgent: varchar("user_agent", { length: 500 }),
 

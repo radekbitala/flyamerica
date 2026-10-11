@@ -33,6 +33,8 @@ yarn-error.log*
 
 # env files (hesla a klíče nikdy do repa)
 .env*
+# vzor jen s názvy proměnných (scripts/import-denik.mjs)
+!.env.import.local.example
 
 # lokální databáze pro vývoj a testy (scripts/local-db.mjs)
 /.local-db/

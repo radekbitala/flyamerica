@@ -1,0 +1,7 @@
+/* Zásady jsou náš text, ne Honzův: čtecí stránka jako .prose (mezery, nadpisy,
+   seznamy, odkazy), jen v Overpassu. Source Serif 4 je podle DESIGN.md jen pro
+   Honzova slova. Dvě třídy, aby pravidlo vyhrálo nad .prose bez ohledu na
+   pořadí stylů. Na mobilu má .prose také 18 px. */
+.policy:global(.prose) {
+  font: 400 18px/1.6 var(--f-sans);
+}

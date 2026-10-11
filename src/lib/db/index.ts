@@ -2,6 +2,29 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
+/** Lokální databáze (npm run db:local, next start nad ní) jede bez TLS. */
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+/**
+ * TLS spojení s databází. postgres-js bez volby ssl šifruje jen podle
+ * sslmode v adrese, jinak by poptávky (jméno, e-mail, telefon) i heslo
+ * k databázi šly mezi Vercelem a Supabase nešifrovaně. Rozhoduje host,
+ * ne NODE_ENV: sslmode v DATABASE_URL má přednost (postgres-js ho čte sám),
+ * lokální databáze je bez TLS, jinak "require" (šifrované spojení bez
+ * ověření certifikátu, README, Nasazení, krok 4). Adresa se nikam nevypisuje.
+ */
+function sslOption(connectionString: string): { ssl?: false | "require" } {
+  let url: URL;
+  try {
+    url = new URL(connectionString);
+  } catch {
+    return { ssl: "require" };
+  }
+  if (url.searchParams.has("sslmode")) return {};
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  return { ssl: LOCAL_HOSTS.has(host) ? false : "require" };
+}
+
 function createDb() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -13,6 +36,7 @@ function createDb() {
   const poolMax = Number(process.env.DB_POOL_MAX);
 
   const client = postgres(connectionString, {
+    ...sslOption(connectionString),
     // Supabase pooler v režimu transaction nepodporuje prepared statements.
     prepare: false,
     max:

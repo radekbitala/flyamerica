@@ -1,0 +1,63 @@
+/* Deník: jen to, co css/web.css z modelu nemá. Model nemá zvětšení fotky, galerii uprostřed textu ani obsah článku delší než obrazovka.
+   Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). Bez stínů, zaoblení a přechodů. */
+
+/* Fotka v galerii je odkaz na zvětšení. Bez skriptu otevře samotný soubor. */
+.zoom { display: block; cursor: zoom-in; }
+.zoom:focus-visible { outline: 2px solid var(--grafit); outline-offset: 3px; }
+
+/* Galerie uprostřed textu článku (.prose): odsazení jako fotka v textu, fotky v mřížce bez okrajů z .prose .fig */
+:global(.prose) > .inProse { margin: 2em 0; }
+:global(.prose) .inProse :global(.fig) { margin: 0; }
+
+/* Víc galerií za sebou v sekci Fotky: mezera jako v mřížce, vypadají jako jedna */
+.galleries { display: grid; gap: 24px; }
+
+/* Obsah „V článku“ je na počítači sticky (web.css). Dlouhý obsah (Oblet Ameriky, 17 dní) by byl vyšší než obrazovka
+   a konec seznamu by šel otevřít až na konci textu, proto se posouvá sám. Pod 961 px je sbalený a static (web.css). */
+@media (min-width: 961px) {
+  /* Padding 28 px z .aside zůstává, rámeček fokusu odkazů se do něj vejde a posuvná plocha ho neořízne. */
+  .toc { max-height: calc(100vh - var(--hdr) - 48px); overflow-y: auto; overscroll-behavior: contain; }
+}
+
+/* ---------- Zvětšení fotky ----------
+   Celá obrazovka v Grafitu (jako patička, proto třída on-dark u dialogu): nahoře pořadí a Zavřít, uprostřed fotka,
+   dole popisek a Předchozí / Další. Fotka se nezvětšuje nad svou velikost (fotky 580 px z roku 2010). */
+.lightbox {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0;
+  background: var(--grafit); color: var(--papir);
+  overflow: hidden auto; overscroll-behavior: contain;
+}
+.lightbox[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.lightbox::backdrop { background: var(--grafit); }
+
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: var(--hdr); padding: 0 var(--gut); }
+.count { font: 600 14px/1.4 var(--f-sans); font-variant-numeric: tabular-nums lining-nums; color: var(--s400); }
+.close {
+  font: 600 15px/1 var(--f-sans); color: var(--papir);
+  background: none; border: 0; margin: 0 -4px 0 0; padding: 0 4px 0 16px; height: 44px; min-width: 44px; cursor: pointer;
+}
+.close:hover { text-decoration: underline var(--linka); text-underline-offset: .22em; }
+.close:focus-visible { outline: 2px solid var(--zluta); outline-offset: 2px; }
+
+.stage { position: relative; min-height: 0; margin: 0 var(--gut); }
+/* Rámeček fotky je nejvýš velký jako soubor (max-width a max-height v px nastaví komponenta), fotka v něm object-fit: contain */
+.photo { position: absolute; inset: 0; margin: auto; width: 100%; height: 100%; }
+
+.foot {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px 40px;
+  padding: 18px var(--gut) 24px;
+}
+.caption { font: 400 15px/1.5 var(--f-sans); color: var(--s300); max-width: 46em; }
+.nav { display: flex; gap: 32px; }
+/* Tlačítka jako textový odkaz se šipkou (.fa-link na tmavém) */
+.btn { background: none; border: 0; padding: 0; margin: 0; min-height: 44px; cursor: pointer; }
+.btn.prev svg { transform: rotate(180deg); }
+.btn.prev:hover svg { transform: rotate(180deg) translateX(2px); }
+
+@media (max-width: 600px) {
+  .stage { margin: 0; }
+  .foot { grid-template-columns: minmax(0, 1fr); padding-bottom: 16px; }
+  .nav { justify-content: space-between; }
+}

@@ -40,6 +40,38 @@ function loadRedirects(): Redirect[] {
   return data as Redirect[];
 }
 
+/**
+ * Staré adresy WordPressu končí lomítkem (/oblet-ameriky-2016/, /validace/).
+ * Next by lomítko nejdřív odstranil (308) a teprve pak použil pravidlo
+ * (druhé 308). Výchozí odstraňování lomítka je proto vypnuté
+ * (skipTrailingSlashRedirect) a každé pravidlo má i variantu s lomítkem:
+ * Next porovnává zdroj přesně, /validace/:path* lomítko na konci nepustí.
+ * Pravidla s has (/?p=ID) mají zdroj "/" a zůstávají jednou. Na konci
+ * náhrada výchozího chování: jakákoli jiná adresa s lomítkem na konci
+ * jedním 308 na adresu bez něj (/kontakt/, /denik/<slug>/).
+ * Test: node scripts/test-redirects.mjs proti běžícímu serveru.
+ */
+function withTrailingSlash(rules: Redirect[]): Redirect[] {
+  const variants = rules
+    .filter((rule) => rule.source !== "/" && !rule.source.endsWith("/"))
+    .map((rule) => ({ ...rule, source: `${rule.source}/` }));
+  return [...variants, ...rules, { source: "/:path+/", destination: "/:path+", permanent: true }];
+}
+
+/**
+ * Bezpečnostní hlavičky všech odpovědí. Stránku nejde vložit do rámu na
+ * cizím webu (clickjacking formulářů), prohlížeč neodhaduje typ souborů,
+ * cizí weby dostanou z odkazu jen doménu a web nepotřebuje kameru, mikrofon
+ * ani polohu. Plná CSP (s nonce pro skripty) zatím není. HSTS doplní Vercel.
+ */
+const SECURITY_HEADERS = [
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+];
+
 export default function nextConfig(phase: string): NextConfig {
   const dev = phase === PHASE_DEVELOPMENT_SERVER;
 
@@ -50,6 +82,10 @@ export default function nextConfig(phase: string): NextConfig {
     // Vlevo dole by indikátor vývojového serveru zakrýval odhlášení
     // v administraci.
     devIndicators: { position: "bottom-right" },
+    // Hlavička X-Powered-By: Next.js by zbytečně prozrazovala framework.
+    poweredByHeader: false,
+    // Lomítko na konci adresy řeší přesměrování níže (withTrailingSlash).
+    skipTrailingSlashRedirect: true,
     experimental: {
       // Web a administrace mají každý svůj kořenový layout, takže neexistuje
       // společný layout, do kterého by se vykreslil 404 pro neznámou adresu.
@@ -93,7 +129,10 @@ export default function nextConfig(phase: string): NextConfig {
       ...(dev ? { dangerouslyAllowLocalIP: true } : {}),
     },
     async redirects() {
-      return loadRedirects();
+      return withTrailingSlash(loadRedirects());
+    },
+    async headers() {
+      return [{ source: "/:path*", headers: SECURITY_HEADERS }];
     },
   };
 }

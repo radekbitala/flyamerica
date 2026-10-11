@@ -9,6 +9,11 @@ const YOUTUBE_HOSTS = [
 ];
 
 const GALLERY_ID = /^[a-z0-9-]+$/;
+
+// Při next dev smí obrázek v textu i přes http, ale jen z lokálního serveru
+// s fotkami z migrace (import deníku --local, README). Jinak jen https.
+const DEV_HTTP_IMAGES = process.env.NODE_ENV === "development" ? "http://127.0.0.1:8816/" : null;
+
 // Rozměry obrázků a videí a začátek číslovaného seznamu: jen celé číslo.
 const DIMENSION = /^\d{1,4}$/;
 
@@ -61,7 +66,7 @@ const OPTIONS: sanitizeHtml.IOptions = {
   allowedSchemes: ["http", "https", "mailto", "tel"],
   allowedSchemesByTag: {
     // http by prohlížeč na https webu zablokoval.
-    img: ["https"],
+    img: DEV_HTTP_IMAGES ? ["https", "http"] : ["https"],
     iframe: ["https"],
   },
   allowProtocolRelative: false,
@@ -94,7 +99,13 @@ const OPTIONS: sanitizeHtml.IOptions = {
       if (attribs.start && DIMENSION.test(attribs.start)) kept.start = attribs.start;
       return { tagName, attribs: kept };
     },
-    img: (tagName, attribs) => ({ tagName, attribs: keepDimensions(attribs) }),
+    img: (tagName, attribs) => {
+      const kept = keepDimensions(attribs);
+      // Bez mezer a řídicích znaků, stejně jako je při kontrole schématu bere sanitize-html.
+      const src = (kept.src ?? "").replace(/[\u0000-\u0020]+/g, "").toLowerCase();
+      if (src.startsWith("http:") && !(DEV_HTTP_IMAGES && src.startsWith(DEV_HTTP_IMAGES))) delete kept.src;
+      return { tagName, attribs: kept };
+    },
     iframe: (tagName, attribs) => ({ tagName, attribs: keepDimensions(attribs) }),
   },
   // Iframe, kterému sanitizer vzal src (cizí web), obrázek bez src a obal

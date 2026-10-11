@@ -5,8 +5,11 @@
  *
  * Ověřuje to, o čem server action submitInquiry rozhoduje sama: zod schéma
  * (platná i neplatná data, hlášky z klikacího modelu), čtení FormData,
- * podepsaný token proti robotům a otisk IP. Uložení do databáze a e-maily
- * pokrývá e2e test (scripts/e2e.mjs).
+ * podepsaný token proti robotům a otisk IP. K tomu kontrolu polí, kterou
+ * formulář dělá v prohlížeči (src/lib/inquiries/fields.ts): musí hlásit
+ * totéž co server. Odeslání formulářů na webu a uložení do databáze
+ * pokrývá e2e test (scripts/e2e.mjs). E-maily se bez Resendu jen zalogují,
+ * žádný test je neposílá.
  *
  * TypeScript ze src/ načte Node sám (odstranění typů). Háček níž doplní
  * příponu .ts u relativních importů, přeloží alias @/ a nahradí
@@ -54,6 +57,9 @@ const {
   readFields,
 } = await import("../src/lib/inquiries/schema.ts");
 const { packageFromParam, packageName } = await import("../src/lib/inquiries/options.ts");
+const { INQUIRY_STEPS, checkCallbackField, checkInquiryField } = await import(
+  "../src/lib/inquiries/fields.ts"
+);
 const { MAX_FORM_AGE_MS, MIN_FILL_MS, checkFormToken, clientIp, createFormToken, hashIp } =
   await import("../src/lib/inquiries/spam.ts");
 
@@ -146,7 +152,7 @@ describe("poptávka: platná data", () => {
 describe("poptávka: neplatná data", () => {
   test("prázdný formulář hlásí povinná pole hláškami z prototypu", () => {
     assert.deepEqual(errorsOf(inquirySchema, EMPTY), {
-      licence: "Vyberte, jakou máte licenci.",
+      licence: "Vyberte licenci, nebo možnost Nemám.",
       packageSlug: "Vyberte balíček, nebo možnost Zatím nevím.",
       travelDate: "Napište přibližný termín, třeba měsíc.",
       pilotCount: "Vyberte počet pilotů.",
@@ -243,6 +249,78 @@ describe("žádost o zavolání", () => {
       errorsOf(callbackSchema, { name: "Jana", phone: "12345678" }).phone,
       MESSAGES.callbackPhone,
     );
+  });
+});
+
+describe("kontrola v prohlížeči", () => {
+  /** Chyby, které by formulář ukázal před odesláním (src/lib/inquiries/fields.ts). */
+  function clientErrors(input) {
+    const out = {};
+    for (const field of INQUIRY_FIELDS) {
+      const message = checkInquiryField(field, input[field] ?? "");
+      if (message) out[field] = message;
+    }
+    return out;
+  }
+
+  function serverErrors(schema, input) {
+    const result = schema.safeParse(input);
+    return result.success ? {} : firstErrors(result.error);
+  }
+
+  test("kroky formuláře obsahují všechna pole poptávky v pořadí", () => {
+    assert.deepEqual(INQUIRY_STEPS.flat(), [...INQUIRY_FIELDS]);
+  });
+
+  test("hlásí stejné chyby a hlášky jako server", () => {
+    const cases = [
+      VALID,
+      EMPTY,
+      { ...VALID, aboutPilot: "", companions: "", phone: "", referralSource: "", message: "" },
+      { ...VALID, name: "   ", travelDate: "\n\t" },
+      { ...VALID, name: "  Jan \n  Novák\t", travelDate: " duben\r\n2027 " },
+      { ...VALID, phone: "602 214 71" },
+      { ...VALID, phone: "volejte večer" },
+      { ...VALID, phone: "1 ".repeat(30) },
+      { ...VALID, phone: " +420  602 214\n719 " },
+      { ...VALID, licence: "SPL", packageSlug: "luxury", pilotCount: "5" },
+      { ...VALID, companions: "Možná", referralSource: "Z televize" },
+      { ...VALID, name: "J".repeat(121), travelDate: "x".repeat(121) },
+      { ...VALID, name: "J".repeat(120), travelDate: "x".repeat(120) },
+      { ...VALID, aboutPilot: "x".repeat(2001), message: "x".repeat(2001) },
+      { ...VALID, aboutPilot: ` ${"x".repeat(2000)} `, message: "x".repeat(2000) },
+      { ...VALID, email: "jan" },
+      { ...VALID, email: "jan@seznam" },
+      { ...VALID, email: "jan novak@seznam.cz" },
+      { ...VALID, email: `${"a".repeat(250)}@b.cz` },
+      { ...VALID, email: "  jan.novak@example.cz " },
+    ];
+    for (const input of cases) {
+      assert.deepEqual(clientErrors(input), serverErrors(inquirySchema, input), JSON.stringify(input));
+    }
+  });
+
+  test("e-mail kontroluje volněji, přísnější chybu ukáže až server", () => {
+    for (const email of ["jan..novak@seznam.cz", "jan@seznam.c"]) {
+      assert.equal(checkInquiryField("email", email), undefined, email);
+      assert.equal(serverErrors(inquirySchema, { ...VALID, email }).email, MESSAGES.email, email);
+    }
+  });
+
+  test("žádost o zavolání hlásí totéž co server", () => {
+    for (const input of [
+      { name: "", phone: "" },
+      { name: " Jana ", phone: "602 214 719" },
+      { name: "Jana", phone: "12345678" },
+      { name: "J".repeat(121), phone: "1".repeat(41) },
+    ]) {
+      const client = {};
+      for (const field of ["name", "phone"]) {
+        const message = checkCallbackField(field, input[field]);
+        if (message) client[field] = message;
+      }
+      assert.deepEqual(client, serverErrors(callbackSchema, input), JSON.stringify(input));
+    }
   });
 });
 

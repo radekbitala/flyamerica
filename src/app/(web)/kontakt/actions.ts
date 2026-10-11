@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { after } from "next/server";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { inquiries } from "@/lib/db/schema";
 import {
@@ -29,6 +29,7 @@ import {
 import {
   MAX_PER_IP_PER_HOUR,
   MIN_FILL_MS,
+  TRACE_RETENTION_DAYS,
   checkFormToken,
   clientIp,
   createFormToken,
@@ -118,6 +119,19 @@ async function save(row: Submission): Promise<{ id: string } | "rate-limited" | 
         .insert(inquiries)
         .values({ ...row, ipHash, userAgent })
         .returning({ id: inquiries.id });
+
+      // Otisk IP a údaj o prohlížeči starších poptávek se mažou (zásady
+      // zpracování osobních údajů), bez cronu vždy s novou poptávkou.
+      // Limit počítá jen poslední hodinu, o data nepřijde.
+      await tx
+        .update(inquiries)
+        .set({ ipHash: null, userAgent: null })
+        .where(
+          and(
+            lt(inquiries.createdAt, sql`now() - make_interval(days => ${TRACE_RETENTION_DAYS}::int)`),
+            or(isNotNull(inquiries.ipHash), isNotNull(inquiries.userAgent)),
+          ),
+        );
       return { id: inserted.id };
     });
   } catch (err) {

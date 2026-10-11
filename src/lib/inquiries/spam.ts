@@ -20,6 +20,14 @@ export const MAX_FORM_AGE_MS = 24 * 60 * 60 * 1000;
 /** Poptávek a žádostí o zavolání z jedné IP za hodinu. */
 export const MAX_PER_IP_PER_HOUR = 5;
 
+/**
+ * Po kolika dnech se u poptávky smaže otisk IP a údaj o prohlížeči. Limit
+ * potřebuje jen poslední hodinu, delší lhůta je pro dohledání zneužití
+ * formuláře. Lhůtu uvádějí zásady zpracování osobních údajů, při změně
+ * upravit i stránku /zasady-zpracovani-osobnich-udaju.
+ */
+export const TRACE_RETENTION_DAYS = 30;
+
 // Hodiny serverů se můžou mírně rozcházet, token „z budoucnosti" do minuty projde.
 const CLOCK_SKEW_MS = 60_000;
 
@@ -70,7 +78,9 @@ export function checkFormToken(token: string, now: number = Date.now()): FormTok
 
 /**
  * Otisk IP pro omezení četnosti. Samotnou IP neukládáme. Bez soli by šel
- * otisk dopočítat zpátky, IPv4 adres je jen pár miliard.
+ * otisk dopočítat zpátky, IPv4 adres je jen pár miliard. Kdo sůl zná, to
+ * dokáže i tak (celé IPv4 za desítky minut), otisk je proto jen
+ * pseudonymizovaný osobní údaj a u poptávek se po TRACE_RETENTION_DAYS maže.
  *
  * Když IP_HASH_SALT chybí (lokálně ho npm run db:local nezapisuje), poslouží
  * jako sůl AUTH_SECRET. Bez obou se omezení vypne, poptávka se ale přijme.

@@ -12,13 +12,14 @@ import { db } from "@/lib/db";
 import { postCategories, postCategoryMap, posts } from "@/lib/db/schema";
 import { sanitizePostHtml } from "@/lib/sanitize";
 import { revalidatePublicPosts } from "@/lib/posts-cache";
+import { isAllowedImageUrl } from "@/lib/image-hosts";
 import {
   contentImageUrls,
-  isOwnFileUrl,
   postFilePaths,
   removeUnusedFiles,
 } from "@/lib/post-files";
 import {
+  POST_LIMITS,
   postSchema,
   slugify,
   type PostFormState,
@@ -84,15 +85,38 @@ function read(formData: FormData) {
   };
 }
 
-function fieldErrors(issues: { path: PropertyKey[]; message: string }[]) {
+type Issue = { path: PropertyKey[]; message: string; code?: string };
+
+function fieldErrors(issues: Issue[]) {
   const errors: Record<string, string> = {};
   for (const issue of issues) {
-    // U galerií stačí hláška k celé sekci, formulář nemá kam vypsat chybu
-    // ke třetí fotce druhé galerie.
+    // Formulář má jedno místo pro chybu všech galerií, hláška proto říká,
+    // která galerie a fotka to je (číslování jako v administraci).
     const key = String(issue.path[0] ?? "");
-    if (key && !errors[key]) errors[key] = issue.message;
+    if (key && !errors[key]) errors[key] = key === "gallery" ? galleryMessage(issue) : issue.message;
   }
   return errors;
+}
+
+/**
+ * Hláška k chybě v galerii podle cesty chyby: ["gallery"] celý seznam
+ * (moc galerií), ["gallery", 1, "items"] fotky galerie, ["gallery", 1,
+ * "items", 4, "caption"] popisek páté fotky druhé galerie.
+ */
+function galleryMessage({ path, message, code }: Issue): string {
+  const [, gallery, items, photo, field] = path;
+  if (typeof gallery !== "number") return message;
+  const name = `Galerie ${gallery + 1}`;
+  if (items !== "items") return FALLBACK_ERRORS.gallery;
+  if (typeof photo !== "number") {
+    return code === "too_big"
+      ? `${name} má příliš mnoho fotek, nejvýš ${POST_LIMITS.photosPerGallery}.`
+      : FALLBACK_ERRORS.gallery;
+  }
+  if (field === "caption") {
+    return `${name}, fotka ${photo + 1}: popisek je příliš dlouhý, nejvýš ${POST_LIMITS.caption} znaků.`;
+  }
+  return `${name}, fotka ${photo + 1} je poškozená. Odeberte ji a nahrajte znovu.`;
 }
 
 /**
@@ -135,18 +159,26 @@ function parse(formData: FormData): Parsed {
   if (!result.success) return fail(fieldErrors(result.error.issues));
 
   const data = result.data;
-  // Cizí adresa by na webu i v přehledu článků shodila next/image.
-  if (data.imageUrl && !isOwnFileUrl(data.imageUrl)) {
+  // Fotky jen z našeho úložiště (bucket "denik", při vývoji i lokální, viz
+  // src/lib/image-hosts.ts). Formulář posílá adresy ve skrytých polích.
+  // Cizí adresa by na webu načítala fotku z cizího serveru a dostal by IP
+  // návštěvníků, next/image by ji navíc odmítl.
+  if (data.imageUrl && !isAllowedImageUrl(data.imageUrl)) {
     return fail({ imageUrl: FALLBACK_ERRORS.imageUrl });
   }
-  if (data.gallery.some((g) => g.items.some((item) => !isOwnFileUrl(item.url)))) {
-    return fail({ gallery: FALLBACK_ERRORS.gallery });
+  for (const [g, gallery] of data.gallery.entries()) {
+    const p = gallery.items.findIndex((item) => !isAllowedImageUrl(item.url));
+    if (p >= 0) {
+      return fail({
+        gallery: `Galerie ${g + 1}, fotka ${p + 1} není z úložiště webu. Odeberte ji a nahrajte znovu.`,
+      });
+    }
   }
 
   // Obrázek zkopírovaný s textem z jiného webu by se načítal odtamtud
   // a po zániku starého webu by zmizel. Tiše ho nezahazujeme (ani http,
   // který by čištění HTML odstranilo), Honza by nevěděl, kam fotka zmizela.
-  if (contentImageUrls(data.content).some((url) => !isOwnFileUrl(url))) {
+  if (contentImageUrls(data.content).some((url) => !isAllowedImageUrl(url))) {
     return fail({
       content:
         "Text obsahuje obrázek z jiného webu. Odeberte ho a fotku nahrajte tlačítkem Fotka do textu.",

@@ -1,0 +1,3 @@
+/* Stránka 404 je nižší než obrazovka a pod tmavou patičkou by zůstal světlý pruh Papíru.
+   Záhlaví proto zabere aspoň výšku obrazovky pod hlavičkou, patička začíná až pod záhybem. */
+.notFound { min-height: calc(100svh - var(--hdr)); }

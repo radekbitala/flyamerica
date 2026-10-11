@@ -18,17 +18,6 @@ export function isStorageConfigured(): boolean {
   );
 }
 
-/**
- * Fotka z našeho úložiště? Formulář posílá adresy ve skrytých polích, takže
- * je server ověřuje. Bez nastaveného úložiště (lokálně, ukázková data
- * z placehold.co) projde každá adresa.
- */
-export function isOwnFileUrl(url: string): boolean {
-  if (!isStorageConfigured()) return true;
-  const prefix = publicImageUrl("");
-  return url.startsWith(prefix) && url.length > prefix.length;
-}
-
 /** Adresy obrázků vložených do textu článku (<img src="...">). */
 export function contentImageUrls(html: string): string[] {
   return Array.from(html.matchAll(/<img\b[^>]*?\ssrc="([^"]+)"/g), (match) => match[1]);

@@ -4,6 +4,9 @@ import { z } from "zod";
  * Délky podle sloupců tabulky posts a post_categories. Počty galerií a fotek
  * a délka textu drží celý formulář pod limitem těla server action
  * (next.config.ts): fotka v galerii zabere ve formuláři asi 0,5-1,5 kB.
+ * Popisek do 500 znaků a 30 galerií kvůli článkům ze starého webu (článek
+ * 2017 má popisky přes 300 znaků, Oblet Ameriky 2016 má 17 galerií), aby
+ * je Honza mohl v administraci upravit a uložit.
  */
 export const POST_LIMITS = {
   title: 255,
@@ -12,9 +15,9 @@ export const POST_LIMITS = {
   content: 500_000,
   imageAlt: 300,
   url: 500,
-  caption: 300,
+  caption: 500,
   categoryName: 100,
-  galleries: 10,
+  galleries: 30,
   photosPerGallery: 60,
 } as const;
 
@@ -75,9 +78,16 @@ const blur = z
   .optional()
   .catch(undefined);
 
+/**
+ * Adresa fotky: http nebo https s libovolným hostem (z.httpUrl by nepustil
+ * 127.0.0.1 s fotkami z migrace při vývoji). Odkud fotka smí být, hlídá
+ * server action při uložení (isAllowedImageUrl v src/lib/image-hosts.ts).
+ */
+const imageUrl = z.url({ protocol: /^https?$/ }).max(POST_LIMITS.url);
+
 const galleryItemSchema = z.object({
   path: z.string().regex(STORAGE_PATH),
-  url: z.httpUrl().max(POST_LIMITS.url),
+  url: imageUrl,
   width: dimension,
   height: dimension,
   caption: z
@@ -120,7 +130,7 @@ export const postSchema = z
     content: z
       .string()
       .max(POST_LIMITS.content, "Text článku je příliš dlouhý. Rozdělte ho do dvou článků."),
-    imageUrl: z.preprocess(emptyToUndefined, z.httpUrl().max(POST_LIMITS.url).optional()),
+    imageUrl: z.preprocess(emptyToUndefined, imageUrl.optional()),
     imageWidth: dimension.optional().catch(undefined),
     imageHeight: dimension.optional().catch(undefined),
     imageBlur: blur,
