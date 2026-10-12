@@ -793,12 +793,19 @@ async function uploadPhotos(env, files) {
       while (queue.length) {
         const file = queue.shift();
         const body = await readFile(file.local);
-        const { error } = await supabase.storage.from(BUCKET).upload(file.path, body, {
-          contentType: "image/jpeg",
-          // Jako nahrávání z administrace (src/app/api/admin/upload/route.ts).
-          cacheControl: "31536000, immutable",
-          upsert: true,
-        });
+        // Výpadek sítě u jedné fotky nemá shodit celý import (první ostrý běh
+        // 12. 10. spadl na „fetch failed“ u 261. fotky), proto 3 pokusy s pauzou.
+        let error = null;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          ({ error } = await supabase.storage.from(BUCKET).upload(file.path, body, {
+            contentType: "image/jpeg",
+            // Jako nahrávání z administrace (src/app/api/admin/upload/route.ts).
+            cacheControl: "31536000, immutable",
+            upsert: true,
+          }));
+          if (!error) break;
+          if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
+        }
         if (error) throw new ImportError(`nahrání ${file.path}: ${error.message}`);
         done += 1;
         if (done % 50 === 0) log(`  nahráno ${done}/${todo.length}`);
