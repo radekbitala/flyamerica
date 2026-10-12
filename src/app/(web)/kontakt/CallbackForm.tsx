@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  startTransition,
   useActionState,
   useEffect,
   useRef,
@@ -21,11 +22,13 @@ import { czechNbspText } from "@/lib/typography";
 import { submitCallback } from "./actions";
 import {
   FormGuard,
+  SEND_FAILED,
   describedBy,
   fieldClass,
   fieldValue,
   focusField,
   focusFormError,
+  withSendFallback,
 } from "./form-helpers";
 
 /*
@@ -34,10 +37,15 @@ import {
  * Odeslání zkontroluje obě pole, ukáže chyby a fokus dá na první chybné,
  * chyba zmizí, jakmile pole opraví. Po odeslání potvrzení pod tlačítkem
  * (v modelu s dovětkem „Ukázka, nic se neodeslalo.“) a prázdná pole.
- * Bez skriptu kontroluje jen server, chyby přijdou u polí.
+ * Výpadek sítě nebo chyba serveru je hláška pod poli a vyplněné údaje
+ * zůstanou (withSendFallback). Bez skriptu kontroluje jen server, chyby
+ * přijdou u polí.
  */
 
 type Errors = Partial<Record<CallbackField, string>>;
+
+/** Odeslání se skriptem: výpadek sítě nebo chyba serveru vrátí hlášku místo chybové stránky. */
+const sendCallback = withSendFallback(submitCallback, CALLBACK_FIELDS, SEND_FAILED.callback);
 
 const IDS: Record<CallbackField, string> = { name: "z-jmeno", phone: "z-telefon" };
 const errorId = (field: CallbackField) => `${IDS[field]}-chyba`;
@@ -58,12 +66,15 @@ const viewFor = (state: CallbackFormState, prev?: View): View => ({
 });
 
 export function CallbackForm({ token }: { token: string }) {
-  const [state, formAction, pending] = useActionState(submitCallback, {
+  // Bez skriptu odešle formulář prohlížeč rovnou server action (action
+  // formuláře), se skriptem onSubmit přes send (jako InquiryForm).
+  const [serverState, serverAction] = useActionState(submitCallback, {
     ok: false,
     errors: {},
     values: {},
     token,
   });
+  const [state, send, pending] = useActionState(sendCallback, serverState);
   const [saved, setSaved] = useState(() => viewFor(state));
   const view = saved.source === state ? saved : viewFor(state, saved);
 
@@ -101,11 +112,15 @@ export function CallbackForm({ token }: { token: string }) {
       if (message) errors[field] = message;
     }
     setSaved({ ...view, errors });
+    // Odeslání vždy přes send, action formuláře je jen pro prohlížeč bez skriptu.
+    e.preventDefault();
     const first = CALLBACK_FIELDS.find((f) => errors[f]);
     if (first) {
-      e.preventDefault();
       pendingFocus.current = first;
+      return;
     }
+    const formData = new FormData(e.currentTarget);
+    startTransition(() => send(formData));
   }
 
   function onChange(e: ChangeEvent<HTMLFormElement>) {
@@ -138,7 +153,7 @@ export function CallbackForm({ token }: { token: string }) {
       ref={formRef}
       className="form kt-1"
       id="zavolam"
-      action={formAction}
+      action={serverAction}
       noValidate
       aria-labelledby="zavolam-nadpis"
       onSubmit={onSubmit}

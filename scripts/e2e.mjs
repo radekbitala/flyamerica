@@ -734,6 +734,176 @@ test(
   { ...visitor(), reducedMotion: "reduce" },
 );
 
+/** Požadavek na server action formulářů stránky Kontakt (POST na /kontakt). */
+const isContactPost = (request) =>
+  request.method() === "POST" && new URL(request.url()).pathname === "/kontakt";
+
+/** Text bez rozdílu mezi mezerou a pevnou mezerou. */
+const plainText = async (locator) => (await locator.innerText()).replace(/\s+/g, " ").trim();
+
+/**
+ * Výpadek sítě při odeslání poptávky: vyplněné údaje zůstanou, místo
+ * chybové stránky Next („This page couldn’t load“) česká hláška
+ * s telefonem. Po obnovení sítě jde stejný formulář odeslat.
+ */
+test(
+  "poptávka na webu: výpadek sítě zachová údaje",
+  async (page, credentials) => {
+    const sql = database(credentials);
+    const stamp = Date.now();
+    const email = `e2e-sit-${stamp}@test.local`;
+    const name = `E2E Výpadek ${stamp}`;
+    try {
+      await page.goto(`${BASE_URL}/kontakt`);
+      await page.waitForLoadState("networkidle");
+      const loadedAt = Date.now();
+      await fillInquiry(page, { email, name });
+      await waitMinFill(loadedAt);
+
+      await page.route(
+        (url) => url.pathname === "/kontakt",
+        (route) => (isContactPost(route.request()) ? route.abort("internetdisconnected") : route.continue()),
+      );
+      await page.getByRole("button", { name: "Odeslat poptávku" }).click();
+      const alert = page.locator("#poptavka [role=alert]");
+      await alert.filter({ hasText: /Poptávku se nepodařilo odeslat/ }).waitFor();
+      const message = await plainText(alert);
+      assert(
+        message === "Poptávku se nepodařilo odeslat. Zkuste to prosím znovu, nebo zavolejte Honzovi: +420 602 214 719.",
+        `Hláška po výpadku: "${message}"`,
+      );
+
+      // Žádná chybová stránka, formulář na kroku 3 se všemi údaji.
+      assert((await page.getByText(/couldn.t load/i).count()) === 0, "Ukázala se chybová stránka Next.");
+      await page.getByRole("heading", { level: 1, name: "Napište, kdy chcete letět." }).waitFor();
+      await page.locator("#krok-3.is-current").waitFor();
+      for (const [selector, value] of [
+        ["#f-jmeno", name],
+        ["#f-email", email],
+        ["#f-telefon", "+420 602 000 111"],
+        ["#f-zprava", "Zpráva z e2e testu."],
+        ["#f-kdy", "březen 2027"],
+      ]) {
+        const actual = await page.locator(selector).inputValue();
+        assert(actual === value, `Po výpadku sítě ${selector}: "${actual}"`);
+      }
+      for (const selector of [
+        'input[name="licence"][value="PPL"]',
+        'input[name="packageSlug"][value="grand-tour"]',
+        'input[name="pilotCount"][value="2"]',
+        'input[name="companions"][value="Ano"]',
+      ]) {
+        assert(await page.locator(selector).isChecked(), `Po výpadku sítě není zaškrtnuté ${selector}.`);
+      }
+      const [{ n }] = await sql`select count(*)::int as n from inquiries where email = ${email}`;
+      assert(n === 0, `Poptávka bez sítě je v databázi (${n}).`);
+
+      // Síť zase jde: stejný formulář se odešle.
+      await page.unrouteAll({ behavior: "wait" });
+      await page.getByRole("button", { name: "Odeslat poptávku" }).click();
+      await page.locator(".kt-done h2", { hasText: "Děkujeme, poptávka je odeslaná" }).waitFor();
+      await assertInquiryRow(sql, email, { kind: "inquiry", licence: "PPL", package_slug: "grand-tour" });
+    } finally {
+      await sql`delete from inquiries where email = ${email}`;
+      await sql.end();
+    }
+  },
+  { ...visitor(), reducedMotion: "reduce" },
+);
+
+/**
+ * Chyba serveru při „Zavolejte mi“ (odpověď 500 místo odpovědi server
+ * action, třeba výpadek funkce na Vercelu): údaje zůstanou, česká hláška.
+ */
+test(
+  "Zavolejte mi: chyba serveru zachová údaje",
+  async (page, credentials) => {
+    const sql = database(credentials);
+    const name = `E2E Zavolat chyba ${Date.now()}`;
+    try {
+      await page.goto(`${BASE_URL}/kontakt`);
+      await page.waitForLoadState("networkidle");
+      const loadedAt = Date.now();
+      const form = page.locator("#zavolam");
+      await form.getByLabel("Jméno").fill(name);
+      await form.getByLabel("Telefon").fill("602 000 333");
+      await waitMinFill(loadedAt);
+
+      await page.route(
+        (url) => url.pathname === "/kontakt",
+        (route) =>
+          isContactPost(route.request())
+            ? route.fulfill({ status: 500, contentType: "text/html", body: "<h1>Internal Server Error</h1>" })
+            : route.continue(),
+      );
+      await form.getByRole("button", { name: "Zavolejte mi" }).click();
+      const alert = form.getByRole("alert");
+      await alert.filter({ hasText: /Číslo se nepodařilo odeslat/ }).waitFor();
+      const message = await plainText(alert);
+      assert(
+        message === "Číslo se nepodařilo odeslat. Zkuste to prosím znovu, nebo zavolejte Honzovi: +420 602 214 719.",
+        `Hláška po chybě serveru: "${message}"`,
+      );
+      assert((await form.getByLabel("Jméno").inputValue()) === name, "Po chybě serveru zmizelo jméno.");
+      assert((await form.getByLabel("Telefon").inputValue()) === "602 000 333", "Po chybě serveru zmizel telefon.");
+
+      await page.unrouteAll({ behavior: "wait" });
+      await form.getByRole("button", { name: "Zavolejte mi" }).click();
+      await form.getByRole("status").filter({ hasText: "Děkujeme, Honza se vám ozve." }).waitFor();
+      const rows = await sql`select kind from inquiries where name = ${name}`;
+      assert(rows.length === 1, `Žádosti o zavolání v databázi: ${rows.length}`);
+    } finally {
+      await sql`delete from inquiries where name = ${name}`;
+      await sql.end();
+    }
+  },
+  { ...visitor(), reducedMotion: "reduce" },
+);
+
+/**
+ * Do spuštění webu nesmí nic do vyhledávačů. Počítá s výchozím nastavením
+ * serveru (bez NEXT_PUBLIC_ALLOW_INDEXING=true): robots.txt zakáže celý
+ * web, stránky i 404 mají meta robots noindex, nofollow a odpovědi
+ * hlavičku X-Robots-Tag: noindex.
+ */
+test("indexace: výchozí nastavení je noindex", async (page) => {
+  const robots = await (await fetch(`${BASE_URL}/robots.txt`)).text();
+  assert(/^Disallow: \/$/m.test(robots), `robots.txt nezakazuje celý web:\n${robots}`);
+  assert(!/^Allow:/m.test(robots), `robots.txt něco povoluje:\n${robots}`);
+
+  for (const [url, status] of [
+    ["/", 200],
+    ["/kontakt", 200],
+    ["/denik", 200],
+    ["/neexistujici-adresa-e2e", 404],
+  ]) {
+    const res = await page.goto(`${BASE_URL}${url}`);
+    assert(res?.status() === status, `${url} vrátila ${res?.status()}.`);
+    assert(res.headers()["x-robots-tag"] === "noindex", `${url}: X-Robots-Tag ${res.headers()["x-robots-tag"]}`);
+    const metas = await page.locator('meta[name="robots"]').evaluateAll((els) => els.map((el) => el.content));
+    assert(metas.includes("noindex, nofollow"), `${url}: meta robots ${JSON.stringify(metas)}`);
+  }
+});
+
+/** Statické soubory bez otisku v názvu mají cache na den, HEAD na přihlášení Auth.js nevolá. */
+test("hlavičky: cache statických souborů a HEAD na /api/auth", async () => {
+  for (const url of ["/img/honza-portret.jpg", "/logo/logo-px-32-tmave.svg", "/og/og-image.jpg"]) {
+    const res = await fetch(`${BASE_URL}${url}`, { method: "HEAD" });
+    const cache = res.headers.get("cache-control");
+    assert(
+      res.status === 200 && cache === "public, max-age=86400, stale-while-revalidate=604800",
+      `${url}: ${res.status}, Cache-Control ${cache}`,
+    );
+  }
+  for (const url of ["/api/auth/session", "/api/auth/providers", "/api/auth/csrf"]) {
+    const res = await fetch(`${BASE_URL}${url}`, { method: "HEAD" });
+    assert(res.status === 405 && res.headers.get("allow") === "GET, POST", `HEAD ${url}: ${res.status}`);
+  }
+  // GET na přihlášení dál funguje.
+  const session = await fetch(`${BASE_URL}/api/auth/session`);
+  assert(session.status === 200, `GET /api/auth/session: ${session.status}`);
+});
+
 /** Fotka v otevřeném zvětšení: bod mimo vykreslenou fotku (object-fit: contain) a její střed. */
 function lightboxPoints(page) {
   return page.evaluate(() => {

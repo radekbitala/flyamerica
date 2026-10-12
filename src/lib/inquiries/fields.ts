@@ -161,5 +161,22 @@ export interface FormState<F extends string> {
 export type InquiryFormState = FormState<InquiryField>;
 export type CallbackFormState = FormState<CallbackField>;
 
+/**
+ * Hodnoty polí z FormData jako řetězce. Chybějící pole je prázdný řetězec,
+ * soubor se zahodí, takže schéma vždy dostane jen text. Používá ho server
+ * action i formulář v prohlížeči (hodnoty po výpadku sítě).
+ */
+export function readFields<F extends string>(
+  formData: FormData,
+  fields: readonly F[],
+): Record<F, string> {
+  const out = {} as Record<F, string>;
+  for (const field of fields) {
+    const v = formData.get(field);
+    out[field] = typeof v === "string" ? v : "";
+  }
+  return out;
+}
+
 export const initialInquiryState: InquiryFormState = { ok: false, errors: {}, values: {} };
 export const initialCallbackState: CallbackFormState = { ok: false, errors: {}, values: {} };

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { webFontVariables } from "@/lib/fonts";
-import { OG_IMAGES } from "@/lib/metadata";
+import { OG_IMAGES, SITE_ROBOTS } from "@/lib/metadata";
 import { SITE_NAME, SITE_URL, THEME_COLOR } from "@/lib/site";
 import { ArrowSymbol } from "@/components/web/ArrowSymbol";
 import { SiteHeader } from "@/components/web/SiteHeader";
@@ -29,6 +29,8 @@ export const metadata: Metadata = {
     images: [{ url: OG_IMAGES.default, width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: { card: "summary_large_image", images: [OG_IMAGES.default] },
+  // Do spuštění webu noindex, nofollow na všech stránkách (ALLOW_INDEXING).
+  robots: SITE_ROBOTS,
 };
 
 export const viewport: Viewport = {

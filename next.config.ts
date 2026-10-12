@@ -72,6 +72,34 @@ const SECURITY_HEADERS = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
+/**
+ * Soubory z public/ (fotky stránek, logo, náhledy odkazu, případně písma)
+ * a ikony webu (src/app: favicon.ico, icon.png, apple-icon.png) nemají
+ * v názvu otisk obsahu. Proto ne rok a immutable jako /_next/static (ten
+ * nastavuje Next sám a nejde přepsat), ale den v cache prohlížeče a CDN
+ * a další týden smí dostat starou verzi, zatímco se na pozadí ověří nová.
+ * Vyměněná fotka se stejným názvem se tak projeví nejpozději za den.
+ * Písma webu jsou dnes v src/fonts přes next/font (/_next/static/media).
+ */
+const STATIC_FILE_CACHE = "public, max-age=86400, stale-while-revalidate=604800";
+const STATIC_FILE_SOURCES = [
+  "/img/:path*",
+  "/logo/:path*",
+  "/og/:path*",
+  "/fonts/:path*",
+  "/favicon.ico",
+  "/icon.png",
+  "/apple-icon.png",
+];
+
+/**
+ * Do spuštění webu (bez NEXT_PUBLIC_ALLOW_INDEXING=true) dostane každá
+ * odpověď X-Robots-Tag: noindex, i obrázky a soubory, které meta robots
+ * nemají. Stejný přepínač jako ALLOW_INDEXING v src/lib/site.ts (robots.txt
+ * a meta robots), čte se při buildu.
+ */
+const ALLOW_INDEXING = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";
+
 export default function nextConfig(phase: string): NextConfig {
   const dev = phase === PHASE_DEVELOPMENT_SERVER;
 
@@ -132,7 +160,19 @@ export default function nextConfig(phase: string): NextConfig {
       return withTrailingSlash(loadRedirects());
     },
     async headers() {
-      return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+      return [
+        {
+          source: "/:path*",
+          headers: [
+            ...SECURITY_HEADERS,
+            ...(ALLOW_INDEXING ? [] : [{ key: "X-Robots-Tag", value: "noindex" }]),
+          ],
+        },
+        ...STATIC_FILE_SOURCES.map((source) => ({
+          source,
+          headers: [{ key: "Cache-Control", value: STATIC_FILE_CACHE }],
+        })),
+      ];
     },
   };
 }

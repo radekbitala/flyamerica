@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { webFontVariables } from "@/lib/fonts";
+import { SITE_ROBOTS } from "@/lib/metadata";
 import { THEME_COLOR } from "@/lib/site";
 import { ArrowSymbol } from "@/components/web/ArrowSymbol";
 import { NotFoundContent } from "@/components/web/NotFoundContent";
@@ -16,6 +17,8 @@ import "@/styles/fonts.css";
 // i pro neznámé adresy pod /admin.
 export const metadata: Metadata = {
   title: "Stránka nenalezena - FLY America",
+  // Stejně jako layout webu: do spuštění noindex, nofollow (ALLOW_INDEXING).
+  robots: SITE_ROBOTS,
 };
 
 export const viewport = {

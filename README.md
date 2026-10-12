@@ -2,7 +2,7 @@
 
 Nový web flyamerica.cz: veřejné stránky (balíčky, tipy na výlety, deník, kontakt s poptávkovým formulářem) a administrace pro deník a poptávky. Honza Čermák létá jako mentor s českými piloty na Floridě.
 
-Stav: administrace (přihlášení, přehled, deník, poptávky) i veřejný web jsou hotové. Stránky webu jsou převedené z klikacího modelu `../prototyp` (úvod, oba balíčky, Tipy na výlety, O Honzovi, Deník a články, Kontakt s poptávkou, zásady zpracování osobních údajů jako návrh), deník je z databáze a deník starého webu převádí importní skript (část Import deníku). Web zatím neběží, nic není nasazené.
+Stav: administrace (přihlášení, přehled, deník, poptávky) i veřejný web jsou hotové. Stránky webu jsou převedené z klikacího modelu `../prototyp` (úvod, oba balíčky, Tipy na výlety, O Honzovi, Deník a články, Kontakt s poptávkou, zásady zpracování osobních údajů jako návrh), deník je z databáze a deník starého webu převádí importní skript (část Import deníku). Web je nasazený na Vercelu na `https://flyamerica.vercel.app` (produkce v regionu `dub1`, Dublin, blízko databáze Supabase v eu-west-1), do vyhledávačů zatím nesmí (Spuštění webu). Podrobnosti v části Nasazení.
 
 ## Stack
 
@@ -29,6 +29,8 @@ src/
     api/auth/[...nextauth] Auth.js
     api/admin/upload/      nahrávání fotek deníku do úložiště
     global-not-found.tsx   404 pro neznámé adresy (oba layouty)
+    global-error.tsx       chyba v kořenovém layoutu (oba layouty), česky, bez stylů webu
+    (web)/error.tsx        chybová stránka webu (Zkusit znovu, úvod, telefon)
     sitemap.ts, robots.ts  /sitemap.xml a /robots.txt
     favicon.ico, icon.png, apple-icon.png
   components/
@@ -81,13 +83,15 @@ eslint-rules/              vlastní pravidlo local/require-admin
 
 Web a administrace mají každý svůj kořenový layout, aby se jejich styly nikdy nemíchaly. Přechod mezi webem a administrací je proto vždy celé načtení stránky. Adresu, která neodpovídá žádné stránce, obsluhuje `global-not-found.tsx` (vzhled webu), `notFound()` uvnitř webu `(web)/not-found.tsx` a uvnitř administrace `admin/(dashboard)/not-found.tsx`.
 
+Chyby při vykreslení: stránky webu `(web)/error.tsx` (v layoutu webu s hlavičkou a patičkou: „Stránku se nepodařilo načíst“, Zkusit znovu, odkaz na úvod a Honzův telefon, žádné technické podrobnosti), stránky administrace `admin/(dashboard)/error.tsx`. Chybu v kořenovém layoutu (error.tsx je pod ním) zachytí `global-error.tsx`: stejný text s vlastním `<html>` a vloženým CSS v barvách webu. Styly webu (`web.css`, písma) nenačítá, protože patří i k administraci. Bez nich by se ukázala anglická stránka Next „This page couldn’t load“.
+
 ## Proměnné prostředí
 
 Hodnoty patří do Vercelu (produkce) nebo do `.env.development.local` (lokálně, zapisuje ho `npm run db:local`). Soubory `.env*` se necommitují.
 
 | Proměnná | K čemu |
 | --- | --- |
-| `DATABASE_URL` | připojení k Postgresu (Supabase), s `?sslmode=require` (Nasazení, krok 4) |
+| `DATABASE_URL` | připojení k Postgresu (Supabase), s `?sslmode=require`. Na Vercelu sdílený pooler Supabase (Nasazení, krok 4) |
 | `AUTH_SECRET` | podepisování přihlašovacích cookies (Auth.js) |
 | `SUPABASE_URL` | adresa projektu Supabase (úložiště obrázků). Musí být nastavená i při buildu, jen pro ni povolí `next/image` fotky z bucketu `denik`. Podle ní administrace při uložení článku ověřuje adresy fotek |
 | `SUPABASE_SERVICE_ROLE_KEY` | servisní klíč Supabase, jen na serveru (nahrávání a mazání obrázků) |
@@ -97,6 +101,7 @@ Hodnoty patří do Vercelu (produkce) nebo do `.env.development.local` (lokáln�
 | `IP_HASH_SALT` | sůl pro otisk IP u poptávek a přihlášení (omezení četnosti, samotná IP se neukládá). Bez ní poslouží `AUTH_SECRET` |
 | `DB_POOL_MAX` | volitelně: počet spojení do databáze (výchozí 10 v produkci, 1 při vývoji) |
 | `NEXT_PUBLIC_SITE_URL` | volitelně: adresa webu pro canonical, og:url a náhledy odkazu, výchozí `https://flyamerica.cz`. Hlavní doména (s www, nebo bez) ještě není rozhodnutá. Vkládá se při buildu |
+| `NEXT_PUBLIC_ALLOW_INDEXING` | `true` = web smí do vyhledávačů. Bez ní (výchozí, do spuštění webu) robots.txt zakáže celý web, stránky mají `<meta name="robots" content="noindex, nofollow">` a odpovědi hlavičku `X-Robots-Tag: noindex`. Vkládá se při buildu, po změně nové nasazení (Spuštění webu) |
 
 Bez `RESEND_*` a `NOTIFY_TO` se e-maily jen zalogují, poptávka se uloží i tak. Build projde úplně bez proměnných, databáze ani úložiště se při importu nepřipojují. Stránky s články deníku se pak nevygenerují při buildu, ale až při návštěvě (viz Veřejný web, Deník).
 
@@ -196,7 +201,11 @@ Stránky `src/app/(web)/denik/` podle `prototyp/denik.html` a šablon článků:
 - Zvětšení fotky (`_components/GalleryLightbox.tsx`, model ho nemá): nativní `<dialog>` přes celou obrazovku v Grafitu, šipky a přejetí prstem listují, Escape a klik mimo fotku (i na tmavý okraj vedle fotky) zavřou, fokus se vrátí na fotku v mřížce. Bez JavaScriptu odkaz otevře samotnou fotku. Fotka se nezvětší nad svou velikost.
 - Styly, které `web.css` nemá (zvětšení fotky, galerie v textu, posuvný obsah článku), jsou v `src/app/(web)/denik/denik.module.css`.
 
-Mapa webu `src/app/sitemap.ts` (stránky webu a publikované články, seznam stránek je v souboru) a `src/app/robots.ts` (bez `/admin` a `/api/`, odkaz na mapu webu).
+Mapa webu `src/app/sitemap.ts` (stránky webu a publikované články, seznam stránek je v souboru).
+
+### Indexace
+
+`src/app/robots.ts`, `ALLOW_INDEXING` v `src/lib/site.ts`, proměnná `NEXT_PUBLIC_ALLOW_INDEXING`. Výchozí je indexace vypnutá, dokud web neběží na hlavní doméně, aby se do vyhledávačů nedostala adresa `flyamerica.vercel.app` ani rozpracované texty. Vypnutá znamená `robots.txt` s `Disallow: /` pro všechny roboty (bez odkazu na mapu webu), `robots: noindex, nofollow` v metadatech kořenového layoutu webu a stránky 404 (`SITE_ROBOTS` v `src/lib/metadata.ts`, stránky ho dědí) a hlavičku `X-Robots-Tag: noindex` u všech odpovědí včetně obrázků (`next.config.ts`). S `NEXT_PUBLIC_ALLOW_INDEXING=true` je to jako dřív: `Allow: /`, `Disallow: /admin` a `/api/`, odkaz na mapu webu, žádné meta robots ani hlavička. Administrace má `noindex, nofollow` vždy. e2e test „indexace: výchozí nastavení je noindex“ počítá se serverem bez proměnné.
 
 ### Přesměrování
 
@@ -206,12 +215,14 @@ Staré adresy většinou končí lomítkem (`/oblet-ameriky-2016/`). Next by lom
 
 Bezpečnostní hlavičky všech odpovědí (`headers()` v `next.config.ts`): `X-Frame-Options: DENY` a `Content-Security-Policy: frame-ancestors 'none'` (web nejde vložit do rámu na cizím webu), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` bez kamery, mikrofonu a polohy. `X-Powered-By` se neposílá (`poweredByHeader: false`). Plná CSP s nonce pro skripty zatím není, HSTS doplní Vercel.
 
+Cache statických souborů (`STATIC_FILE_SOURCES` v `next.config.ts`): `/img/*`, `/logo/*`, `/og/*`, `/fonts/*` a ikony (`/favicon.ico`, `/icon.png`, `/apple-icon.png`) mají `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`. Soubory nemají v názvu otisk obsahu, proto ne rok a `immutable`: vyměněná fotka se stejným názvem se projeví nejpozději za den. `/_next/static` (s otiskem) má rok a `immutable` od Next, to nejde přepsat. Písma webu jdou přes `next/font` z `/_next/static/media`, pravidlo pro `/fonts/*` je pro soubory v `public/fonts`.
+
 ## Poptávky
 
 Stránka Kontakt má dva formuláře: poptávku „Poptat termín" na tři kroky a krátké „Nechte číslo, Honza zavolá". Oba ukládají do tabulky `inquiries` (sloupec `kind`) přes server actions `submitInquiry` a `submitCallback` v `src/app/(web)/kontakt/actions.ts`. Jsou veřejné, proto bez `requireAdmin()`.
 
 - Pole, volby a chybové hlášky jsou z klikacího modelu: `src/lib/inquiries/options.ts` (volby), `fields.ts` (pole po krocích, hlášky, délky, stav formuláře a rychlá kontrola polí bez zod pro prohlížeč) a `schema.ts` (zod schéma pro server). Pole mají anglické názvy podle sloupců tabulky, formulář v prototypu má české. Licence: PPL, CPL/ATPL, Ultralight, Jiná, Nemám. Test `scripts/test-inquiry-action.mjs` hlídá, že prohlížeč i server hlásí totéž (prohlížeč jen u e-mailu volněji).
-- Stránka `src/app/(web)/kontakt/`: `page.tsx` (záhlaví, boční sloupec, token, předvyplnění z `?balicek=`), `InquiryForm.tsx` (poptávka na tři kroky, chování z `prototyp/js/kontakt.js`), `CallbackForm.tsx` („Nechte číslo, Honza zavolá“). Obě komponenty odesílají přes `useActionState` a `<form action>`, v prohlížeči jen řídí kroky, kontrolují pole před pokračováním a hlídají fokus. Kroky jsou skryté už v HTML ze serveru, bez JavaScriptu je `<noscript>` styl ukáže všechny pod sebou a kontroluje jen server. Po odeslání potvrzení se shrnutím a odkaz „Poslat další poptávku“ (prázdný formulář).
+- Stránka `src/app/(web)/kontakt/`: `page.tsx` (záhlaví, boční sloupec, token, předvyplnění z `?balicek=`), `InquiryForm.tsx` (poptávka na tři kroky, chování z `prototyp/js/kontakt.js`), `CallbackForm.tsx` („Nechte číslo, Honza zavolá“). Obě komponenty odesílají přes `useActionState`, v prohlížeči jen řídí kroky, kontrolují pole před pokračováním a hlídají fokus. Se skriptem odesílá `onSubmit` přes `withSendFallback()` (`form-helpers.tsx`): když server action selže výjimkou (výpadek sítě, chyba serveru, chybová stránka místo odpovědi), formulář zůstane vyplněný a ukáže hlášku „Poptávku se nepodařilo odeslat. Zkuste to prosím znovu, nebo zavolejte Honzovi: +420 602 214 719.“ (u Zavolejte mi „Číslo se nepodařilo odeslat…“) místo chybové stránky. Bez skriptu odesílá formulář prohlížeč rovnou server action přes `<form action>` jako dřív. Kroky jsou skryté už v HTML ze serveru, bez JavaScriptu je `<noscript>` styl ukáže všechny pod sebou a kontroluje jen server. Po odeslání potvrzení se shrnutím a odkaz „Poslat další poptávku“ (prázdný formulář).
 - Zásady zpracování osobních údajů `/zasady-zpracovani-osobnich-udaju` jsou zatím návrh k odsouhlasení (Radek, Honza), chybějící údaje jsou `[doplnit: …]`.
 - Souhlas se zpracováním údajů se nezaškrtává (rozhodnutí 10. 10. 2026 v klikacím modelu): oba formuláře mají jen informační větu s odkazem na zásady (u Zavolejte mi navíc proti modelu, čl. 13 GDPR) a validace souhlas nevyžaduje. Sloupce `consent` a `consent_at` zůstávají nevyužité pro případ, že by se zaškrtávátko vrátilo.
 - Stav pro `useActionState`: `{ ok, errors, values, formError, token }`. `values` vrací vyplněné hodnoty (při chybě do polí, po odeslání do shrnutí).
@@ -256,6 +267,7 @@ Všechny tabulky mají zapnuté RLS bez politik (`.enableRLS()`): Supabase vysta
 - Kontrola ověřuje i to, že účet v `admin_users` pořád existuje a že přihlášení nese aktuální `session_version`. Smazaný účet tak přestane fungovat hned a změna hesla přes `scripts/create-admin.mjs` odhlásí všechna zařízení přihlášená starým heslem.
 - Přihlášení: po 10 neúspěšných pokusech z jedné IP (otisk jako u poptávek) se přihlášení z ní na 15 minut zablokuje, ještě před ověřením hesla. Úspěšné přihlášení pokusy té IP vynuluje. Limit se počítá podle IP, ne podle e-mailu, aby nikdo nemohl zablokovat Honzův účet. Špatné heslo jde do logu jako jeden řádek bez e-mailu.
 - HTML článků se před uložením čistí přes `sanitizePostHtml()`.
+- `/api/auth/*` (Auth.js) na `HEAD` odpoví 405 s `Allow: GET, POST` a Auth.js nevolá. Auth.js umí jen GET a POST a na HEAD (roboti, kontroly dostupnosti) by zapsal chybu `UnknownAction` do logu Vercelu.
 
 ## Založení admina
 
@@ -287,6 +299,8 @@ where email = 'jmeno@example.cz';
 
 ## Nasazení (Vercel + Supabase)
 
+Web běží na Vercelu na `https://flyamerica.vercel.app`. Funkce jsou v regionu `dub1` (Dublin), blízko databáze Supabase v eu-west-1, nastavuje to `vercel.json` (`"regions": ["dub1"]`). Nové nasazení: ručně, nebo pushem do větve `main`.
+
 1. Supabase: založit projekt a v Storage veřejný bucket `denik`.
 2. Migrace na Supabase z lokálního počítače, s connection stringem pro přímé spojení nebo session pooler:
    ```bash
@@ -294,9 +308,17 @@ where email = 'jmeno@example.cz';
    ```
    Drizzle si aplikované migrace pamatuje v tabulce `drizzle.__drizzle_migrations`. Migrace proto nespouštět ručně v SQL editoru, jinak by je `drizzle-kit migrate` zkusil spustit znovu.
 3. Založit admina (viz výše).
-4. Vercel: připojit repozitář, nastavit proměnné prostředí z tabulky výše. `AUTH_SECRET` vygenerovat např. `openssl rand -base64 32`. Pro `DATABASE_URL` aplikace použít pooler Supabase, kód počítá s `prepare: false`. Adresu zadat s `?sslmode=require` na konci. Spojení se šifruje i bez toho (`src/lib/db/index.ts`: databáze mimo localhost jede přes TLS, `sslmode` v adrese má přednost), ale certifikát Supabase se tak neověřuje. V Supabase zapnout Database, SSL Configuration, Enforce SSL on incoming connections, aby databáze nešifrované spojení vůbec nepřijala. Ověření certifikátu (`sslmode=verify-full` s kořenovým certifikátem Supabase) zatím nastavené není.
+4. Vercel: připojit repozitář, nastavit proměnné prostředí z tabulky výše. `AUTH_SECRET` vygenerovat např. `openssl rand -base64 32`. `DATABASE_URL` aplikace musí být sdílený pooler Supabase (Supavisor) `aws-0-eu-west-1.pooler.supabase.com`, port `6543`, s uživatelem `postgres.<ref>` (`<ref>` je id projektu Supabase): `postgres://postgres.<ref>:<heslo>@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?sslmode=require`. Dedicated pooler na `db.<ref>.supabase.co` má jen IPv6 adresu a z Vercelu se na něj připojit nejde. Kód počítá s `prepare: false` (pooler v transakčním režimu). Adresu zadat s `?sslmode=require` na konci. Spojení se šifruje i bez toho (`src/lib/db/index.ts`: databáze mimo localhost jede přes TLS, `sslmode` v adrese má přednost), ale certifikát Supabase se tak neověřuje. V Supabase zapnout Database, SSL Configuration, Enforce SSL on incoming connections, aby databáze nešifrované spojení vůbec nepřijala. Ověření certifikátu (`sslmode=verify-full` s kořenovým certifikátem Supabase) zatím nastavené není.
 5. Písma jsou v repozitáři (`src/fonts`), build ani prohlížeč nic z Google Fonts nestahují.
 6. Deník ze starého webu: import podle části Import deníku, nejlépe před prvním nasazením.
+
+### Spuštění webu
+
+Do spuštění je indexace vypnutá (Veřejný web, Indexace). Při spuštění na hlavní doméně:
+
+1. Ve Vercelu (Settings, Environment Variables, prostředí Production) nastavit `NEXT_PUBLIC_ALLOW_INDEXING` na `true` a `NEXT_PUBLIC_SITE_URL` na adresu hlavní domény.
+2. Web znovu nasadit. Obě proměnné se vkládají při buildu, samotná změna ve Vercelu se bez nového nasazení neprojeví.
+3. Zkontrolovat: `/robots.txt` má `Allow: /`, `Disallow: /admin`, `Disallow: /api/` a odkaz na mapu webu, stránky nemají `<meta name="robots">` a odpovědi nemají hlavičku `X-Robots-Tag`.
 
 ## Import deníku
 

@@ -1,9 +1,51 @@
-import { HONEYPOT_FIELD, TOKEN_FIELD } from "@/lib/inquiries/fields";
+import { HONEYPOT_FIELD, TOKEN_FIELD, readFields, type FormState } from "@/lib/inquiries/fields";
+import { FA_PHONE } from "@/lib/site";
 
 /*
  * Společné kousky obou formulářů stránky Kontakt (InquiryForm, CallbackForm).
  * Běží v prohlížeči, server action dostane jen hodnoty polí.
  */
+
+/**
+ * Hlášky, když odeslání neprojde z jiného důvodu než kvůli údajům ve
+ * formuláři: výpadek sítě, chyba serveru, odpověď, které prohlížeč
+ * nerozumí. Telefon jako jistota, když web zrovna nejde.
+ */
+export const SEND_FAILED = {
+  inquiry: `Poptávku se nepodařilo odeslat. Zkuste to prosím znovu, nebo zavolejte Honzovi: ${FA_PHONE}.`,
+  callback: `Číslo se nepodařilo odeslat. Zkuste to prosím znovu, nebo zavolejte Honzovi: ${FA_PHONE}.`,
+} as const;
+
+/**
+ * Odeslání formuláře se skriptem. Když server action selže výjimkou (výpadek
+ * sítě, chyba na serveru, chybová stránka místo odpovědi Next), React by
+ * chybu poslal do error.tsx a návštěvník by přišel o vyplněné údaje. Místo
+ * toho vrátí chybový stav s hláškou, s hodnotami z odeslaného formuláře
+ * a s tokenem, se kterým formulář přišel (je pořád platný). Bez skriptu
+ * formulář odesílá prohlížeč rovnou server action a tohle se nepoužije.
+ */
+export function withSendFallback<F extends string>(
+  action: (prev: FormState<F>, formData: FormData) => Promise<FormState<F>>,
+  fields: readonly F[],
+  message: string,
+): (prev: FormState<F>, formData: FormData) => Promise<FormState<F>> {
+  return async (prev, formData) => {
+    try {
+      return await action(prev, formData);
+    } catch (error) {
+      // Jen do konzole prohlížeče. Chyba ze serveru je v produkci bez podrobností.
+      console.warn("[poptavka] odeslání selhalo", error);
+      const token = formData.get(TOKEN_FIELD);
+      return {
+        ok: false,
+        errors: {},
+        values: readFields(formData, fields),
+        formError: message,
+        token: typeof token === "string" && token !== "" ? token : prev.token,
+      };
+    }
+  };
+}
 
 /** Hodnota pole podle name. U skupiny přepínačů zaškrtnutá volba, nebo "". */
 export function fieldValue(form: HTMLFormElement, name: string): string {

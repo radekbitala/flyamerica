@@ -33,6 +33,7 @@ export {
   TOKEN_FIELD,
   initialCallbackState,
   initialInquiryState,
+  readFields,
   type CallbackField,
   type CallbackFormState,
   type FormState,
@@ -93,22 +94,6 @@ export const callbackSchema = z.object({
 
 export type InquiryData = z.output<typeof inquirySchema>;
 export type CallbackData = z.output<typeof callbackSchema>;
-
-/**
- * Hodnoty polí z FormData jako řetězce. Chybějící pole je prázdný řetězec,
- * soubor se zahodí, takže schéma vždy dostane jen text.
- */
-export function readFields<F extends string>(
-  formData: FormData,
-  fields: readonly F[],
-): Record<F, string> {
-  const out = {} as Record<F, string>;
-  for (const field of fields) {
-    const v = formData.get(field);
-    out[field] = typeof v === "string" ? v : "";
-  }
-  return out;
-}
 
 /** První chyba u každého pole, další by u jednoho pole jen mátly. */
 export function firstErrors<F extends string>(error: z.ZodError): Partial<Record<F, string>> {

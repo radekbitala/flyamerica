@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Fragment,
+  startTransition,
   useActionState,
   useEffect,
   useRef,
@@ -35,17 +36,20 @@ import { NBSP, czechNbspText } from "@/lib/typography";
 import { submitInquiry } from "./actions";
 import {
   FormGuard,
+  SEND_FAILED,
   describedBy,
   fieldClass,
   fieldValue,
   focusField,
   focusFormError,
+  withSendFallback,
 } from "./form-helpers";
 
 /*
  * Poptávka „Poptat termín“ na tři kroky podle prototyp/kontakt.html
  * a js/kontakt.js. Odesílá ji server action submitInquiry přes
- * useActionState a <form action>, tahle komponenta jen řídí kroky:
+ * useActionState: se skriptem z onSubmit, bez skriptu přes <form action>.
+ * Tahle komponenta jen řídí kroky:
  *
  * 1. Pokračovat zkontroluje pole aktuálního kroku (fields.ts, stejné hlášky
  *    jako server), Zpět vrátí o krok, fokus jde na nadpis kroku. Odeslat
@@ -54,7 +58,9 @@ import {
  *    příchodu z odkazu na balíček je nad kroky „Poptáváte: …“ s tlačítkem
  *    Změnit, změna v kroku 2 ho přepíše, u „Zatím nevím“ zmizí.
  * 3. Chyby ze serveru: formulář přejde na krok s první chybou a dá na ni
- *    fokus. Hodnoty se vrátí do polí ze state.values.
+ *    fokus. Hodnoty se vrátí do polí ze state.values. Výpadek sítě nebo
+ *    chyba serveru je hláška u tlačítka Odeslat a vyplněné údaje zůstanou
+ *    (withSendFallback ve form-helpers.tsx), ne chybová stránka.
  * 4. Po odeslání potvrzení se shrnutím a místo „Upravit poptávku“ z modelu
  *    „Poslat další poptávku“ (prázdný formulář od kroku 1, _PRAVIDLA.md 7).
  *
@@ -66,6 +72,9 @@ import {
 
 type Errors = Partial<Record<InquiryField, string>>;
 type Values = Partial<Record<InquiryField, string>>;
+
+/** Odeslání se skriptem: výpadek sítě nebo chyba serveru vrátí hlášku místo chybové stránky. */
+const sendInquiry = withSendFallback(submitInquiry, INQUIRY_FIELDS, SEND_FAILED.inquiry);
 
 const LAST_STEP = INQUIRY_STEPS.length - 1;
 
@@ -198,12 +207,16 @@ export function InquiryForm({
   /** Balíček z ?balicek= v adrese. */
   preset: PackageSlug | null;
 }) {
-  const [state, formAction, pending] = useActionState(submitInquiry, {
+  // Bez skriptu formulář odešle prohlížeč rovnou server action (action
+  // formuláře) a výsledek přijde v HTML nové stránky jako serverState.
+  const [serverState, serverAction] = useActionState(submitInquiry, {
     ok: false,
     errors: {},
     values: preset ? { packageSlug: preset } : {},
     token,
   });
+  // Se skriptem odesílá onSubmit přes send, který zachytí výpadek sítě.
+  const [state, send, pending] = useActionState(sendInquiry, serverState);
   const [saved, setSaved] = useState(() => viewFor(state));
   const view = saved.source === state ? saved : viewFor(state, saved);
   const update = (patch: Partial<View>) => setSaved({ ...view, ...patch });
@@ -255,8 +268,12 @@ export function InquiryForm({
       const field = checkStep(form, step, errors);
       if (field) return stop({ errors, step }, { kind: "field", field });
     }
-    // Všechno v pořádku: React zavolá server action.
+    // Všechno v pořádku. Odeslání přes send místo action formuláře, ta by
+    // výpadek sítě nechala dojít až na chybovou stránku.
+    e.preventDefault();
     update({ errors });
+    const formData = new FormData(form);
+    startTransition(() => send(formData));
   }
 
   // Chyba zmizí, jakmile pole opraví. Změna balíčku přepíše řádek „Poptáváte“.
@@ -350,7 +367,7 @@ export function InquiryForm({
       ref={formRef}
       className="kt-form kt-js"
       id="poptavka"
-      action={formAction}
+      action={serverAction}
       noValidate
       aria-labelledby="poptavka-nadpis"
       onSubmit={onSubmit}

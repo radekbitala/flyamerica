@@ -1,0 +1,5 @@
+/* Chybová stránka webu (error.tsx). Jako stránka 404 zabere aspoň výšku obrazovky pod hlavičkou,
+   aby pod tmavou patičkou nezůstal světlý pruh Papíru. */
+.page { min-height: calc(100svh - var(--hdr)); }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px 28px; margin-top: 32px; }
+.actions + :global(.kt-tel) { margin-top: 28px; }

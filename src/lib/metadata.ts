@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SITE_NAME } from "@/lib/site";
+import { ALLOW_INDEXING, SITE_NAME } from "@/lib/site";
 
 /**
  * Metadata stránek webu podle klikacího modelu (_PRAVIDLA.md, část 2 a 7):
@@ -12,6 +12,16 @@ import { SITE_NAME } from "@/lib/site";
  * nastaví vlastní openGraph, by přišla o obrázek z layoutu. Proto každá
  * stránka webu skládá metadata celá přes tuhle funkci.
  */
+
+/**
+ * meta robots stránek webu: do spuštění (bez ALLOW_INDEXING v src/lib/site.ts)
+ * noindex, nofollow, s povolenou indexací žádné, jako dosud. Nastavuje ho
+ * kořenový layout webu a stránka 404 (global-not-found), stránky ho dědí,
+ * pageMetadata() ho nepřepisuje.
+ */
+export const SITE_ROBOTS: Metadata["robots"] = ALLOW_INDEXING
+  ? undefined
+  : { index: false, follow: false };
 
 /** Náhledy odkazu z design/predavaci-sada/og, v public/og. */
 export const OG_IMAGES = {
