@@ -11,7 +11,7 @@ import { toast } from "sonner";
 const MESSAGES: Record<string, { kind: "success" | "info"; msg: string }> = {
   saved: { kind: "success", msg: "Uloženo" },
   deleted: { kind: "success", msg: "Smazáno" },
-  // Deník
+  // Články (Z cest)
   "post-draft": { kind: "success", msg: "Koncept uložen" },
   "post-published": { kind: "success", msg: "Článek publikován" },
   "post-updated": { kind: "success", msg: "Změny uloženy" },

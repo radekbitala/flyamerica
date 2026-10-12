@@ -5,9 +5,9 @@ import { FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 
 /**
  * Výzva k poptávce na konci stránky („Napište, kdy chcete letět.“), doslova
- * z modelu (index, tipy, O Honzovi, deník, články). Na Papíru, proto
+ * z modelu (úvod, Kam letět, Váš mentor, Z cest, články). Na Papíru, proto
  * grafitová směrová tabule se žlutou šipkou. Nadpis má id "poptat-nadpis",
- * na stránce smí být jen jednou. Balíčky a kontakt ji nemají.
+ * na stránce smí být jen jednou. Výlety a kontakt ji nemají.
  */
 export function CtaSection({ id }: { /** Kotva sekce, na úvodu "poptat". */ id?: string }) {
   return (

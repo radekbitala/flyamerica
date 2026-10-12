@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import styles from "../denik.module.css";
+import styles from "../z-cest.module.css";
 
 export interface ArticleTocEntry {
   id: string;

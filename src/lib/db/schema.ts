@@ -187,10 +187,10 @@ export const inquiries = pgTable(
     /** Pole „Pár slov o vás": nálet, na čem létá, co od Floridy čeká. */
     aboutPilot: text("about_pilot"),
 
-    // Krok 2: balíček a termín
+    // Krok 2: výlet (v kódu package) a termín
     /**
      * Hodnota z formuláře (florida-week, grand-tour, nevim). Řetězec, ne
-     * enum: balíčky žijí na webu a třetí ještě přibude.
+     * enum: výlety žijí na webu a třetí ještě přibude.
      */
     packageSlug: varchar("package_slug", { length: 60 }),
     /** Volný text, formulář chce jen měsíc nebo rozmezí. */

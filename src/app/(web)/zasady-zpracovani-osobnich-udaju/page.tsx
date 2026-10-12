@@ -49,7 +49,7 @@ export default function PrivacyPage() {
             <p>Z&nbsp;poptávkového formuláře:</p>
             <ul>
               <li>jméno a&nbsp;příjmení, e-mail a&nbsp;telefon, pokud ho vyplníte,</li>
-              <li>pilotní licenci, balíček, termín, počet pilotů, doprovod a&nbsp;odkud o&nbsp;nás víte,</li>
+              <li>pilotní licenci, výlet, termín, počet pilotů, doprovod a&nbsp;odkud o&nbsp;nás víte,</li>
               <li>co sami napíšete do polí Pár slov o&nbsp;vás a&nbsp;Chcete ještě něco dodat.</li>
             </ul>
             <p>Z&nbsp;formuláře Nechte číslo, Honza zavolá: jméno a&nbsp;telefon.</p>

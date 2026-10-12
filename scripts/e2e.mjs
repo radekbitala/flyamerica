@@ -100,7 +100,7 @@ test("přihlášení testovacího admina a přehled", async (page, { email, pass
   await page.getByRole("heading", { level: 1, name: "Přehled" }).waitFor();
 
   const nav = page.getByRole("navigation", { name: "Administrace" });
-  for (const name of ["Přehled", "Deník", "Poptávky"]) {
+  for (const name of ["Přehled", "Z cest", "Poptávky"]) {
     await nav.getByRole("link", { name, exact: true }).waitFor();
   }
 
@@ -244,15 +244,15 @@ async function testPoptavky(page, credentials) {
 
 test("poptávky v administraci", testPoptavky);
 
-/** Je článek vidět na webu? Detail, seznam deníku a mapa webu. */
+/** Je článek vidět na webu? Detail, seznam Z cest a mapa webu. */
 async function publicPost(slug) {
-  const article = await fetchManual(`/denik/${slug}`);
-  const list = await (await fetch(`${BASE_URL}/denik`)).text();
+  const article = await fetchManual(`/z-cest/${slug}`);
+  const list = await (await fetch(`${BASE_URL}/z-cest`)).text();
   const sitemap = await (await fetch(`${BASE_URL}/sitemap.xml`)).text();
   return {
     status: article.status,
-    inList: list.includes(`href="/denik/${slug}"`),
-    inSitemap: sitemap.includes(`/denik/${slug}</loc>`),
+    inList: list.includes(`href="/z-cest/${slug}"`),
+    inSitemap: sitemap.includes(`/z-cest/${slug}</loc>`),
   };
 }
 
@@ -264,9 +264,9 @@ function assertHidden(state, when) {
 }
 
 /**
- * Deník v administraci: koncept, úprava, publikace, kontrola v seznamu,
- * vrácení do konceptů a smazání, u každého kroku i to, co je vidět na webu
- * (detail, /denik, sitemap.xml). Bez nahrávání fotek, lokálně úložiště
+ * Články (Z cest) v administraci: koncept, úprava, publikace, kontrola
+ * v seznamu, vrácení do konceptů a smazání, u každého kroku i to, co je
+ * vidět na webu (detail, /z-cest, sitemap.xml). Bez nahrávání fotek, lokálně úložiště
  * nastavené není. Předpokládá přihlášeného admina. S databaseUrl po sobě
  * článek uklidí, i když test spadne uprostřed.
  */
@@ -293,7 +293,7 @@ async function testDenik(page, { databaseUrl } = {}) {
 
     // Nový koncept.
     await page.goto(`${BASE_URL}/admin/posts`);
-    await page.getByRole("heading", { level: 1, name: "Deník" }).waitFor();
+    await page.getByRole("heading", { level: 1, name: "Z cest" }).waitFor();
     await page.getByRole("link", { name: "Nový článek" }).click();
     await page.waitForURL(`${BASE_URL}/admin/posts/new`);
     // Editor se vykreslí až po hydrataci, do té doby by React vyplněný
@@ -337,9 +337,9 @@ async function testDenik(page, { databaseUrl } = {}) {
     await page.getByText("Článek publikován").waitFor();
     const row = page.getByRole("row").filter({ hasText: edited });
     await row.getByText("Publikováno").waitFor();
-    await row.getByText(`/denik/${slug}`).waitFor();
+    await row.getByText(`/z-cest/${slug}`).waitFor();
 
-    // Publikovaný článek je hned na webu: detail, seznam deníku a mapa webu.
+    // Publikovaný článek je hned na webu: detail, seznam Z cest a mapa webu.
     const published = await publicPost(slug);
     assert(
       published.status === 200 && published.inList && published.inSitemap,
@@ -379,7 +379,7 @@ async function testDenik(page, { databaseUrl } = {}) {
   }
 }
 
-test("deník v administraci", async (page, credentials) => {
+test("články Z cest v administraci", async (page, credentials) => {
   await login(page, credentials);
   await testDenik(page, credentials);
 });
@@ -517,16 +517,19 @@ test("administrace na telefonu", async (page, credentials) => {
 /** Stránky webu (src/app/sitemap.ts). */
 const PUBLIC_PAGES = [
   "/",
-  "/balicek-florida-week",
-  "/balicek-grand-tour",
-  "/tipy-na-vylety",
-  "/o-honzovi",
-  "/denik",
+  "/letecke-vylety",
+  "/letecke-vylety/florida-week",
+  "/letecke-vylety/grand-tour",
+  "/kam-letet",
+  "/kam-letet/fa83",
+  "/kam-letet/key-west-everglades",
+  "/z-cest",
+  "/vas-mentor",
   "/kontakt",
   "/zasady-zpracovani-osobnich-udaju",
 ];
 
-test("veřejný web: úvod, balíček a stránky na telefonu", async (page) => {
+test("veřejný web: úvod, výlet a stránky na telefonu", async (page) => {
   const response = await page.goto(`${BASE_URL}/`);
   assert(response?.status() === 200, `Úvod vrátil ${response?.status()}.`);
   // Bezpečnostní hlavičky z next.config.ts, bez X-Powered-By.
@@ -536,26 +539,46 @@ test("veřejný web: úvod, balíček a stránky na telefonu", async (page) => {
   assert(!("x-powered-by" in headers), "Odpověď prozrazuje X-Powered-By.");
 
   await page.getByRole("heading", { level: 1 }).waitFor();
-  // Kotvy, na které vedou přesměrování ze starého webu (/validace/, /naklady/).
-  for (const id of ["postup", "balicky"]) {
-    assert((await page.locator(`#${id}`).count()) === 1, `Úvod nemá kotvu #${id}.`);
-  }
-  // Deník na úvodu z databáze: nejnovější článek a odkaz na celý deník, bez podpisu.
-  const diary = page.locator("#denik");
+  // Kotva, na kterou vede přesměrování ze starého webu (/validace/).
+  assert((await page.locator("#postup").count()) === 1, "Úvod nemá kotvu #postup.");
+  // Z cest na úvodu z databáze: nejnovější článek a odkaz na všechny články, bez podpisu.
+  const diary = page.locator("#z-cest");
   const latest = await diary.getByRole("link", { name: /Číst celý článek/ }).getAttribute("href");
-  assert(/^\/denik\/[a-z0-9-]+$/.test(latest ?? ""), `Odkaz na nejnovější článek: ${latest}`);
+  assert(/^\/z-cest\/[a-z0-9-]+$/.test(latest ?? ""), `Odkaz na nejnovější článek: ${latest}`);
   await diary.getByRole("link", { name: "Všechny články" }).waitFor();
   assert((await diary.locator(".sig").count()) === 0, "Úvod podepisuje článek, autor v databázi není.");
 
-  // Balíček: výzva vede na poptávku s předvyplněným balíčkem.
-  await page.goto(`${BASE_URL}/balicek-florida-week`);
+  // Menu: Letecké výlety, Kam letět, Z cest, Váš mentor, Kontakt. Na detailu
+  // výletu je položka sekce aktivní (aria-current="true"), na stránce sekce "page".
+  const menu = page.getByRole("navigation", { name: "Hlavní menu" });
+  const labels = (await menu.getByRole("link").allInnerTexts()).map((label) => label.trim());
+  assert(
+    JSON.stringify(labels) === JSON.stringify(["Letecké výlety", "Kam letět", "Z cest", "Váš mentor", "Kontakt"]),
+    `Menu: ${JSON.stringify(labels)}`,
+  );
+  await page.goto(`${BASE_URL}/z-cest`);
+  assert((await menu.getByRole("link", { name: "Z cest" }).getAttribute("aria-current")) === "page", "Z cest v menu není aktivní.");
+
+  // Výlet: výzva vede na poptávku s předvyplněným výletem.
+  await page.goto(`${BASE_URL}/letecke-vylety/florida-week`);
   await page.getByRole("heading", { level: 1 }).waitFor();
-  await page.locator('main a[href^="/kontakt?balicek=florida-week"]').first().click();
-  await page.waitForURL(/\/kontakt\?balicek=florida-week/);
+  assert(
+    (await menu.getByRole("link", { name: "Letecké výlety" }).getAttribute("aria-current")) === "true",
+    "Letecké výlety v menu nejsou na detailu výletu aktivní.",
+  );
+  assert((await page.getByText(/balíč/i).count()) === 0, "Stránka výletu obsahuje slovo balíček.");
+  await page.locator('main a[href^="/kontakt?vylet=florida-week"]').first().click();
+  await page.waitForURL(/\/kontakt\?vylet=florida-week/);
   const preset = page.locator('input[name="packageSlug"][value="florida-week"]');
   await preset.waitFor({ state: "attached" });
-  assert(await preset.isChecked(), "Balíček z odkazu není ve formuláři předvyplněný.");
+  assert(await preset.isChecked(), "Výlet z odkazu není ve formuláři předvyplněný.");
   await page.getByText("Poptáváte:").waitFor();
+
+  // Neznámý výlet a neznámá destinace jsou 404.
+  for (const url of ["/letecke-vylety/neexistuje", "/kam-letet/neexistuje"]) {
+    const res = await fetchManual(url);
+    assert(res.status === 404, `${url} vrátila ${res.status}.`);
+  }
 
   // Žádná stránka nepřetéká do strany na šířce telefonu.
   await page.setViewportSize({ width: 375, height: 812 });
@@ -659,13 +682,14 @@ test(
     const stamp = Date.now();
     const email = `e2e-nojs-${stamp}@test.local`;
     try {
+      // Starší odkazy s ?balicek= (před přejmenováním na ?vylet=) fungují dál.
       await page.goto(`${BASE_URL}/kontakt?balicek=florida-week`);
       const loadedAt = Date.now();
-      // Bez skriptu jsou všechny kroky pod sebou, balíček předvyplněný.
+      // Bez skriptu jsou všechny kroky pod sebou, výlet předvyplněný.
       assert((await page.locator(".kt-step:visible").count()) === 3, "Bez JavaScriptu nejsou vidět všechny kroky.");
       assert(
         await page.locator('input[name="packageSlug"][value="florida-week"]').isChecked(),
-        "Balíček z ?balicek= není předvyplněný.",
+        "Výlet ze staršího ?balicek= není předvyplněný.",
       );
 
       await page.locator('input[name="licence"][value="Nemám"]').check();
@@ -874,7 +898,7 @@ test("indexace: výchozí nastavení je noindex", async (page) => {
   for (const [url, status] of [
     ["/", 200],
     ["/kontakt", 200],
-    ["/denik", 200],
+    ["/z-cest", 200],
     ["/neexistujici-adresa-e2e", 404],
   ]) {
     const res = await page.goto(`${BASE_URL}${url}`);
@@ -926,7 +950,7 @@ function lightboxPoints(page) {
 }
 
 test(
-  "deník: seznam, článek s galerií a zvětšení fotky",
+  "Z cest: seznam, článek s galerií a zvětšení fotky",
   async (page, credentials) => {
     const sql = database(credentials);
     let posts;
@@ -941,14 +965,14 @@ test(
     const draft = posts.find((post) => post.status === "draft");
 
     // Seznam: všechny publikované články, koncepty ne.
-    await page.goto(`${BASE_URL}/denik`);
+    await page.goto(`${BASE_URL}/z-cest`);
     await page.getByRole("heading", { level: 1 }).waitFor();
     for (const post of published) {
-      assert((await page.locator(`main a[href="/denik/${post.slug}"]`).count()) > 0, `V deníku chybí ${post.slug}.`);
+      assert((await page.locator(`main a[href="/z-cest/${post.slug}"]`).count()) > 0, `V Z cest chybí ${post.slug}.`);
     }
     if (draft) {
-      assert((await page.locator(`a[href="/denik/${draft.slug}"]`).count()) === 0, "Deník ukazuje koncept.");
-      const res = await fetchManual(`/denik/${draft.slug}`);
+      assert((await page.locator(`a[href="/z-cest/${draft.slug}"]`).count()) === 0, "Z cest ukazuje koncept.");
+      const res = await fetchManual(`/z-cest/${draft.slug}`);
       assert(res.status === 404, `Koncept vrátil ${res.status}.`);
     }
 
@@ -957,7 +981,7 @@ test(
       published.find((post) => post.slug === "druhy-prelet-atlantiku-2017") ??
       published.find((post) => post.galleries > 0);
     assert(withGallery, "V databázi není publikovaný článek s galerií.");
-    await page.goto(`${BASE_URL}/denik/${withGallery.slug}`);
+    await page.goto(`${BASE_URL}/z-cest/${withGallery.slug}`);
     const thumbs = page.locator(".gallery a[data-photo]");
     const count = await thumbs.count();
     assert(count > 0, "Článek nemá fotky v galerii.");
@@ -1003,9 +1027,9 @@ test(
 );
 
 test(
-  "deník: články ze starého webu (import)",
+  "Z cest: články ze starého webu (import)",
   async (page) => {
-    const exists = (await fetchManual("/denik/druhy-prelet-atlantiku-2017")).status === 200;
+    const exists = (await fetchManual("/z-cest/druhy-prelet-atlantiku-2017")).status === 200;
     if (!exists) {
       console.log("         (přeskočeno: lokální databáze je bez importu deníku)");
       return;
@@ -1018,7 +1042,7 @@ test(
       const host = new URL(request.url()).hostname;
       if (/youtube|ytimg|google|gstatic|doubleclick/.test(host)) thirdParty.push(host);
     });
-    await page.goto(`${BASE_URL}/denik/druhy-prelet-atlantiku-2017`);
+    await page.goto(`${BASE_URL}/z-cest/druhy-prelet-atlantiku-2017`);
     await page.waitForLoadState("networkidle");
     const perex = await page.locator(".page-head .perex").innerText();
     assert(perex.startsWith("Přelet nového letadla Cirrus SR-22"), `Perex v záhlaví: "${perex}"`);
@@ -1037,7 +1061,7 @@ test(
 
     // Oblet Ameriky: obsah se 17 dny je vyšší než obrazovka, posouvá se sám
     // a poslední den jde otevřít hned na začátku čtení.
-    await page.goto(`${BASE_URL}/denik/oblet-ameriky-2016`);
+    await page.goto(`${BASE_URL}/z-cest/oblet-ameriky-2016`);
     const toc = page.locator(".dn-toc");
     await toc.locator("li").last().waitFor();
     await page.locator(".prose > h2").first().scrollIntoViewIfNeeded();
@@ -1060,12 +1084,19 @@ test(
     const footerTop = await page.locator("footer").last().evaluate((el) => el.getBoundingClientRect().top);
     assert(footerTop >= 900 - 1, `Patička stránky 404 začíná na ${footerTop} px.`);
 
-    // Staré adresy WordPressu jedním přesměrováním (celý seznam: scripts/test-redirects.mjs).
+    // Staré adresy WordPressu a dočasné adresy nového webu jedním
+    // přesměrováním (celý seznam: scripts/test-redirects.mjs).
     for (const [from, to] of [
       ["/validace/", "/#postup"],
       ["/validace", "/#postup"],
-      ["/instruktor/", "/o-honzovi"],
+      ["/instruktor/", "/vas-mentor"],
+      ["/naklady/", "/letecke-vylety"],
       ["/kontakt/", "/kontakt"],
+      ["/balicek-florida-week", "/letecke-vylety/florida-week"],
+      ["/tipy-na-vylety", "/kam-letet"],
+      ["/denik", "/z-cest"],
+      ["/denik/oblet-ameriky-2016/", "/z-cest/oblet-ameriky-2016"],
+      ["/o-honzovi", "/vas-mentor"],
     ]) {
       const redirect = await fetchManual(from);
       const location = redirect.headers.get("location")?.replace(BASE_URL, "");

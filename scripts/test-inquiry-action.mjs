@@ -153,7 +153,7 @@ describe("poptávka: neplatná data", () => {
   test("prázdný formulář hlásí povinná pole hláškami z prototypu", () => {
     assert.deepEqual(errorsOf(inquirySchema, EMPTY), {
       licence: "Vyberte licenci, nebo možnost Nemám.",
-      packageSlug: "Vyberte balíček, nebo možnost Zatím nevím.",
+      packageSlug: "Vyberte výlet, nebo možnost Zatím nevím.",
       travelDate: "Napište přibližný termín, třeba měsíc.",
       pilotCount: "Vyberte počet pilotů.",
       name: "Napište své jméno.",
@@ -346,8 +346,8 @@ describe("čtení FormData", () => {
   });
 });
 
-describe("balíčky", () => {
-  test("parametr ?balicek= z odkazů na web", () => {
+describe("výlety", () => {
+  test("parametr ?vylet= (dřív ?balicek=) z odkazů na web", () => {
     assert.equal(packageFromParam("florida-week"), "florida-week");
     assert.equal(packageFromParam("Week"), "florida-week");
     assert.equal(packageFromParam("2"), "grand-tour");
@@ -356,10 +356,10 @@ describe("balíčky", () => {
     assert.equal(packageFromParam(null), null);
   });
 
-  test("název balíčku pro e-mail a administraci", () => {
+  test("název výletu pro e-mail a administraci", () => {
     assert.equal(packageName("grand-tour"), "Florida Grand Tour & Fly");
     assert.equal(packageName("nevim"), "Zatím neví");
-    assert.equal(packageName("zruseny-balicek"), "zruseny-balicek");
+    assert.equal(packageName("zruseny-vylet"), "zruseny-vylet");
     assert.equal(packageName(null), null);
   });
 });

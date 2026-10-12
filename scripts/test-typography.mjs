@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * Test pevných mezer (pravidlo R4 z klikacího modelu) bez Next serveru:
+ * Test pevných mezer (pravidlo R4 z klikacího modelu) a českých uvozovek
+ * bez Next serveru:
  *   node scripts/test-typography.mjs
  *
- * Očekávané výsledky jsou texty z modelu (prototyp/*.html), kde jsou pevné
- * mezery vysázené ručně. TypeScript ze src/ načte Node sám (odstranění typů).
+ * Očekávané výsledky pevných mezer jsou texty z modelu (prototyp/*.html),
+ * kde jsou pevné mezery vysázené ručně. Uvozovky: věty z článků starého webu
+ * (migrace/posts.json). TypeScript ze src/ načte Node sám (odstranění typů).
  */
 import { registerHooks } from "node:module";
 import { describe, test } from "node:test";
@@ -18,7 +20,7 @@ registerHooks({
   },
 });
 
-const { czechNbsp, czechNbspText, NBSP } = await import("../src/lib/typography.ts");
+const { czechNbsp, czechNbspText, czechQuotesText, NBSP } = await import("../src/lib/typography.ts");
 
 /** Zápis očekávaného textu: „~“ = pevná mezera. */
 const nb = (s) => s.replaceAll("~", NBSP);
@@ -30,7 +32,7 @@ const MODEL_TEXTS = [
     "O veškerou organizaci a servis se postaráme a v kabině vás bude doprovázet zkušený mentor.",
     "O~veškerou organizaci a~servis se postaráme a~v~kabině vás bude doprovázet zkušený mentor.",
   ],
-  ["Balíčky od $7 400 USD", "Balíčky od $7~400~USD"],
+  ["Výlety od $7 400 USD", "Výlety od $7~400~USD"],
   [
     "za osobu při 2 pilotech. Pro 1 pilota $13 900 USD.",
     "za osobu při 2~pilotech. Pro 1~pilota $13~900~USD.",
@@ -105,6 +107,9 @@ describe("czechNbspText: co se nemění", () => {
     assert.equal(czechNbspText("Dash 8, Bell 212 a Falconů 10."), nb("Dash~8, Bell~212 a~Falconů~10."));
     assert.equal(czechNbspText("Krok 1 ze 3"), nb("Krok~1 ze 3"));
     assert.equal(czechNbspText("Pro 1 pilota"), nb("Pro 1~pilota"));
+    // Tabulky výletů v modelu: „Celkem 12~letových hodin“, „Všech 12~hodin“.
+    assert.equal(czechNbspText("Celkem 12 letových hodin v C182"), nb("Celkem 12~letových hodin v~C182"));
+    assert.equal(czechNbspText("Všech 20 hodin jako PIC."), nb("Všech 20~hodin jako PIC."));
   });
   test("rok se váže jen s jednotkou", () => {
     assert.equal(czechNbspText("v roce 2017 jsme vyrazili"), nb("v~roce 2017 jsme vyrazili"));
@@ -204,6 +209,81 @@ describe("czechNbsp: HTML", () => {
 
   test("opakované použití nic dalšího nezmění", () => {
     const html = "<p>Letiště v <em>Key West</em>, 1. 11. 2017 a $7 400 USD.</p>";
+    const once = czechNbsp(html);
+    assert.equal(czechNbsp(once), once);
+  });
+});
+
+describe("české uvozovky", () => {
+  test("rovné uvozovky v páru na české (článek 2017)", () => {
+    assert.equal(
+      czechQuotesText('dotankované po "špunty". Během "severských" letů'),
+      "dotankované po „špunty“. Během „severských“ letů",
+    );
+  });
+
+  test("rovná zavírací po české otevírací (článek 2025)", () => {
+    assert.equal(
+      czechQuotesText('ve znamení amerického vládního „shutdownu" a s ním'),
+      "ve znamení amerického vládního „shutdownu“ a s ním",
+    );
+    assert.equal(
+      czechQuotesText('takovéto „vítejte zpátky v Evropě", je zde prostě „přeprostorováno". Po'),
+      "takovéto „vítejte zpátky v Evropě“, je zde prostě „přeprostorováno“. Po",
+    );
+  });
+
+  test("rovná otevírací před českou zavírací", () => {
+    assert.equal(czechQuotesText('říká se mu "ice cap“ a'), "říká se mu „ice cap“ a");
+  });
+
+  test("lichý počet rovných uvozovek nechá blok beze změny", () => {
+    const text = 'Letadlo "expediční a "obývák" bez konce';
+    assert.equal(czechQuotesText(text), text);
+    assert.equal(czechQuotesText('Monitor 10" v kabině'), 'Monitor 10" v kabině');
+  });
+
+  test("uvozovky v adrese v textu zůstávají", () => {
+    assert.equal(
+      czechQuotesText('Viz "web" https://example.com/?q="x" a dál'),
+      'Viz "web" https://example.com/?q="x" a dál',
+    );
+    assert.equal(czechQuotesText('Adresa "https://www.flyamerica.cz".'), "Adresa „https://www.flyamerica.cz“.");
+  });
+
+  test("text bez rovných uvozovek se nemění", () => {
+    const text = "„Létání pro mě není jen o přesunu z bodu A do bodu B.“";
+    assert.equal(czechQuotesText(text), text);
+  });
+
+  test("czechNbspText: uvozovky i pevné mezery, celý text je jeden blok", () => {
+    assert.equal(czechNbspText('Náš průvodce a hlavně "šofér" naší lodě'), nb("Náš průvodce a~hlavně „šofér“ naší lodě"));
+    assert.equal(czechNbspText('v "Key West"'), nb("v~„Key~West“"));
+  });
+
+  test("czechNbsp: páruje v bloku i přes řádkové značky, ne přes odstavce", () => {
+    assert.equal(
+      czechNbsp('<p>Zpráva <em>"vítejte na faerských ostrovech</em>, do ČR voláte za 35,-kč/min."</p>'),
+      nb("<p>Zpráva <em>„vítejte na faerských ostrovech</em>, do ČR voláte za 35,-kč/min.“</p>"),
+    );
+    // Uvozovka v jednom odstavci a druhá v dalším: v každém bloku lichý počet, beze změny.
+    assert.equal(czechNbsp('<p>Začátek "citace</p><p>konec" citace</p>'), '<p>Začátek "citace</p><p>konec" citace</p>');
+  });
+
+  test("czechNbsp: entita &quot; v textu ano, atributy a kód ne", () => {
+    assert.equal(czechNbsp("<p>Říkáme mu &quot;obývák&quot;.</p>"), "<p>Říkáme mu „obývák“.</p>");
+    const html =
+      '<p><a href="https://x.cz/?q=&quot;a&quot;" title="&quot;b&quot;">odkaz "c"</a></p>' +
+      '<img alt="Cessna &quot;expediční&quot;" src="a.jpg"><pre>"kód"</pre><code>x = "y"</code>';
+    assert.equal(
+      czechNbsp(html),
+      '<p><a href="https://x.cz/?q=&quot;a&quot;" title="&quot;b&quot;">odkaz „c“</a></p>' +
+        '<img alt="Cessna &quot;expediční&quot;" src="a.jpg"><pre>"kód"</pre><code>x = "y"</code>',
+    );
+  });
+
+  test("opakované použití nic dalšího nezmění", () => {
+    const html = '<p>Po "špunty" a „shutdownu" v "Key West".</p>';
     const once = czechNbsp(html);
     assert.equal(czechNbsp(once), once);
   });

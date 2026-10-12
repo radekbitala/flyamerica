@@ -11,7 +11,10 @@
  * Pro každou adresu musí platit:
  * - cíl je stejný, jaký by dalo první pravidlo pro adresu bez lomítka na
  *   konci (pořadí pravidel, matcher z Next.js), u adresy z CSV navíc stejný
- *   jako v CSV,
+ *   jako v CSV po přejmenování stránek z 12. 10. 2026 (RENAMED níž: CSV má
+ *   cíle z doby migrace, /denik/<slug> je teď /z-cest/<slug> atd.),
+ * - dočasné adresy nového webu (/balicek-florida-week, /tipy-na-vylety,
+ *   /denik, /denik/<slug>, /o-honzovi) vedou jedním 308 na nové,
  * - nejvýš jedno přesměrování (308) a cíl vrátí 200 bez dalšího přesměrování,
  * - jiná adresa s lomítkem na konci (/kontakt/, /denik/<slug>/) jedním 308
  *   na adresu bez lomítka, stránky webu, soubory z public a /_next/static
@@ -107,7 +110,7 @@ function csvCases() {
     if (!old || /[*<]/.test(old)) continue;
     const url = new URL(old);
     const extra = destination?.startsWith("/")
-      ? { csvDestination: destination }
+      ? { csvDestination: renamed(destination) }
       : destination === "(bez přesměrování)"
         ? { noRedirect: true }
         : {};
@@ -120,13 +123,34 @@ function csvCases() {
   return cases;
 }
 
+/**
+ * Přejmenování stránek nového webu (12. 10. 2026). Cíle v ../migrace/redirects.csv
+ * jsou z doby migrace, test je před porovnáním převede na nové adresy.
+ */
+const RENAMED = {
+  "/denik": "/z-cest",
+  "/o-honzovi": "/vas-mentor",
+  "/tipy-na-vylety": "/kam-letet",
+  "/balicek-florida-week": "/letecke-vylety/florida-week",
+  "/balicek-grand-tour": "/letecke-vylety/grand-tour",
+  "/#balicky": "/letecke-vylety",
+};
+
+/** Cíl z CSV na adresu po přejmenování (/denik/slug -> /z-cest/slug). */
+function renamed(destination) {
+  if (destination in RENAMED) return RENAMED[destination];
+  return destination.startsWith("/denik/") ? `/z-cest/${destination.slice("/denik/".length)}` : destination;
+}
+
 const PAGES = [
   "/",
-  "/balicek-florida-week",
-  "/balicek-grand-tour",
-  "/tipy-na-vylety",
-  "/o-honzovi",
-  "/denik",
+  "/letecke-vylety",
+  "/letecke-vylety/florida-week",
+  "/letecke-vylety/grand-tour",
+  "/kam-letet",
+  "/kam-letet/cedar-key",
+  "/z-cest",
+  "/vas-mentor",
   "/kontakt",
   "/zasady-zpracovani-osobnich-udaju",
   "/robots.txt",
@@ -148,14 +172,20 @@ async function main() {
   if (!asset) throw new Error("Úvod nenačítá nic z /_next/static.");
 
   // Článek z cílů přesměrování (existuje, jinak by test cílů selhal).
-  const article = rules.map((rule) => rule.destination).find((d) => d.startsWith("/denik/"));
+  const article = rules.map((rule) => rule.destination).find((d) => d.startsWith("/z-cest/"));
+  const articleSlug = article.slice("/z-cest/".length);
 
   const cases = [
     ...rules.flatMap((rule) => samples(rule).map((sample) => ({ path: sample }))),
     ...csvCases(),
     { path: "/kontakt/", expect: "/kontakt" },
-    { path: "/denik/", expect: "/denik" },
+    { path: "/z-cest/", expect: "/z-cest" },
     { path: `${article}/`, expect: article },
+    // Dočasné adresy nového webu (do 12. 10. 2026) jedním 308 na nové, i s lomítkem na konci.
+    { path: `/denik/${articleSlug}`, expect: article },
+    { path: `/denik/${articleSlug}/`, expect: article },
+    { path: "/denik/", expect: "/z-cest" },
+    { path: "/balicek-grand-tour/", expect: "/letecke-vylety/grand-tour" },
     { path: "/admin/", expect: "/admin" },
     { path: "/neexistujici-adresa/", expect: "/neexistujici-adresa" },
     { path: "/?p=99999", expect: null },

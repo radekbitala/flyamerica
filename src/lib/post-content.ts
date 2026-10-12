@@ -5,7 +5,7 @@ import { sanitizePostHtml } from "@/lib/sanitize";
 import { czechNbsp } from "@/lib/typography";
 
 /**
- * Text článku deníku pro vykreslení na webu (src/app/(web)/denik/[slug]).
+ * Text článku pro vykreslení na webu (src/app/(web)/z-cest/[slug]).
  *
  * HTML z databáze se před vykreslením znovu vyčistí (sanitizePostHtml),
  * doplní se pevné mezery (czechNbsp) a rozloží se na strom uzlů. Stránka ho

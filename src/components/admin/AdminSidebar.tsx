@@ -21,7 +21,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: "/admin", label: "Přehled", icon: LayoutDashboard, exact: true },
-  { href: "/admin/posts", label: "Deník", icon: FileText },
+  { href: "/admin/posts", label: "Z cest", icon: FileText },
   { href: "/admin/poptavky", label: "Poptávky", icon: Inbox },
 ];
 

@@ -2,25 +2,25 @@ import Link from "next/link";
 import { Arrow } from "@/components/web/ArrowSymbol";
 import { HonzaWho } from "@/components/web/HonzaWho";
 import { inquiryHref } from "@/components/web/nav";
-import type { PackageSlug } from "@/lib/inquiries/options";
+import type { TripSlug } from "@/data/trip-slugs";
 import { FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 import { NBSP } from "@/lib/typography";
 
 /**
- * Panel Poptávka vedle tabulky cen na stránce balíčku (.pk-ask), doslova
+ * Panel Poptávka vedle tabulky cen na stránce výletu (.pk-ask), doslova
  * z modelu. Jediná výzva na obrazovce, grafitová na Papíru, vede na
- * formulář s předvyplněným balíčkem (?balicek=). Nadpis má id "ask-nadpis",
+ * formulář s předvyplněným výletem (?vylet=). Nadpis má id "ask-nadpis",
  * na stránce smí být jen jednou.
  */
-export function PackageAsk({ balicek }: { balicek: PackageSlug }) {
+export function TripAsk({ trip }: { trip: TripSlug }) {
   return (
     <aside className="aside pk-ask" aria-labelledby="ask-nadpis">
       <span className="lbl">Poptávka</span>
       <h3 id="ask-nadpis">Napište, kdy chcete letět.</h3>
       <p>Odpoví vám přímo Honza. Poptávka má tři krátké kroky, termín a&nbsp;podrobnosti doladíte spolu.</p>
       <HonzaWho />
-      <Link className="fa-dir fa-dir--grafit" href={inquiryHref(balicek)}>
-        <span className="t">Poptat tento balíček</span>
+      <Link className="fa-dir fa-dir--grafit" href={inquiryHref(trip)}>
+        <span className="t">Poptat tento výlet</span>
         <Arrow />
       </Link>
       <ul className="contact-list">

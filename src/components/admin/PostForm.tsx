@@ -12,6 +12,8 @@ import Link from "next/link";
 import { ExternalLink, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import type { PostGallery } from "@/lib/db/schema";
+import { ROUTES, postPath } from "@/lib/routes";
+import { SITE_HOST } from "@/lib/site";
 import {
   POST_LIMITS,
   slugify,
@@ -280,7 +282,7 @@ export function PostForm({
         <div>
           <FieldLabel htmlFor="post-slug">Adresa článku</FieldLabel>
           <div className="flex items-center gap-2">
-            <span className="shrink-0 text-sm text-text-secondary">/denik/</span>
+            <span className="shrink-0 text-sm text-text-secondary">{ROUTES.posts}/</span>
             <input
               id="post-slug"
               type="text"
@@ -303,7 +305,7 @@ export function PostForm({
             {effectiveSlug ? (
               <>
                 Adresa na webu:{" "}
-                <span className="font-mono">flyamerica.cz/denik/{effectiveSlug}</span>
+                <span className="font-mono">{SITE_HOST}{postPath(effectiveSlug)}</span>
               </>
             ) : (
               "Adresa vznikne z názvu."
@@ -335,7 +337,7 @@ export function PostForm({
           />
           <FieldError id="post-perex-error" error={errors.perex} />
           <p id="post-perex-hint" className="mt-1 text-xs text-text-secondary">
-            Krátké shrnutí pod názvem a v přehledu deníku.
+            Krátké shrnutí pod názvem a v přehledu článků (Z cest).
           </p>
         </div>
       </Section>

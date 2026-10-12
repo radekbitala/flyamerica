@@ -12,7 +12,7 @@ import {
   type TouchEvent,
 } from "react";
 import { Arrow } from "@/components/web/ArrowSymbol";
-import styles from "../denik.module.css";
+import styles from "../z-cest.module.css";
 
 /** Fotka galerie pro zvětšení. Data připraví server (PostGallery). */
 export interface LightboxPhoto {

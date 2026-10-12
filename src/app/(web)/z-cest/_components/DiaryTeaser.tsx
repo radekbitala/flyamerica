@@ -4,6 +4,7 @@ import { Arrow } from "@/components/web/ArrowSymbol";
 import { isoDate, yearOf } from "@/lib/dates";
 import { postDisplayTitle } from "@/lib/post-title";
 import type { PublicPostSummary } from "@/lib/public-posts";
+import { postPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
 import { PostImage } from "./PostImage";
 
@@ -12,8 +13,8 @@ const DIARY_PHOTO_SIZES = "(max-width: 960px) 100vw, 600px";
 
 /**
  * Jeden článek ve velkém bloku .diary.dn-lead (fotka 4 : 3 s popiskem,
- * štítek a rok, nadpis, perex v serifu, odkaz). Nejnovější článek na /denik
- * a „Z deníku“ na konci článku, podle modelu. Rok místo celého data jako
+ * štítek a rok, nadpis, perex v serifu, odkaz). Nejnovější článek na /z-cest
+ * a „Z cest“ na konci článku, podle modelu. Rok místo celého data jako
  * v modelu, celé datum mají karty a záhlaví článku. Bez fotky jen text.
  */
 export function DiaryTeaser({
@@ -28,7 +29,7 @@ export function DiaryTeaser({
   label: ReactNode;
   headingId: string;
   linkText: string;
-  /** Fotka v prvním záběru stránky (nejnovější článek na /denik). */
+  /** Fotka v prvním záběru stránky (nejnovější článek na /z-cest). */
   priority?: boolean;
   /** Pod odkazem, např. .diary-older s dalšími články. */
   children?: ReactNode;
@@ -59,7 +60,7 @@ export function DiaryTeaser({
         </div>
         <h2 id={headingId}>{czechNbspText(postDisplayTitle(post.title))}</h2>
         {post.perex ? <p className="voice">{czechNbspText(post.perex)}</p> : null}
-        <Link className="fa-link" href={`/denik/${post.slug}`}>
+        <Link className="fa-link" href={postPath(post.slug)}>
           {linkText} <Arrow />
         </Link>
         {children}

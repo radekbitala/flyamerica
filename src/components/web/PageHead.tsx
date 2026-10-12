@@ -1,17 +1,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { SectionSign } from "@/components/web/SectionSign";
 
 export interface CrumbsProps {
-  /** Odkaz na sekci v polohové tabuli (.fa-loc): "/denik", "/#balicky". */
+  /** Odkaz na sekci v polohové tabuli (.fa-loc): "/z-cest", "/letecke-vylety". */
   href: string;
-  /** Název sekce: „Deník“, „Balíčky“. */
+  /** Název sekce: „Z cest“, „Letecké výlety“. */
   label: ReactNode;
-  /** Aktuální stránka za tabulí: „Balíček 1“, krátký název článku. */
+  /** Aktuální stránka za tabulí: název výletu, krátký název článku. */
   current: ReactNode;
 }
 
 /**
- * Drobečky na detailu (balíček, článek deníku): polohová tabule sekce
+ * Drobečky na detailu (výlet, destinace, článek): polohová tabule sekce
  * a název stránky s aria-current="page". Stránky sekcí drobečky nemají.
  */
 export function Crumbs({ href, label, current }: CrumbsProps) {
@@ -26,9 +27,14 @@ export function Crumbs({ href, label, current }: CrumbsProps) {
 }
 
 export interface PageHeadProps {
-  /** Štítek nad h1 na stránce sekce (Tipy, Deník, O Honzovi, Kontakt). S drobečky se nepoužívá. */
+  /**
+   * Název sekce nad h1 na stránce sekce (Kam letět, Z cest, Váš mentor,
+   * Kontakt) jako polohová tabule (SectionSign). S drobečky se nepoužívá,
+   * tabule je pak v drobečcích. Je to jediná polohová tabule v prvním
+   * záběru stránky (DESIGN.md, The One Location Sign Rule).
+   */
   label?: ReactNode;
-  /** Drobečky na detailu (balíček, článek). */
+  /** Drobečky na detailu (výlet, destinace, článek). */
   crumbs?: CrumbsProps;
   /** Nadpis h1, doslova z modelu (s &nbsp;). Naše nadpisy bez tečky, tečka jen u claimů (R6). */
   title: ReactNode;
@@ -41,14 +47,14 @@ export interface PageHeadProps {
 }
 
 /**
- * Záhlaví podstránky (.page-head) podle _sablona.html. Balíčky mají vlastní
+ * Záhlaví podstránky (.page-head) podle _sablona.html. Výlety mají vlastní
  * záhlaví .pk-head s panelem ceny, skládají si ho z Crumbs.
  */
 export function PageHead({ label, crumbs, title, perex, perexVoice, children }: PageHeadProps) {
   return (
     <header className="page-head">
       <div className="fa-wrap">
-        {crumbs ? <Crumbs {...crumbs} /> : label ? <span className="lbl">{label}</span> : null}
+        {crumbs ? <Crumbs {...crumbs} /> : label ? <SectionSign>{label}</SectionSign> : null}
         <h1>{title}</h1>
         {perex ? <p className={perexVoice ? "perex perex--voice" : "perex"}>{perex}</p> : null}
         {children}

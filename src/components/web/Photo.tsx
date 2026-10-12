@@ -30,7 +30,7 @@ export function resolvePhoto(photo: PhotoName | PhotoData): PhotoData {
 
 /**
  * Fotka přes next/image (AVIF a WebP, srcset podle sizes). Pro fotky bez
- * popisku: dlaždice tipů, karty balíčků a článků, portrét Honzy (.who).
+ * popisku: dlaždice destinací, karty výletů a článků, portrét Honzy (.who).
  * Fotka s popiskem je Figure.
  */
 export function Photo({ photo, sizes, priority, alt, className, style, blurDataURL }: PhotoProps) {

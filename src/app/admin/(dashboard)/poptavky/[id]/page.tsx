@@ -73,7 +73,7 @@ export default async function AdminInquiryDetailPage({
 
           {!callback && (
             <Section title="Let">
-              <Field label="Balíček">{packageName(inquiry.packageSlug)}</Field>
+              <Field label="Výlet">{packageName(inquiry.packageSlug)}</Field>
               <Field label="Termín">{inquiry.travelDate}</Field>
               <Field label="Počet pilotů">{inquiry.pilotCount}</Field>
               <Field label="Doprovod">{inquiry.companions}</Field>

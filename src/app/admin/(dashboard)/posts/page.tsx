@@ -8,7 +8,7 @@ import { requireAdminPage } from "@/lib/admin-guard";
 import { PostsTable, type PostFilter, type PostRow } from "@/components/admin/PostsTable";
 
 export const metadata: Metadata = {
-  title: "Deník",
+  title: "Z cest",
 };
 
 const STATUS_FILTERS = new Set<string>(["published", "draft", "archived"]);
@@ -48,7 +48,7 @@ export default async function AdminPostsPage({
   return (
     <div>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">Deník</h1>
+        <h1 className="text-2xl font-bold text-foreground">Z cest</h1>
         <Link
           href="/admin/posts/new"
           className="inline-flex items-center gap-1.5 rounded-[10px] bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-dark"

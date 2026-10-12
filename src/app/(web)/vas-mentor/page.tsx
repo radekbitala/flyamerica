@@ -7,16 +7,17 @@ import { isoDate, yearOf } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { postDisplayTitle } from "@/lib/post-title";
 import { getPublishedPosts } from "@/lib/public-posts";
+import { ROUTES, postPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
 
-// O Honzovi podle prototyp/o-honzovi.html. Text „O mně“ je Honzova verze 2
+// Váš mentor (dřív O Honzovi) podle prototyp/o-honzovi.html. Text „O mně“ je Honzova verze 2
 // z modelu, doslova. Slovo „instruktor“ je v něm Honzovo, v našich textech
 // je Honza vždy mentor.
 export const metadata = pageMetadata({
-  title: "O Honzovi",
+  title: "Váš mentor",
   description:
     "Honza Čermák, pilot a mentor FLY America: jeho cesta k létání, zkušenosti a fotky z cest a přeletů.",
-  path: "/o-honzovi",
+  path: ROUTES.mentor,
 });
 
 /** sizes fotky v galerii (3 / 2 / 1 sloupec). */
@@ -29,12 +30,12 @@ const GALLERY_SIZES = "(max-width: 600px) 100vw, (max-width: 960px) 50vw, 370px"
  */
 const FERRY_FLIGHT_SLUGS = ["dalsi-prelet-oceanu-2025", "druhy-prelet-atlantiku-2017"];
 
-export default function AboutHonzaPage() {
+export default function MentorPage() {
   return (
     <>
       {/* ===== ZÁHLAVÍ STRÁNKY (stránka sekce: bez drobečků) ===== */}
       <PageHead
-        label={<>O&nbsp;Honzovi</>}
+        label="Váš mentor"
         title="Honza Čermák"
         perex={<>Pilot a&nbsp;mentor, se kterým poletíte po Floridě. Svůj příběh popisuje sám.</>}
       />
@@ -84,16 +85,16 @@ export default function AboutHonzaPage() {
         </div>
       </section>
 
-      {/* ===== DENÍK A KONTAKT ===== */}
+      {/* ===== Z CEST A KONTAKT ===== */}
       <section className="sec sec--tight" aria-labelledby="denik-nadpis">
         <div className="fa-wrap honza-denik">
           <div>
-            <span className="lbl">Deník</span>
+            <span className="lbl">Z&nbsp;cest</span>
             <h2 id="denik-nadpis">Přelety popsané Honzou</h2>
           </div>
           <div>
             <FerryFlightPosts />
-            <p className="sec-more"><Link className="fa-link" href="/denik">Všechny články v&nbsp;deníku <Arrow /></Link><Link className="fa-link" href="/kontakt">Kontakt na Honzu <Arrow /></Link></p>
+            <p className="sec-more"><Link className="fa-link" href={ROUTES.posts}>Všechny články z&nbsp;cest <Arrow /></Link><Link className="fa-link" href={ROUTES.contact}>Kontakt na Honzu <Arrow /></Link></p>
           </div>
         </div>
       </section>
@@ -107,7 +108,7 @@ export default function AboutHonzaPage() {
 /**
  * Seznam Honzových článků o přeletech (.honza-clanky): rok a titulek
  * z databáze, jen publikované. Když není publikovaný žádný, seznam se
- * nevykreslí a zůstanou odkazy na deník a kontakt.
+ * nevykreslí a zůstanou odkazy na Z cest a kontakt.
  */
 async function FerryFlightPosts() {
   const published = await getPublishedPosts();
@@ -118,7 +119,7 @@ async function FerryFlightPosts() {
       {posts.map((post) => (
         <li key={post.id}>
           <time className="date" dateTime={isoDate(post.publishedAt)}>{yearOf(post.publishedAt)}</time>
-          <Link href={`/denik/${post.slug}`}>{czechNbspText(postDisplayTitle(post.title))}</Link>
+          <Link href={postPath(post.slug)}>{czechNbspText(postDisplayTitle(post.title))}</Link>
         </li>
       ))}
     </ul>

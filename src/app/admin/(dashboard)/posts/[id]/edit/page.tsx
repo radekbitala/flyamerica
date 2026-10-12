@@ -4,6 +4,7 @@ import { requireAdminPage } from "@/lib/admin-guard";
 import { isStorageConfigured } from "@/lib/post-files";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { PostForm } from "@/components/admin/PostForm";
+import { postPath } from "@/lib/routes";
 import { deletePost, updatePost } from "../../actions";
 import { getCategories, getPostForEdit } from "../../queries";
 
@@ -26,7 +27,7 @@ export default async function EditPostPage({
   return (
     <div>
       <Breadcrumbs
-        items={[{ label: "Deník", href: "/admin/posts" }, { label: post.title }]}
+        items={[{ label: "Z cest", href: "/admin/posts" }, { label: post.title }]}
       />
       <h1 className="mb-6 text-2xl font-bold text-foreground">Upravit článek</h1>
 
@@ -38,7 +39,7 @@ export default async function EditPostPage({
         categories={categories}
         action={updatePost.bind(null, post.id)}
         onDelete={deletePost.bind(null, post.id)}
-        publicUrl={post.status === "published" ? `/denik/${post.slug}` : null}
+        publicUrl={post.status === "published" ? postPath(post.slug) : null}
         uploadsEnabled={isStorageConfigured()}
         defaults={{
           title: post.title,

@@ -6,32 +6,33 @@ import { formatDate, isoDate } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { postDisplayTitle } from "@/lib/post-title";
 import { getPublishedPosts, type PublicPostSummary } from "@/lib/public-posts";
+import { ROUTES, postPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
 import { DiaryTeaser } from "./_components/DiaryTeaser";
 import { PostImage } from "./_components/PostImage";
 
-// Deník podle prototyp/denik.html: nejnovější článek nahoře, starší jako
+// Z cest (dřív Deník) podle prototyp/denik.html: nejnovější článek nahoře, starší jako
 // karty. Všechny články jsou z databáze (jen publikované, nejnovější první),
 // každá karta je celá odkaz na článek. Stránka se obnoví po každé změně
 // článku v administraci (revalidatePublicPosts, src/lib/posts-cache.ts).
 
 export const metadata = pageMetadata({
-  title: "Deník",
+  title: "Z cest",
   description: "Články o létání po Floridě a USA a o přeletech letadel přes Atlantik, od roku 2010.",
-  path: "/denik",
+  path: ROUTES.posts,
 });
 
 /** sizes fotky na kartě (.grid-3: 3 / 2 / 1 sloupec). */
 const CARD_PHOTO_SIZES =
   "(max-width: 600px) calc(100vw - 32px), (max-width: 960px) calc(50vw - 36px), (max-width: 1248px) calc(33.3vw - 32px), 368px";
 
-export default async function DenikPage() {
+export default async function PostsPage() {
   const [latest, ...older] = await getPublishedPosts();
 
   return (
     <>
       <PageHead
-        label="Deník"
+        label={<>Z&nbsp;cest</>}
         title={<>Zápisky z&nbsp;letů</>}
         perex={<>Cesty po Floridě a&nbsp;USA a&nbsp;přelety letadel přes Atlantik. Články od roku 2010, nejnovější nahoře.</>}
       />
@@ -71,7 +72,7 @@ function PostCard({ post }: { post: PublicPostSummary }) {
   const headingId = `c-${post.slug}`;
   return (
     <article className="dn-post" aria-labelledby={headingId}>
-      <Link className="dn-post-link" href={`/denik/${post.slug}`}>
+      <Link className="dn-post-link" href={postPath(post.slug)}>
         {post.image ? (
           <div className="dn-post-img">
             <PostImage

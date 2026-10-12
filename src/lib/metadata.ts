@@ -25,9 +25,9 @@ export const SITE_ROBOTS: Metadata["robots"] = ALLOW_INDEXING
 
 /** Náhledy odkazu z design/predavaci-sada/og, v public/og. */
 export const OG_IMAGES = {
-  /** Všechny stránky kromě článků deníku. */
+  /** Všechny stránky kromě článků. */
   default: "/og/og-image.jpg",
-  /** Články deníku. */
+  /** Články Z cest. */
   photo: "/og/og-image-foto.jpg",
 } as const;
 
@@ -35,20 +35,20 @@ export type OgImage = keyof typeof OG_IMAGES;
 
 export interface PageMetadataInput {
   /**
-   * Název stránky bez „ - FLY America“, doslova jako v modelu
-   * („Florida Week & Fly“, „Tipy na výlety“). Na úvodní stránce celý
+   * Název stránky bez „ - FLY America“ („Florida Week & Fly“,
+   * „Letecké výlety“, „Kam letět“). Na úvodní stránce celý
    * titulek s absoluteTitle.
    */
   title: string;
   /** Jedna věcná věta, stejná pro description i og:description. */
   description: string;
-  /** Cesta stránky bez domény a bez lomítka na konci: "/", "/denik/slug". */
+  /** Cesta stránky bez domény a bez lomítka na konci: "/", "/z-cest/slug". */
   path: string;
   /** Titulek bez přípony „ - FLY America“ (úvodní stránka). */
   absoluteTitle?: boolean;
-  /** Náhled odkazu, výchozí "default". Články deníku "photo". */
+  /** Náhled odkazu, výchozí "default". Články Z cest "photo". */
   ogImage?: OgImage;
-  /** Článek deníku: og:type article a datum vydání (ISO). */
+  /** Článek Z cest: og:type article a datum vydání (ISO). */
   article?: { publishedTime?: string; modifiedTime?: string };
 }
 

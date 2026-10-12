@@ -2,12 +2,18 @@
 
 import { useEffect } from "react";
 
+/**
+ * Chyba při vykreslení stránky administrace. Next 16 předává error,
+ * reset a retry (ErrorInfo v next/dist/client/components/error-boundary).
+ * retry() načte stránku znovu ze serveru a překreslí ji, reset() by jen
+ * zrušil chybu bez nového načtení dat, takže by stejná chyba přišla hned znovu.
+ */
 export default function AdminError({
   error,
-  unstable_retry,
+  retry,
 }: {
   error: Error & { digest?: string };
-  unstable_retry: () => void;
+  retry: () => void;
 }) {
   useEffect(() => {
     console.error(error);
@@ -22,7 +28,7 @@ export default function AdminError({
       </p>
       <button
         type="button"
-        onClick={() => unstable_retry()}
+        onClick={() => retry()}
         className="cursor-pointer rounded-[10px] bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-dark"
       >
         Zkusit znovu

@@ -139,6 +139,10 @@ export default function nextConfig(phase: string): NextConfig {
       imageSizes: [128, 256, 400],
       remotePatterns: [
         ...supabaseImages(),
+        // Náhledy videí z YouTube v článcích (náhled s tlačítkem přehrát,
+        // přehrávač youtube-nocookie až po kliknutí). Obrázek stahuje náš
+        // server přes next/image, prohlížeč návštěvníka se na Google neptá.
+        { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
         ...(dev
           ? [
               // Ukázkové články z lokální databáze (scripts/local-db.mjs) mají

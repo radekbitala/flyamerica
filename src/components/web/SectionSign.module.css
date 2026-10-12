@@ -1,0 +1,13 @@
+/* Polohová tabule jako označení sekce nebo stránky (SectionSign). Vzhled je .fa-loc z web.css, tady jen umístění:
+   samostatný řádek nad nadpisem, šířka podle nápisu. Dva selektory, aby pořadí načtení CSS nerozhodovalo proti .fa-loc.
+   Okraj --linka kolem tabule nechává místo grafitovému obrysu (box-shadow 0 0 0 1px), mezera pod tabulí je jako pod .lbl. */
+.block:global(.fa-loc) {
+  display: block;
+  width: fit-content;
+  max-width: calc(100% - 2 * var(--linka));
+  margin: var(--linka) var(--linka) calc(16px + var(--linka));
+  white-space: normal;
+}
+
+/* V záhlaví podstránky stejná mezera jako štítek .lbl (web.css: .page-head > .fa-wrap > .lbl) */
+:global(.page-head) .block:global(.fa-loc) { margin-bottom: calc(18px + var(--linka)); }

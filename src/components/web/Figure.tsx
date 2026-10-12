@@ -20,10 +20,11 @@ export interface FigureProps {
    * "page-photo", "page-photo pk-photo". Velkou fotku obalit do <div className="fa-wrap">.
    */
   className?: string;
-  /** Styl <figure>, např. výřez velké fotky balíčku: { "--pos": "50% 62%" }. */
+  /** Styl <figure>, např. výřez velké fotky výletu: { "--pos": "50% 62%" }. */
   style?: CSSProperties;
   /**
-   * Viditelný popisek. Výchozí = alt (popisek z archivu) s pevnými mezerami.
+   * Viditelný popisek. Výchozí = caption fotky, jinak alt (popisek z archivu),
+   * s pevnými mezerami.
    * Vlastní obsah (např. alt a za ním <span className="todo">[doplnit: …]</span>),
    * null = bez popisku.
    */
@@ -38,7 +39,7 @@ export interface FigureProps {
   priority?: boolean;
   /** Jiný alt než popisek z archivu. */
   alt?: string;
-  /** Malý data URL náhled (fotky deníku z databáze). */
+  /** Malý data URL náhled (fotky článků z databáze). */
   blurDataURL?: string | null;
 }
 
@@ -55,7 +56,7 @@ export function Figure({
   blurDataURL,
 }: FigureProps) {
   const data = resolvePhoto(photo);
-  const text = caption === undefined ? czechNbspText(data.alt) : caption;
+  const text = caption === undefined ? czechNbspText(data.caption ?? data.alt) : caption;
   let content: ReactNode = text;
   if (credit) {
     if (text === null || text === "") content = PHOTO_CREDIT;

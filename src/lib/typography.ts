@@ -1,4 +1,17 @@
 /**
+ * Česká typografie textu z databáze (články, perexy, popisky fotek) při
+ * vykreslení: pevné mezery a české uvozovky.
+ *
+ * Uvozovky (rozhodnutí 12. 10. 2026): rovné dvojité uvozovky "…" ze starého
+ * webu se zobrazí jako české „…“. Data v databázi se nemění. Párují se
+ * v rámci jednoho bloku (odstavec, položka seznamu, popisek, nadpis):
+ * - rovná uvozovka po otevřené české „ ji zavře („shutdownu" -> „shutdownu“),
+ * - rovná uvozovka před českou zavírací “ ji otevře,
+ * - zbylé rovné se střídají „ a “, jen když je jich v bloku sudý počet.
+ *   Lichý počet nechá blok beze změny (nejde poznat, která chybí).
+ * Nikdy v atributech (alt, href, title), v kódu (<code>, <pre>…) ani
+ * v adrese URL v textu (https://…, www.…).
+ *
  * Pevné mezery podle pravidla R4 z klikacího modelu (prototyp/_PRAVIDLA.md,
  * část 3 a 7). Mění se jen druh mezery (běžná na pevnou U+00A0), slova
  * a znaky nikdy:
@@ -61,7 +74,7 @@ const YEAR_UNIT = /^(?:m|km|ft|kg|l|metr\p{L}*|kilometr\p{L}*|stop\p{L}*|mil\p{L
 const CAPITAL_STOP_WORDS = new Set([
   "Pro", "Na", "Do", "Od", "Po", "Za", "Ve", "Ke", "Se", "Ze", "Nad", "Pod", "Před", "Při", "Přes",
   "Mezi", "Bez", "Až", "Asi", "Jen", "Už", "Cca", "Kolem", "Okolo", "Je", "Jsou", "Bylo", "Byl", "Byla",
-  "Jsme", "Ani", "Ale", "Nebo", "Když", "Kde", "Kdy",
+  "Jsme", "Ani", "Ale", "Nebo", "Když", "Kde", "Kdy", "Celkem", "Všech", "Všechny", "Každý", "Každá",
 ]);
 
 interface Rule {
@@ -110,10 +123,67 @@ const RULES: Rule[] = [
   { re: new RegExp(`(?<=(?:^|[^\\p{L}])Grand)${SP}(?=Tour)`, "gu") },
 ];
 
-/** Pevné mezery v souvislém textu (bez značek). Vstup i výstup jsou prostý text. */
+/**
+ * Pevné mezery a české uvozovky v souvislém textu (bez značek), celý text
+ * je jeden blok. Vstup i výstup jsou prostý text.
+ */
 export function czechNbspText(text: string): string {
   if (!text) return text;
-  return applyRules(collapseSpaces(text));
+  return applyRules(czechQuotesText(collapseSpaces(text)));
+}
+
+// ---------------------------------------------------------------------------
+// Uvozovky
+// ---------------------------------------------------------------------------
+
+const OPEN_QUOTE = "„";
+const CLOSE_QUOTE = "“";
+
+/** Adresa v textu. Uvozovky v ní se nemění, interpunkce na konci k ní nepatří. */
+const URL_IN_TEXT = /\b(?:https?:\/\/|www\.)[^\s\uE000]+/gi;
+const URL_TRAILING = /[.,;:!?)\]"'»“”]+$/;
+
+/**
+ * České uvozovky v jednom bloku textu (bez značek): rovné dvojité "…"
+ * na „…“ podle pravidel v úvodu souboru. Délka textu se nemění (znak za
+ * znak), proto jde použít i na spojené úseky textu v czechNbsp().
+ */
+export function czechQuotesText(text: string): string {
+  if (!text.includes('"')) return text;
+
+  const insideUrl: [number, number][] = [];
+  for (const match of text.matchAll(URL_IN_TEXT)) {
+    const url = match[0].replace(URL_TRAILING, "");
+    insideUrl.push([match.index, match.index + url.length]);
+  }
+  const inUrl = (i: number) => insideUrl.some(([start, end]) => i >= start && i < end);
+
+  const out = text.split("");
+  // Rovné uvozovky, které se nepodařilo přiřadit k české (indexy do textu).
+  const pending: number[] = [];
+  let czechOpen = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === OPEN_QUOTE) {
+      czechOpen++;
+    } else if (ch === CLOSE_QUOTE || ch === "”") {
+      if (czechOpen > 0) czechOpen--;
+      else if (pending.length > 0) out[pending.pop()!] = OPEN_QUOTE;
+    } else if (ch === '"' && !inUrl(i)) {
+      if (czechOpen > 0) {
+        out[i] = CLOSE_QUOTE;
+        czechOpen--;
+      } else {
+        pending.push(i);
+      }
+    }
+  }
+  if (pending.length % 2 === 0) {
+    pending.forEach((index, k) => {
+      out[index] = k % 2 === 0 ? OPEN_QUOTE : CLOSE_QUOTE;
+    });
+  }
+  return out.join("");
 }
 
 function collapseSpaces(text: string): string {
@@ -158,8 +228,10 @@ const SEPARATOR = "\uE000";
 const TOKEN = /<!--[\s\S]*?-->|<![^>]*>|<\/?([a-zA-Z][a-zA-Z0-9-]*)\b(?:[^>"']|"[^"]*"|'[^']*')*>|[^<]+|</g;
 
 /**
- * Pevné mezery v HTML (text článku z databáze). Mění jen textové uzly,
- * atributy a značky zůstávají znak po znaku.
+ * Pevné mezery a české uvozovky v HTML (text článku z databáze). Mění jen
+ * textové uzly, atributy a značky zůstávají znak po znaku. Uvozovky se
+ * párují v rámci bloku (odstavec, položka seznamu, nadpis…) i přes řádkové
+ * značky („<em>Key West</em>“).
  */
 export function czechNbsp(html: string): string {
   if (!html) return html;
@@ -172,7 +244,7 @@ export function czechNbsp(html: string): string {
 
   const flush = () => {
     if (run.length === 0) return;
-    const texts = run.map((i) => collapseSpaces(decodeNbsp(parts[i])));
+    const texts = run.map((i) => collapseSpaces(decodeQuotes(decodeNbsp(parts[i]))));
     // Úseky se spojí do jednoho textu, aby pravidla viděla přes řádkové
     // značky („v <em>Key West</em>“). Kde na sebe dva úseky narážejí bez
     // mezery (od</span><strong>10 800 USD</strong><span>za), vloží se mezi
@@ -184,7 +256,7 @@ export function czechNbsp(html: string): string {
       starts.push(joined.length);
       joined += t;
     });
-    const result = applyRules(joined);
+    const result = applyRules(czechQuotesText(joined));
     run.forEach((partIndex, k) => {
       parts[partIndex] = result.slice(starts[k], starts[k] + texts[k].length);
     });
@@ -233,4 +305,9 @@ export function czechNbsp(html: string): string {
 /** &nbsp; v textu jako znak, aby ho pravidla poznala jako mezeru. */
 function decodeNbsp(text: string): string {
   return text.replace(/&nbsp;|&#160;|&#x0*a0;/gi, NBSP);
+}
+
+/** &quot; v textu jako znak, aby se z něj mohla stát česká uvozovka. V textu HTML je " platný znak. */
+function decodeQuotes(text: string): string {
+  return text.replace(/&quot;|&#0*34;|&#x0*22;/gi, '"');
 }

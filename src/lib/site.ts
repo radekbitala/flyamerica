@@ -1,13 +1,17 @@
 export const SITE_NAME = "FLY America";
 
 /**
- * Adresa webu bez lomítka na konci: canonical, og:url, og:image a odkazy
- * v e-mailech. Hlavní doména ještě není rozhodnutá (flyamerica.cz, nebo
- * www.flyamerica.cz s přesměrováním z té druhé), proto jde přepsat přes
- * NEXT_PUBLIC_SITE_URL ve Vercelu. Hodnota se do kódu vloží při buildu,
- * po změně je potřeba nový build.
+ * Adresa webu bez lomítka na konci: canonical, og:url, og:image, mapa webu
+ * a odkazy v e-mailech. Hlavní doména je www.flyamerica.cz (rozhodnutí
+ * 12. 10. 2026), doména bez www se na ni přesměruje v nastavení domén ve
+ * Vercelu (README, Spuštění webu). Jinou adresu (náhled, testy) jde nastavit
+ * přes NEXT_PUBLIC_SITE_URL. Hodnota se do kódu vloží při buildu, po změně
+ * je potřeba nový build.
  */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://flyamerica.cz").replace(/\/+$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.flyamerica.cz").replace(/\/+$/, "");
+
+/** Hostitel webu bez protokolu pro texty („www.flyamerica.cz/z-cest/…“ v administraci). */
+export const SITE_HOST = new URL(SITE_URL).host;
 
 /**
  * Smí web do vyhledávačů? Výchozí je ne, dokud web neběží na hlavní doméně:

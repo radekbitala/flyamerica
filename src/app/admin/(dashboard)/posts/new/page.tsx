@@ -17,7 +17,7 @@ export default async function NewPostPage() {
   return (
     <div>
       <Breadcrumbs
-        items={[{ label: "Deník", href: "/admin/posts" }, { label: "Nový článek" }]}
+        items={[{ label: "Z cest", href: "/admin/posts" }, { label: "Nový článek" }]}
       />
       <h1 className="mb-6 text-2xl font-bold text-foreground">Nový článek</h1>
 

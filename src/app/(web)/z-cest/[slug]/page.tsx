@@ -17,6 +17,7 @@ import {
   getPublishedSlugs,
   type PublicPost,
 } from "@/lib/public-posts";
+import { ROUTES, postPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
 import { ArticleContent } from "../_components/ArticleContent";
 import { ArticleToc } from "../_components/ArticleToc";
@@ -24,9 +25,9 @@ import { DiaryTeaser } from "../_components/DiaryTeaser";
 import { PostGalleryGrid } from "../_components/PostGalleryGrid";
 import { PostImage } from "../_components/PostImage";
 import { VideoLink } from "../_components/VideoLink";
-import styles from "../denik.module.css";
+import styles from "../z-cest.module.css";
 
-// Článek deníku podle šablon prototyp/denik-druhy-prelet-atlantiku-2017.html
+// Článek Z cest (dřív Deník) podle šablon prototyp/denik-druhy-prelet-atlantiku-2017.html
 // a denik-dalsi-prelet-oceanu-2025.html. Data z databáze (jen publikované),
 // stránky se generují při buildu (s DATABASE_URL), nové při první návštěvě
 // a obnovují se po změně článku (tag PUBLIC_POSTS_TAG, src/lib/posts-cache.ts).
@@ -67,7 +68,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     description:
       modelDescription(post.slug) ??
       postDescription(post.perex || articleLeadText(post.content) || postDisplayTitle(post.title)),
-    path: `/denik/${post.slug}`,
+    path: postPath(post.slug),
     ogImage: "photo",
     article: {
       publishedTime: post.publishedAt.toISOString(),
@@ -88,7 +89,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   // Článek jen s galerií na konci nemá text: sekce s textem se vynechá.
   const hasText = body.nodes.some((node) => !isBlank(node)) || videoHref !== null;
   // Podtitul z textu (článek 2017) je v záhlaví místo perexu jako v modelu,
-  // perex pak zůstává jen na kartách v deníku a na úvodu.
+  // perex pak zůstává jen na kartách v Z cest a na úvodu.
   const headPerex = body.subtitle ?? (post.perex ? czechNbspText(post.perex) : undefined);
   const image = post.image;
   const imageAlt = image?.alt.trim() ?? "";
@@ -101,7 +102,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   return (
     <>
       <PageHead
-        crumbs={{ href: "/denik", label: "Deník", current: czechNbspText(postShortTitle(post.title)) }}
+        crumbs={{ href: ROUTES.posts, label: <>Z&nbsp;cest</>, current: czechNbspText(postShortTitle(post.title)) }}
         title={czechNbspText(postDisplayTitle(post.title))}
         perex={headPerex}
         perexVoice
@@ -177,19 +178,19 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {teaser ? (
         <section className="sec sec--line" aria-labelledby="dalsi-nadpis">
-          <DiaryTeaser post={teaser} label={<>Z&nbsp;deníku</>} headingId="dalsi-nadpis" linkText="Číst článek">
+          <DiaryTeaser post={teaser} label={<>Z&nbsp;cest</>} headingId="dalsi-nadpis" linkText="Číst článek">
             <p className="diary-older">
               {alsoNewer ? (
                 <>
-                  Novější z&nbsp;deníku:{" "}
-                  <Link href={`/denik/${alsoNewer.slug}`}>
+                  Novější článek:{" "}
+                  <Link href={postPath(alsoNewer.slug)}>
                     {czechNbspText(postDisplayTitle(alsoNewer.title))}, {yearOf(alsoNewer.publishedAt)}
                   </Link>
                   <span className="dot" aria-hidden="true" />
-                  <Link href="/denik">Všechny články</Link>
+                  <Link href={ROUTES.posts}>Všechny články</Link>
                 </>
               ) : (
-                <Link href="/denik">Všechny články z&nbsp;deníku</Link>
+                <Link href={ROUTES.posts}>Všechny články z&nbsp;cest</Link>
               )}
             </p>
           </DiaryTeaser>

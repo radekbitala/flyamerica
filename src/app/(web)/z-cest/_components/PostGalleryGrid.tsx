@@ -3,7 +3,7 @@ import { canOptimizeImage } from "@/lib/image-hosts";
 import { czechNbspText } from "@/lib/typography";
 import { GalleryLightbox, type LightboxPhoto } from "./GalleryLightbox";
 import { PostImage } from "./PostImage";
-import styles from "../denik.module.css";
+import styles from "../z-cest.module.css";
 
 /** sizes fotky v galerii přes celou šířku (sekce Fotky): 3 / 2 / 1 sloupec .gallery. */
 const SIZES_WIDE =

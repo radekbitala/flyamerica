@@ -30,16 +30,22 @@ const NOSCRIPT_STEPS =
 
 const phone = FA_PHONE.replaceAll(" ", NBSP);
 
+/** První hodnota parametru adresy (?vylet=a&vylet=b dá „a“). */
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function ContactPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { balicek } = await searchParams;
+  const { vylet, balicek } = await searchParams;
   // Token nese čas vykreslení, musí vzniknout při každém požadavku (spam.ts).
   await connection();
   const token = createFormToken();
-  const preset = packageFromParam(Array.isArray(balicek) ? balicek[0] : balicek);
+  // ?vylet= z odkazů „Poptat tento výlet“, ?balicek= ze starších odkazů (platí dál).
+  const preset = packageFromParam(firstParam(vylet)) ?? packageFromParam(firstParam(balicek));
 
   return (
     <>
@@ -57,7 +63,7 @@ export default async function ContactPage({
 
       <section className="sec sec--tight sec--line" aria-label="Poptávka a kontakt">
         <div className="fa-wrap split">
-          {/* Jiný balíček v adrese (přechod z jiné stránky balíčku) = nový formulář s novým předvyplněním. */}
+          {/* Jiný výlet v adrese (přechod z jiné stránky výletu) = nový formulář s novým předvyplněním. */}
           <InquiryForm key={preset ?? ""} token={token} preset={preset} />
 
           <div className="kt-side">

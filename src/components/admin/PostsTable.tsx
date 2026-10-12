@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink, FileText, ImageIcon, Pencil, Plus, Search } from "lucide-react";
+import { postPath } from "@/lib/routes";
 
 type PostStatus = "draft" | "published" | "archived";
 
@@ -116,7 +117,7 @@ export function PostsTable({
           <FileText size={32} aria-hidden className="mx-auto mb-3 text-text-secondary" />
           {posts.length === 0 ? (
             <>
-              <p className="mb-4 text-text-secondary">V deníku zatím není žádný článek.</p>
+              <p className="mb-4 text-text-secondary">Zatím tu není žádný článek.</p>
               <Link
                 href="/admin/posts/new"
                 className="inline-flex items-center gap-1.5 rounded-[10px] bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-dark"
@@ -186,7 +187,7 @@ export function PostsTable({
                       >
                         {post.title}
                       </Link>
-                      <div className="break-all text-xs text-text-secondary">/denik/{post.slug}</div>
+                      <div className="break-all text-xs text-text-secondary">{postPath(post.slug)}</div>
                     </td>
                     <td className="px-3 py-3 sm:px-4">
                       <span
@@ -213,7 +214,7 @@ export function PostsTable({
                         </Link>
                         {post.status === "published" && (
                           <a
-                            href={`/denik/${post.slug}`}
+                            href={postPath(post.slug)}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Zobrazit na webu"

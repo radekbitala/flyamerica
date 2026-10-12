@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { Arrow } from "@/components/web/ArrowSymbol";
-import { NAV_ITEMS, inquiryHref, packageFromPath } from "@/components/web/nav";
+import { NAV_ITEMS, inquiryHref, tripFromPath } from "@/components/web/nav";
 
 /**
  * Klientská část hlavičky (jediná klientská komponenta společného základu).
@@ -18,7 +18,7 @@ import { NAV_ITEMS, inquiryHref, packageFromPath } from "@/components/web/nav";
  *    směrová tabule (main .fa-dir) ani poptávkový formulář (main #poptavka).
  *    Na každé stránce se sleduje znovu. Bez skriptu ji ukáže <noscript>
  *    v layoutu, při otevřeném menu ji schová web.css (výzva je v menu).
- * 3. Na stránkách balíčků vede výzva na formulář s ?balicek= (nález 13).
+ * 3. Na stránkách výletů vede výzva na formulář s ?vylet= (nález 13).
  *
  * Stav si pamatuje cestu, pro kterou platí: po přechodu na jinou stránku je
  * menu zavřené a výzva skrytá, dokud ji sledování na nové stránce neukáže.
@@ -33,7 +33,7 @@ export function MobileMenu({ logo }: { logo: ReactNode }) {
 
   const open = openOn === pathname;
   const quietHidden = quiet?.path !== pathname || quiet.hidden;
-  const inquiry = inquiryHref(packageFromPath(pathname));
+  const inquiry = inquiryHref(tripFromPath(pathname));
 
   // Escape zavře otevřené menu a vrátí fokus na tlačítko.
   useEffect(() => {

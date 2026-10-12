@@ -8,6 +8,13 @@ import { SiteFooter } from "@/components/web/SiteFooter";
 import "@/styles/fa-tokeny.css";
 import "@/styles/web.css";
 import "@/styles/fonts.css";
+// Styly stránek po web.css (web.css je kopie z modelu a neupravuje se).
+// Každý soubor patří jedné oblasti webu, úpravy jedné stránky nesahají do jiných.
+import "@/styles/pages/home.css";
+import "@/styles/pages/trips.css";
+import "@/styles/pages/destinations.css";
+import "@/styles/pages/article.css";
+import "@/styles/pages/contact.css";
 
 /**
  * Výchozí metadata webu. Stránky skládají svá metadata celá přes
@@ -40,10 +47,17 @@ export const viewport: Viewport = {
 /** Bez skriptu se tichá výzva v hlavičce neskrývá (vzor z prototyp/_sablona.html). */
 const NOSCRIPT_QUIET = "<style>.hdr-right > .fa-quiet.is-hidden { opacity: 1; visibility: visible; }</style>";
 
+/**
+ * Kořenový layout webu. modal je paralelní slot @modal: detail destinace
+ * z Kam letět v okně nad stránkou (zachycená adresa /kam-letet/<slug>),
+ * jinak default.tsx (nic). Přímá adresa /kam-letet/<slug> je celá stránka.
+ */
 export default function WebLayout({
   children,
+  modal,
 }: Readonly<{
   children: React.ReactNode;
+  modal: React.ReactNode;
 }>) {
   return (
     <html
@@ -64,6 +78,7 @@ export default function WebLayout({
         <SiteHeader />
         <main id="obsah">{children}</main>
         <SiteFooter />
+        {modal}
       </body>
     </html>
   );

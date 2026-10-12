@@ -108,7 +108,7 @@ export interface InquiryEmailData {
   phone?: string | null;
   licence?: string | null;
   aboutPilot?: string | null;
-  /** Název balíčku pro čtenáře, ne slug z formuláře. */
+  /** Název výletu pro čtenáře, ne slug z formuláře. */
   packageLabel?: string | null;
   travelDate?: string | null;
   pilotCount?: string | null;
@@ -123,7 +123,7 @@ function inquiryRows(d: InquiryEmailData): [string, string][] {
     ["E-mail", d.email],
     ["Telefon", d.phone],
     ["Licence", d.licence],
-    ["Balíček", d.packageLabel],
+    ["Výlet", d.packageLabel],
     ["Termín", d.travelDate],
     ["Počet pilotů", d.pilotCount],
     ["Doprovod", d.companions],
@@ -147,7 +147,7 @@ export async function sendInquiryNotification(d: InquiryEmailData): Promise<bool
   const adminUrl = `${SITE_URL}/admin/poptavky/${d.id}`;
   const subject = callback
     ? `Zavolat zpět: ${d.name}`
-    : `Poptávka: ${d.packageLabel ?? "bez balíčku"} - ${d.name}`;
+    : `Poptávka: ${d.packageLabel ?? "bez výletu"} - ${d.name}`;
 
   return send({
     to,

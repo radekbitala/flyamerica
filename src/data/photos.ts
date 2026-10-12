@@ -1,18 +1,29 @@
 /**
- * Fotky stránek webu z klikacího modelu (prototyp/img, přehled img/_seznam.tsv).
- * V public/img je od každé fotky použité v modelu jen největší varianta,
- * menší velikosti a formáty (AVIF, WebP) dělá next/image.
+ * Fotky stránek webu: fotky z klikacího modelu (prototyp/img, přehled
+ * img/_seznam.tsv) a fotky z fotobanky (../fotobanka) po oblastech webu.
+ * V public/img je od každé fotky jen největší potřebná varianta, menší
+ * velikosti a formáty (AVIF, WebP) dělá next/image.
  *
- * Klíč = název souboru v modelu bez přípony a bez velikosti
- * (img/cedar-key-letecky-800.jpg -> "cedar-key-letecky"). alt je popisek
- * z archivu doslova (s opraveným pravopisem), stejný jako v modelu. Viditelný
- * popisek pod fotkou je stejný text, pevné mezery v něm doplní czechNbspText()
- * (komponenta Figure to dělá sama). Kódy letišť z popisků nedávat na stránky
- * s jiným Honzovým kódem (_PRAVIDLA.md, část 3).
+ * Fotky z modelu (MODEL_PHOTOS níž): klíč = název souboru v modelu bez
+ * přípony a bez velikosti (img/cedar-key-letecky-800.jpg ->
+ * "cedar-key-letecky"). alt je popisek z archivu doslova (s opraveným
+ * pravopisem), stejný jako v modelu. Viditelný popisek pod fotkou je stejný
+ * text, pevné mezery v něm doplní czechNbspText() (komponenta Figure to dělá
+ * sama). Kódy letišť z popisků nedávat na stránky s jiným Honzovým kódem
+ * (_PRAVIDLA.md, část 3). Vygenerováno z prototyp/img/_seznam.tsv 11. 10. 2026.
  *
- * Vygenerováno z prototyp/img/_seznam.tsv 11. 10. 2026. Novou fotku přidat
- * nejdřív do modelu (prototyp/_nastroje/fotka.py), pak sem a do public/img.
+ * Fotky z fotobanky jsou v samostatných souborech podle oblasti webu, aby
+ * do nich mohlo psát víc lidí najednou bez konfliktů:
+ * photos-home.ts (úvod), photos-trips.ts (letecké výlety),
+ * photos-destinations.ts (Kam letět), photos-article.ts (články Z cest).
+ * Postup přidání fotky je v README (Veřejný web, Fotky). Stejný klíč ve
+ * dvou souborech je chyba (mergePhotoSets() ji ohlásí při buildu).
  */
+
+import { articlePhotos } from "./photos-article";
+import { destinationPhotos } from "./photos-destinations";
+import { homePhotos } from "./photos-home";
+import { tripPhotos } from "./photos-trips";
 
 export interface Photo {
   /** Adresa v public/, pro next/image. */
@@ -22,9 +33,14 @@ export interface Photo {
   height: number;
   /** Popisek z archivu, bez pevných mezer (atributy je nemají). */
   alt: string;
+  /**
+   * Viditelný popisek, když se liší od alt (fotobanka má „popisek“ i „alt“).
+   * Bez něj je popiskem alt. Bez pevných mezer, doplní je Figure.
+   */
+  caption?: string;
 }
 
-export const photos = {
+const MODEL_PHOTOS = {
   // úvod; v modelu: index
   "uvod-jezera-lake-wales": { src: "/img/uvod-jezera-lake-wales.jpg", width: 3110, height: 2333, alt: "Jezera u Lake Wales před západem slunce tvoří krásně barevné scenérie." },
   // letadlo; v modelu: balicek-florida-week, balicek-grand-tour, index
@@ -148,5 +164,27 @@ export const photos = {
   // Honza, malý portrét (výřez 540 x 720 vlevo nahoře); v modelu: balicek-florida-week, balicek-grand-tour, index
   "honza-portret": { src: "/img/honza-portret.jpg", width: 240, height: 320, alt: "Nad jezerem Lake Powell, Utah/Arizona, USA" },
 } as const satisfies Record<string, Photo>;
+
+/**
+ * Sloučí sady fotek do jedné. Klíč, který už v dřívější sadě je, skončí
+ * chybou (při buildu i při next dev): druhá fotka by první tiše přepsala.
+ */
+function mergePhotoSets<T extends readonly Record<string, Photo>[]>(...sets: T): UnionToIntersection<T[number]> {
+  const merged: Record<string, Photo> = {};
+  for (const set of sets) {
+    for (const [name, photo] of Object.entries(set)) {
+      if (name in merged) throw new Error(`Fotka „${name}“ je v src/data/photos*.ts dvakrát.`);
+      merged[name] = photo;
+    }
+  }
+  return merged as UnionToIntersection<T[number]>;
+}
+
+type UnionToIntersection<U> = (U extends unknown ? (arg: U) => void : never) extends (arg: infer I) => void
+  ? I
+  : never;
+
+/** Všechny fotky webu: z modelu a z fotobanky po oblastech. */
+export const photos = mergePhotoSets(MODEL_PHOTOS, homePhotos, tripPhotos, destinationPhotos, articlePhotos);
 
 export type PhotoName = keyof typeof photos;

@@ -102,7 +102,7 @@ const EDITOR_PROPS = {
 
 /**
  * Adresa odkazu z promptu. Bez schématu by "flyamerica.cz" byla relativní
- * adresa a z článku /denik/x by vedla na /denik/flyamerica.cz. defaultProtocol
+ * adresa a z článku /z-cest/x by vedla na /z-cest/flyamerica.cz. defaultProtocol
  * u Linku platí jen pro automatické odkazy, ne pro setLink.
  */
 function normalizeLinkHref(input: string): string {

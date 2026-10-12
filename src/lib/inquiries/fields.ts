@@ -22,7 +22,7 @@ import {
 export const INQUIRY_STEPS = [
   // Krok 1: Pilotní licence a pár slov o vás
   ["licence", "aboutPilot"],
-  // Krok 2: O jaký balíček máte zájem a kdy
+  // Krok 2: O jaký výlet máte zájem a kdy
   ["packageSlug", "travelDate", "pilotCount", "companions"],
   // Krok 3: Jak vás zastihneme
   ["name", "email", "phone", "referralSource", "message"],
@@ -70,10 +70,13 @@ export const MAX_LENGTH = {
 /** Telefon musí mít aspoň tolik číslic (v poptávce, když je vyplněný). */
 export const MIN_PHONE_DIGITS = 9;
 
-/** Hlášky doslova z prototyp/kontakt.html. Pevné mezery doplní formulář při vykreslení. */
+/**
+ * Hlášky doslova z prototyp/kontakt.html, u výletu místo „balíček“ „výlet“
+ * (rozhodnutí 12. 10. 2026). Pevné mezery doplní formulář při vykreslení.
+ */
 export const MESSAGES = {
   licence: "Vyberte licenci, nebo možnost Nemám.",
-  packageSlug: "Vyberte balíček, nebo možnost Zatím nevím.",
+  packageSlug: "Vyberte výlet, nebo možnost Zatím nevím.",
   travelDate: "Napište přibližný termín, třeba měsíc.",
   pilotCount: "Vyberte počet pilotů.",
   name: "Napište své jméno.",

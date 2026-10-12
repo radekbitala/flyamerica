@@ -31,6 +31,7 @@ import {
   REFERRAL_SOURCES,
   type PackageSlug,
 } from "@/lib/inquiries/options";
+import { ROUTES } from "@/lib/routes";
 import { FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 import { NBSP, czechNbspText } from "@/lib/typography";
 import { submitInquiry } from "./actions";
@@ -54,8 +55,9 @@ import {
  * 1. Pokračovat zkontroluje pole aktuálního kroku (fields.ts, stejné hlášky
  *    jako server), Zpět vrátí o krok, fokus jde na nadpis kroku. Odeslat
  *    zkontroluje i dřívější kroky (krok 1 jde přeskočit tlačítkem Změnit).
- * 2. Předvyplněný balíček z ?balicek= (stránka ho pošle jako preset). Při
- *    příchodu z odkazu na balíček je nad kroky „Poptáváte: …“ s tlačítkem
+ * 2. Předvyplněný výlet z ?vylet= nebo dřívějšího ?balicek= (stránka ho
+ *    pošle jako preset). Při příchodu z odkazu na výlet je nad kroky
+ *    „Poptáváte: …“ s tlačítkem
  *    Změnit, změna v kroku 2 ho přepíše, u „Zatím nevím“ zmizí.
  * 3. Chyby ze serveru: formulář přejde na krok s první chybou a dá na ni
  *    fokus. Hodnoty se vrátí do polí ze state.values. Výpadek sítě nebo
@@ -85,7 +87,7 @@ const STEP_OF = Object.fromEntries(
 /** Názvy kroků v ukazateli, doslova z modelu. */
 const STEP_LABELS: ReactNode[] = [
   <>Licence a&nbsp;pár slov o&nbsp;vás</>,
-  <>Balíček a&nbsp;termín</>,
+  <>Výlet a&nbsp;termín</>,
   "Kontakt",
 ];
 
@@ -93,7 +95,7 @@ const STEP_LABELS: ReactNode[] = [
 const IDS: Record<InquiryField, string> = {
   licence: "f-licence",
   aboutPilot: "f-onas",
-  packageSlug: "f-balicek",
+  packageSlug: "f-vylet",
   travelDate: "f-kdy",
   pilotCount: "f-piloti",
   companions: "f-doprovod",
@@ -115,10 +117,10 @@ const PILOT_LABELS: Record<string, ReactNode> = {
 const isPackage = (slug: string | undefined): slug is PackageSlug =>
   slug !== undefined && (PACKAGE_SLUGS as readonly string[]).includes(slug);
 
-/** Popisek balíčku ve volbě a ve shrnutí s pevnými mezerami jako model. */
+/** Popisek výletu ve volbě a ve shrnutí s pevnými mezerami jako model. */
 const packageLabel = (slug: PackageSlug) => czechNbspText(PACKAGES[slug].formLabel);
 
-/** Název balíčku v řádku „Poptáváte“, jen u skutečného balíčku (ne „Zatím nevím“). */
+/** Název výletu v řádku „Poptáváte“, jen u skutečného výletu (ne „Zatím nevím“). */
 function chosenName(slug: string): string | undefined {
   if (slug !== "florida-week" && slug !== "grand-tour") return undefined;
   return czechNbspText(PACKAGES[slug].name);
@@ -130,7 +132,7 @@ function firstErrorField(errors: Errors): InquiryField | undefined {
 
 /**
  * Co formulář ukazuje. Patří k jednomu stavu ze serveru (source): nový stav
- * po odeslání z něj odvodí nový pohled (krok s první chybou, chyby, balíček).
+ * po odeslání z něj odvodí nový pohled (krok s první chybou, chyby, výlet).
  */
 interface View {
   source: InquiryFormState;
@@ -142,7 +144,7 @@ interface View {
   rev: number;
   step: number;
   errors: Errors;
-  /** Zaškrtnutý balíček (kvůli řádku „Poptáváte“). */
+  /** Zaškrtnutý výlet (kvůli řádku „Poptáváte“). */
   pkg: string;
   /** Poslední platný token, chybový stav nese nový, úspěch žádný. */
   token: string | undefined;
@@ -204,7 +206,7 @@ export function InquiryForm({
 }: {
   /** Podepsaný čas vykreslení (createFormToken), stránka ho vytváří při každém požadavku. */
   token: string;
-  /** Balíček z ?balicek= v adrese. */
+  /** Výlet z ?vylet= (nebo ?balicek=) v adrese. */
   preset: PackageSlug | null;
 }) {
   // Bez skriptu formulář odešle prohlížeč rovnou server action (action
@@ -276,7 +278,7 @@ export function InquiryForm({
     startTransition(() => send(formData));
   }
 
-  // Chyba zmizí, jakmile pole opraví. Změna balíčku přepíše řádek „Poptáváte“.
+  // Chyba zmizí, jakmile pole opraví. Změna výletu přepíše řádek „Poptáváte“.
   function onChange(e: ChangeEvent<HTMLFormElement>) {
     const name = (e.target as unknown as { name?: string }).name ?? "";
     if (!(INQUIRY_FIELDS as readonly string[]).includes(name)) return;
@@ -353,7 +355,7 @@ export function InquiryForm({
 
   const summary: [string, ReactNode][] = [
     ["Licence", state.values.licence],
-    ["Balíček", isPackage(state.values.packageSlug) ? packageLabel(state.values.packageSlug) : ""],
+    ["Výlet", isPackage(state.values.packageSlug) ? packageLabel(state.values.packageSlug) : ""],
     ["Termín", singleLine(state.values.travelDate ?? "")],
     ["Počet pilotů", PILOT_LABELS[state.values.pilotCount ?? ""] ?? state.values.pilotCount],
     ["Doprovod", state.values.companions],
@@ -438,17 +440,17 @@ export function InquiryForm({
         <div className={stepClass(1)} id="krok-2" role="group" aria-labelledby="krok-2-h" hidden={done}>
           <div className="kt-step-h">
             <h2 id="krok-2-h" tabIndex={-1}>
-              <span className="vh">Krok&nbsp;2 ze 3: </span>O&nbsp;jaký balíček máte zájem a&nbsp;kdy
+              <span className="vh">Krok&nbsp;2 ze 3: </span>O&nbsp;jaký výlet máte zájem a&nbsp;kdy
             </h2>
           </div>
-          <fieldset className={fieldClass(err("packageSlug"), true)} id="f-balicek">
-            <legend>Balíček</legend>
+          <fieldset className={fieldClass(err("packageSlug"), true)} id="f-vylet">
+            <legend>Výlet</legend>
             <div className="checks kt-col">
               {radios("packageSlug", PACKAGE_SLUGS, (v) => packageLabel(v as PackageSlug))}
             </div>
             <span className="fa-hint">
-              <span className="todo">[doplnit: 3. balíček od Honzy]</span>{" "}
-              <Link href="/#balicky">Porovnat balíčky</Link>
+              <span className="todo">[doplnit: 3. výlet od Honzy]</span>{" "}
+              <Link href={ROUTES.trips}>Porovnat výlety</Link>
             </span>
             {fieldError("packageSlug")}
           </fieldset>

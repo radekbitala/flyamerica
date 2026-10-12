@@ -1,3 +1,4 @@
+import type { TripSlug } from "@/data/trip-slugs";
 import type { inquiries } from "@/lib/db/schema";
 
 /**
@@ -8,6 +9,11 @@ import type { inquiries } from "@/lib/db/schema";
 
 export const LICENCES = ["PPL", "CPL/ATPL", "Ultralight", "Jiná", "Nemám"] as const;
 
+/**
+ * Volby „Výlet“ v poptávce: letecké výlety (slugy ze src/data/trip-slugs.ts)
+ * a „Zatím nevím“. V kódu a v databázi se jmenují package (sloupec
+ * package_slug), na webu výlet.
+ */
 export const PACKAGES = {
   "florida-week": {
     name: "Florida Week & Fly",
@@ -21,20 +27,21 @@ export const PACKAGES = {
     name: "Zatím neví",
     formLabel: "Zatím nevím, poradíme se",
   },
-} as const;
+} as const satisfies Record<TripSlug | "nevim", { name: string; formLabel: string }>;
 
 export type PackageSlug = keyof typeof PACKAGES;
 
 export const PACKAGE_SLUGS = Object.keys(PACKAGES) as [PackageSlug, ...PackageSlug[]];
 
-/** Název balíčku pro člověka. Neznámý slug (balíček z webu zmizel) vrátí beze změny. */
+/** Název výletu pro člověka. Neznámý slug (výlet z webu zmizel) vrátí beze změny. */
 export function packageName(slug: string | null | undefined): string | null {
   if (!slug) return null;
   return slug in PACKAGES ? PACKAGES[slug as PackageSlug].name : slug;
 }
 
-// Odkazy „Poptat tento balíček" vedou na /kontakt?balicek=...#poptavka.
-// Kratší tvary převzaté z js/kontakt.js, aby fungovaly i ručně psané adresy.
+// Odkazy „Poptat tento výlet“ vedou na /kontakt?vylet=...#poptavka (dřív
+// ?balicek=, platí dál). Kratší tvary převzaté z js/kontakt.js, aby
+// fungovaly i ručně psané adresy.
 const PACKAGE_ALIASES: Record<string, PackageSlug> = {
   "florida-week": "florida-week",
   week: "florida-week",
@@ -45,7 +52,7 @@ const PACKAGE_ALIASES: Record<string, PackageSlug> = {
   nevim: "nevim",
 };
 
-/** Balíček předvyplněný z parametru ?balicek= v adrese. */
+/** Výlet předvyplněný z parametru ?vylet= (nebo dřívějšího ?balicek=) v adrese. */
 export function packageFromParam(param: string | null | undefined): PackageSlug | null {
   if (!param) return null;
   return PACKAGE_ALIASES[param.toLowerCase()] ?? null;
