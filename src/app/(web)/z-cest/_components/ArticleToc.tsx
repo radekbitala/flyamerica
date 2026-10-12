@@ -8,15 +8,18 @@ export interface ArticleTocEntry {
   text: string;
 }
 
+/** Do této šířky je obsah sbalený nad textem, od 1200 px v levém okraji (src/styles/pages/article.css). */
+const COLLAPSED = "(max-width: 1199px)";
+
 /**
- * Obsah článku „V článku“ (.dn-toc) jako v modelu (prototyp/js/web.js, část 4):
- * na počítači vždy rozbalený a vedle textu (sticky z web.css), na mobilu
- * (do 960 px) sbalený do jednoho řádku nad textem.
+ * Obsah článku „V článku“ (.dn-toc, .read-toc). Od 1200 px vždy rozbalený
+ * a přilepený v levém okraji vedle textu (rozhodnutí 12. 10. 2026, model ho
+ * měl vpravo), do 1199 px sbalený do jednoho řádku nad textem.
  *
- * Nález 19: na počítači není co rozbalovat, souhrn proto není v pořadí
+ * Nález 19: v okraji není co rozbalovat, souhrn proto není v pořadí
  * tabulátoru a čtečka ho nehlásí jako tlačítko (aria-hidden), klik ho
  * nesbalí. Bez skriptu je obsah rozbalený všude. Obsah vyšší než obrazovka
- * se na počítači posouvá sám (styles.toc), jinak by konec seznamu nešel
+ * se v okraji posouvá sám (styles.toc), jinak by konec seznamu nešel
  * při čtení otevřít.
  */
 export function ArticleToc({ entries, footer }: { entries: ArticleTocEntry[]; footer?: ReactNode }) {
@@ -27,7 +30,7 @@ export function ArticleToc({ entries, footer }: { entries: ArticleTocEntry[]; fo
     const summary = details?.querySelector("summary");
     if (!details || !summary) return;
 
-    const mobile = window.matchMedia("(max-width: 960px)");
+    const mobile = window.matchMedia(COLLAPSED);
     const sync = () => {
       details.open = !mobile.matches;
       summary.tabIndex = mobile.matches ? 0 : -1;
@@ -48,7 +51,7 @@ export function ArticleToc({ entries, footer }: { entries: ArticleTocEntry[]; fo
   }, []);
 
   return (
-    <nav className={`aside dn-toc ${styles.toc}`} aria-labelledby="obsah-clanku">
+    <nav className={`dn-toc read-toc ${styles.toc}`} aria-labelledby="obsah-clanku">
       <details open ref={detailsRef}>
         <summary>
           <span className="lbl" id="obsah-clanku">

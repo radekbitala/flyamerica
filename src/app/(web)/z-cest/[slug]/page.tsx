@@ -5,9 +5,18 @@ import { Arrow } from "@/components/web/ArrowSymbol";
 import { CtaSection } from "@/components/web/CtaSection";
 import { PAGE_PHOTO_SIZES, PHOTO_CREDIT } from "@/components/web/Figure";
 import { PageHead } from "@/components/web/PageHead";
+import { SectionSign } from "@/components/web/SectionSign";
 import { formatDate, isoDate, yearOf } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
-import { articleLeadText, isBlank, prepareArticleBody, youtubeLink } from "@/lib/post-content";
+import {
+  articleLeadText,
+  isBlank,
+  prepareArticleBody,
+  textOf,
+  youtubeLink,
+  youtubeVideo,
+  type HtmlNode,
+} from "@/lib/post-content";
 import { modelDescription, postDescription, postShortTitle } from "@/lib/post-display";
 import { postDisplayTitle } from "@/lib/post-title";
 import {
@@ -24,13 +33,17 @@ import { ArticleToc } from "../_components/ArticleToc";
 import { DiaryTeaser } from "../_components/DiaryTeaser";
 import { PostGalleryGrid } from "../_components/PostGalleryGrid";
 import { PostImage } from "../_components/PostImage";
-import { VideoLink } from "../_components/VideoLink";
+import { ArticleVideo } from "../_components/ArticleVideo";
 import styles from "../z-cest.module.css";
 
 // Článek Z cest (dřív Deník) podle šablon prototyp/denik-druhy-prelet-atlantiku-2017.html
 // a denik-dalsi-prelet-oceanu-2025.html. Data z databáze (jen publikované),
 // stránky se generují při buildu (s DATABASE_URL), nové při první návštěvě
 // a obnovují se po změně článku (tag PUBLIC_POSTS_TAG, src/lib/posts-cache.ts).
+//
+// Rozložení (12. 10. 2026, src/styles/pages/article.css): záhlaví a text ve
+// sloupci 680 px na střed, titulní fotka přes celý kontejner, fotky a galerie
+// v textu širší než text, obsah „V článku“ od 1200 px v levém okraji.
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -49,6 +62,20 @@ async function loadPost(slug: string): Promise<PublicPost | null> {
   const published = await getPublishedPosts();
   if (!published.some((post) => post.slug === slug)) return null;
   return getPublishedPostBySlug(slug);
+}
+
+/**
+ * Text článku aspoň takhle dlouhý (znaky) je vyšší než obrazovka (sloupec
+ * 680 px, asi 75 znaků na řádek, 33 px na řádek): sekce Fotky pod ním smí
+ * mít polohovou tabuli a od tabule v drobečcích ji dělí víc než výška
+ * obrazovky 1440 x 900 i 375 x 667 (DESIGN.md, The One Location Sign Rule).
+ * U kratšího textu má sekce šedý štítek.
+ */
+const SIGN_MIN_TEXT = 2500;
+
+/** Délka textu článku ve znacích (bez značek). */
+function textLength(nodes: HtmlNode[]): number {
+  return nodes.reduce((sum, node) => sum + textOf(node).trim().length, 0);
 }
 
 /** Prázdné pole bez databáze: články se pak vykreslí při první návštěvě (ISR). */
@@ -84,10 +111,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   const { newer, older } = await getAdjacentPosts(post.slug);
   const body = prepareArticleBody(post);
+  const video = post.videoUrl ? youtubeVideo(post.videoUrl) : null;
   const videoHref = post.videoUrl ? youtubeLink(post.videoUrl) : null;
   const hasPhotos = body.trailingGalleries.length > 0;
+  const hasToc = body.toc.length > 0;
   // Článek jen s galerií na konci nemá text: sekce s textem se vynechá.
   const hasText = body.nodes.some((node) => !isBlank(node)) || videoHref !== null;
+  const photosSign = hasText && textLength(body.nodes) >= SIGN_MIN_TEXT;
+  const videoTitle = `Video k článku ${postDisplayTitle(post.title)}`;
   // Podtitul z textu (článek 2017) je v záhlaví místo perexu jako v modelu,
   // perex pak zůstává jen na kartách v Z cest a na úvodu.
   const headPerex = body.subtitle ?? (post.perex ? czechNbspText(post.perex) : undefined);
@@ -101,18 +132,21 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <>
-      <PageHead
-        crumbs={{ href: ROUTES.posts, label: <>Z&nbsp;cest</>, current: czechNbspText(postShortTitle(post.title)) }}
-        title={czechNbspText(postDisplayTitle(post.title))}
-        perex={headPerex}
-        perexVoice
-      >
-        <p className="dn-by">
-          <time className="date" dateTime={isoDate(post.publishedAt)}>
-            {formatDate(post.publishedAt)}
-          </time>
-        </p>
-      </PageHead>
+      {/* Záhlaví ve sloupci textu: tabule Z cest v drobečcích, nadpis, perex v serifu, datum. */}
+      <div className="read-head">
+        <PageHead
+          crumbs={{ href: ROUTES.posts, label: <>Z&nbsp;cest</>, current: czechNbspText(postShortTitle(post.title)) }}
+          title={czechNbspText(postDisplayTitle(post.title))}
+          perex={headPerex}
+          perexVoice
+        >
+          <p className="dn-by">
+            <time className="date" dateTime={isoDate(post.publishedAt)}>
+              {formatDate(post.publishedAt)}
+            </time>
+          </p>
+        </PageHead>
+      </div>
 
       {image ? (
         <div className="fa-wrap">
@@ -135,24 +169,28 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {hasText ? (
         <section className="sec sec--tight" aria-label="Text článku">
-          <div className="fa-wrap split dn-split">
-            {body.toc.length > 0 ? (
-              <ArticleToc
-                entries={body.toc}
-                footer={
-                  hasPhotos ? (
-                    <div className="dn-toc-foot">
-                      <a className="fa-link" href="#fotky">
-                        Fotky z&nbsp;cesty <Arrow />
-                      </a>
-                    </div>
-                  ) : null
-                }
-              />
-            ) : null}
-            <div className="prose">
-              <ArticleContent nodes={body.nodes} galleries={body.galleries} />
-              {videoHref ? <VideoLink href={videoHref} /> : null}
+          <div className="fa-wrap">
+            <div className={hasToc ? "read-body read-body--toc" : "read-body"}>
+              {hasToc ? (
+                <ArticleToc
+                  entries={body.toc}
+                  footer={
+                    hasPhotos ? (
+                      <div className="dn-toc-foot">
+                        <a className="fa-link" href="#fotky">
+                          Fotky z&nbsp;cesty <Arrow />
+                        </a>
+                      </div>
+                    ) : null
+                  }
+                />
+              ) : null}
+              <div className="prose">
+                <ArticleContent nodes={body.nodes} galleries={body.galleries} hasToc={hasToc} videoTitle={videoTitle} />
+                {video && videoHref ? (
+                  <ArticleVideo id={video.id} start={video.start} href={videoHref} title={videoTitle} />
+                ) : null}
+              </div>
             </div>
           </div>
         </section>
@@ -163,7 +201,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <div className="fa-wrap">
             <div className="sec-head">
               <div>
-                <span className="lbl">Fotky</span>
+                {photosSign ? <SectionSign>Fotky</SectionSign> : <span className="lbl">Fotky</span>}
                 <h2 id="fotky-nadpis">Fotky z&nbsp;cesty</h2>
               </div>
             </div>

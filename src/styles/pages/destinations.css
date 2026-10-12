@@ -1,1 +1,119 @@
-/* Kam letět: rozcestník /kam-letet, detail destinace a okno s detailem (@modal). Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
+/* Kam letět: rozcestník /kam-letet, detail destinace a okno s detailem (@modal). Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css).
+   Vlastní třídy mají předponu kl- (Kam letět). Dlaždice (.tip, .route), text destinace (.dest-*) a galerie (.gallery) jsou z web.css. */
+
+/* ---------- ROZCESTNÍK /kam-letet ----------
+   Osm dlaždic (4 + 4 na počítači, 2 sloupce na tabletu, na mobilu seznam s náhledem z web.css). Detaily pod přehledem už nejsou,
+   otevírají se v okně (rozhodnutí 12. 10. 2026). */
+.kl-tiles { list-style: none; margin: 0; padding: 0; }
+/* Dvě řady dlaždic s textem: mezi řadami víc místa než mezi sloupci, aby se výňatek nelepil na fotku pod ním */
+@media (min-width: 1101px) { .kl-tiles { row-gap: 56px; } }
+
+/* ---------- DETAIL DESTINACE JAKO CELÁ STRÁNKA /kam-letet/<slug> ----------
+   Čtecí sloupec uprostřed (záhlaví, text, přepínání destinací), galerie široká jako obsah stránky, tedy širší než text
+   (rozhodnutí 12. 10. 2026, bod 6). Jedna malá fotka (580 px z roku 2010) zůstává zarovnaná se sloupcem textu. */
+.kl-page { --kl-col: 760px; }
+.kl-page .page-head > .fa-wrap > *,
+.kl-page .dest-text,
+.kl-page .dest-gal--1,
+.kl-page .kl-pager,
+.kl-page .dest-back { width: 100%; max-width: var(--kl-col); margin-inline: auto; }
+.kl-page .kl-page-route { margin-top: 20px; margin-bottom: 0; }
+/* Text navazuje přímo na záhlaví, mezeru dává záhlaví (jako úvod stránky Váš mentor) */
+.kl-main { padding-top: 0; }
+
+/* Předchozí a další destinace pod textem stránky (v okně je přepínání v liště) */
+.kl-pager {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;
+  margin-top: 64px; padding-top: 20px;
+  border-top: var(--linka) solid var(--papir-t);
+}
+.kl-pager-link { display: grid; gap: 6px; align-content: start; justify-items: start; padding: 4px 0; color: var(--grafit); text-decoration: none; }
+.kl-pager-next { justify-items: end; text-align: right; }
+.kl-pager-dir { display: inline-flex; align-items: center; gap: .45em; font: 600 14px/1.4 var(--f-sans); color: var(--s600); }
+.kl-pager-dir svg { width: 13px; height: 9px; fill: currentColor; flex: none; transition: transform .18s ease; }
+.kl-pager-prev .kl-pager-dir svg { transform: rotate(180deg); }
+.kl-pager-name { font: 700 20px/1.3 var(--f-sans); letter-spacing: -.005em; text-wrap: balance; }
+.kl-pager-link:hover .kl-pager-name { text-decoration: underline var(--linka); text-underline-offset: .18em; }
+.kl-pager-next:hover .kl-pager-dir svg { transform: translateX(2px); }
+.kl-pager-prev:hover .kl-pager-dir svg { transform: rotate(180deg) translateX(2px); }
+.kl-pager-link:focus-visible { outline: 2px solid var(--grafit); outline-offset: 4px; }
+
+/* Jedna fotka v galerii (Kissimmee): nejvýš 370 px, nezvětšuje se nad soubor 580 px. Dvě třídy kvůli
+   .dest-gal:not(.dest-gal--2) z web.css (601-960 px), které by jinak fotku stáhlo na třetinu šířky. */
+@media (min-width: 601px) { .dest-gal.dest-gal--1 { grid-template-columns: minmax(0, 370px); } }
+
+/* ---------- OKNO S DETAILEM DESTINACE (@modal/(.)kam-letet, DestinationDialog) ----------
+   Papírový panel nad ztmavenou stránkou, nahoře lišta (Předchozí, pořadí, Další, Zavřít), pod ní kód letiště s polem, nadpis,
+   Honzův text a fotky. Jediný tabulový prvek v okně je kód letiště. Na mobilu přes celou obrazovku.
+   Bez stínů a zaoblení. Ztmavení stránky je grafit s průhledností jako ztmavení fotky (DESIGN.md, The Darkened Photo Rule),
+   hodnota přímo: ::backdrop ve starších prohlížečích nedědí proměnné z :root. */
+.kl-dialog {
+  width: min(920px, calc(100% - 48px));
+  max-width: none;
+  max-height: calc(100% - 48px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--papir);
+  color: var(--grafit);
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--s500) var(--papir);
+}
+.kl-dialog::backdrop { background: rgba(29, 37, 45, .85); }
+
+.kl-bar {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 64px; padding: 0 32px;
+  background: var(--papir);
+  border-bottom: var(--linka) solid var(--papir-t);
+}
+.kl-steps { display: flex; align-items: center; gap: 20px; }
+.kl-steps .fa-link { min-height: 44px; font-size: 15px; }
+.kl-prev svg { transform: rotate(180deg); }
+.kl-prev:hover svg { transform: rotate(180deg) translateX(2px); }
+.kl-count { min-width: 3.4em; text-align: center; font: 600 14px/1.4 var(--f-sans); font-variant-numeric: tabular-nums lining-nums; color: var(--s600); }
+.kl-close {
+  font: 600 15px/1 var(--f-sans); color: var(--grafit);
+  background: none; border: 0; margin: 0 -4px 0 0; padding: 0 4px 0 16px; height: 44px; min-width: 44px; cursor: pointer;
+}
+.kl-close:hover { text-decoration: underline var(--linka); text-underline-offset: .22em; }
+.kl-close:focus-visible { outline: 2px solid var(--grafit); outline-offset: 2px; }
+
+.kl-body { padding: 40px 48px 56px; }
+.kl-body .dest-head { margin-bottom: 32px; }
+.kl-body .dest-head h2 { font-size: 36px; }
+/* Nadpis dostává fokus jen skriptem (otevření okna, přepnutí destinace), není to ovládací prvek */
+.kl-body .dest-head h2:focus { outline: none; }
+.kl-body .dest-gal { margin-top: 40px; }
+
+/* Otevření: krátké vyjetí panelu a ztmavení stránky, jen bez omezení pohybu */
+@media (prefers-reduced-motion: no-preference) {
+  .kl-dialog[open] { animation: kl-dialog-in .2s cubic-bezier(.16, 1, .3, 1); }
+  .kl-dialog[open]::backdrop { animation: kl-backdrop-in .2s ease-out; }
+}
+@keyframes kl-dialog-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes kl-backdrop-in { from { opacity: 0; } }
+
+/* ---------- MOBIL ---------- */
+@media (max-width: 960px) and (min-width: 601px) {
+  .kl-body { padding: 32px 32px 48px; }
+}
+@media (max-width: 600px) {
+  .kl-pager { margin-top: 48px; gap: 16px; }
+  .kl-pager-name { font-size: 17px; }
+
+  /* Okno přes celou obrazovku, lišta jako hlavička webu na mobilu */
+  .kl-dialog { width: 100%; height: 100%; max-height: none; margin: 0; }
+  .kl-bar { min-height: var(--hdr); padding: 0 var(--gut); gap: 8px; }
+  .kl-steps { gap: 12px; }
+  .kl-count { min-width: 2.8em; }
+  .kl-body { padding: 28px var(--gut) 40px; }
+  .kl-body .dest-head { margin-bottom: 24px; }
+  .kl-body .dest-head h2 { font-size: 28px; }
+  .kl-body .dest-gal { margin-top: 32px; }
+}
+/* Nejužší telefony (320 px): pořadí se do lišty nevejde, Předchozí, Další a Zavřít zůstávají */
+@media (max-width: 359px) { .kl-count { display: none; } }

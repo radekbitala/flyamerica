@@ -20,10 +20,10 @@ registerHooks({
   },
 });
 
-const { czechNbsp, czechNbspText, czechQuotesText, NBSP } = await import("../src/lib/typography.ts");
+const { czechNbsp, czechNbspText, czechQuotesText, tieText, NBSP, WORD_JOINER } = await import("../src/lib/typography.ts");
 
-/** Zápis očekávaného textu: „~“ = pevná mezera. */
-const nb = (s) => s.replaceAll("~", NBSP);
+/** Zápis očekávaného textu: „~“ = pevná mezera, „^“ = WORD JOINER (nezalomitelné místo). */
+const nb = (s) => s.replaceAll("~", NBSP).replaceAll("^", WORD_JOINER);
 
 /** Dvojice vstup (běžné mezery) a výstup podle modelu. */
 const MODEL_TEXTS = [
@@ -49,10 +49,10 @@ const MODEL_TEXTS = [
   ],
   [
     "Cessna 182 Skylane - prostorný čtyřmístný stroj vhodný pro delší lety ve 2-3 lidech.",
-    "Cessna~182 Skylane - prostorný čtyřmístný stroj vhodný pro delší lety ve 2-3~lidech.",
+    "Cessna~182 Skylane - prostorný čtyřmístný stroj vhodný pro delší lety ve 2-^3~lidech.",
   ],
-  ["20 hodin, přibližně 3-3,5 hodiny za letový den.", "20~hodin, přibližně 3-3,5~hodiny za letový den."],
-  ["6-8 týdnů před odletem", "6-8~týdnů před odletem"],
+  ["20 hodin, přibližně 3-3,5 hodiny za letový den.", "20~hodin, přibližně 3-^3,5~hodiny za letový den."],
+  ["6-8 týdnů před odletem", "6-^8~týdnů před odletem"],
   [
     "Zahájíme ověření zahraniční pilotní licence u FAA (Foreign Pilot Verification).",
     "Zahájíme ověření zahraniční pilotní licence u~FAA (Foreign Pilot Verification).",
@@ -124,9 +124,9 @@ describe("czechNbspText: co se nemění", () => {
     assert.equal(czechNbspText("české L-410 Turbolet"), "české L-410 Turbolet");
     assert.equal(czechNbspText("Ve vrtulníku R-44 na Dymníku u Rumburka"), nb("Ve vrtulníku R-44 na Dymníku u~Rumburka"));
   });
-  test("slova a znaky zůstávají, mění se jen druh mezery", () => {
+  test("slova a znaky zůstávají, mění se jen druh mezery (a neviditelný WORD JOINER v rozsahu)", () => {
     for (const [input] of MODEL_TEXTS) {
-      assert.equal(czechNbspText(input).replaceAll(NBSP, " "), input);
+      assert.equal(czechNbspText(input).replaceAll(NBSP, " ").replaceAll(WORD_JOINER, ""), input);
     }
   });
   test("opakované použití nic dalšího nezmění", () => {
@@ -137,6 +137,35 @@ describe("czechNbspText: co se nemění", () => {
   });
   test("prázdný text", () => {
     assert.equal(czechNbspText(""), "");
+  });
+});
+
+describe("tieText: rozsahy čísel a šipka ->", () => {
+  test("rozsah čísel se za spojovníkem nezalomí", () => {
+    assert.equal(tieText("přibližně 3-3,5 hodiny"), nb("přibližně 3-^3,5 hodiny"));
+    assert.equal(tieText("6-8 týdnů, 2-3 lidech"), nb("6-^8 týdnů, 2-^3 lidech"));
+  });
+  test("označení typu a spojovník mezi slovy beze změny", () => {
+    for (const text of ["Cirrus SR-22", "L-410 Turbolet", "Pilot-mentor", "6 dní - 4 letové", "35,-kč/min"]) {
+      assert.equal(tieText(text), text);
+    }
+  });
+  test("šipka -> drží pohromadě, i jako -&gt; v HTML", () => {
+    assert.equal(tieText("Bryce Canyon, Utah -> Brackett Field"), nb("Bryce Canyon, Utah -^> Brackett Field"));
+    assert.equal(
+      czechNbsp("<h2>Den 6: Bryce Canyon, Utah -&gt; Brackett Field</h2>"),
+      nb("<h2>Den~6: Bryce Canyon, Utah -^&gt; Brackett Field</h2>"),
+    );
+  });
+  test("opakované použití nic dalšího nezmění", () => {
+    const once = czechNbspText("3-3,5 hodiny, Utah -> Brackett");
+    assert.equal(czechNbspText(once), once);
+    const html = czechNbsp("<p>6-8 týdnů, Utah -&gt; Brackett</p>");
+    assert.equal(czechNbsp(html), html);
+  });
+  test("atributy a kód beze změny", () => {
+    const html = '<p title="3-5">a</p><code>a->b 1-2</code>';
+    assert.equal(czechNbsp(html), html);
   });
 });
 
@@ -249,6 +278,34 @@ describe("české uvozovky", () => {
       'Viz "web" https://example.com/?q="x" a dál',
     );
     assert.equal(czechQuotesText('Adresa "https://www.flyamerica.cz".'), "Adresa „https://www.flyamerica.cz“.");
+  });
+
+  test("horní uvozovka na začátku slova je otevírací (archivní články 2010-2022)", () => {
+    assert.equal(czechQuotesText("Je to takové “latentní“ kdy prostě"), "Je to takové „latentní“ kdy prostě");
+    assert.equal(czechQuotesText("jednoho “touch-and-go“ v Okeechobee"), "jednoho „touch-and-go“ v Okeechobee");
+    assert.equal(
+      czechQuotesText("“Kam jsi nás to Honzo vzal, to jsme mohli létat doma!“, také zaznělo"),
+      "„Kam jsi nás to Honzo vzal, to jsme mohli létat doma!“, také zaznělo",
+    );
+    assert.equal(czechQuotesText("(“Sunshine State“)"), "(„Sunshine State“)");
+    // V článku 2022 stojí vedle sebe správné i chybné.
+    assert.equal(
+      czechQuotesText("vyrazit „někam“ na sever, takové “latentní“ kdy"),
+      "vyrazit „někam“ na sever, takové „latentní“ kdy",
+    );
+  });
+
+  test("správná zavírací “ za slovem zůstává", () => {
+    const text = "Všechny nás dobře „vybáli“, abychom lítali opatrně. Tvar „T“ a „odlehčení“ provozu.";
+    assert.equal(czechQuotesText(text), text);
+    assert.equal(czechQuotesText("udělat velmi komplikované“. Takže"), "udělat velmi komplikované“. Takže");
+  });
+
+  test("czechNbsp: horní uvozovka přes řádkové značky i v HTML", () => {
+    assert.equal(
+      czechNbsp("<p>správní “baťůžkáři z <em>Čech</em>“ na pláž</p>"),
+      nb("<p>správní „baťůžkáři z~<em>Čech</em>“ na pláž</p>"),
+    );
   });
 
   test("text bez rovných uvozovek se nemění", () => {

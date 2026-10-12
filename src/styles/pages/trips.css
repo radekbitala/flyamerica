@@ -1,1 +1,137 @@
-/* Letecké výlety: přehled /letecke-vylety a detail výletu. Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
+/* Letecké výlety: přehled /letecke-vylety a detail výletu. Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css).
+   Třídy vy-* jsou nové (12. 10. 2026), pk-* a pkg-* z web.css (model) se používají dál.
+   1. Přehled: karty výletů s fotkou destinace (.vy-list, .vy-card) a srovnání výletů (.vy-compare)
+   2. Detail: posuvná řada fotek destinací (.vy-row, komponenta PhotoRow) a destinace na trase (.vy-route)
+   Bez stínů, zaoblení a přechodů, žlutá tu není nikde (vše na Papíru nebo bílé). */
+
+/* ---------- 1. PŘEHLED VÝLETŮ ---------- */
+
+/* Karty hned pod záhlavím stránky bez dvojité mezery (jako .tipy-prehled) */
+.vy-list { padding-top: 0; }
+
+/* Název výletu v kartě je h2 (nad kartami žádný jiný h2 není), vzhled jako h3 karty na úvodu (.pkg h3) */
+.vy-card h2 { font-size: 26px; line-height: 1.2; letter-spacing: -.01em; margin-bottom: 6px; }
+/* Cena je ve srovnání, v kartě zůstává odkaz dole, aby odkazy obou karet stály vedle sebe */
+.vy-card > p:not(.sub) { margin-bottom: 24px; }
+.vy-card > .fa-link { margin-top: auto; }
+
+/* Srovnání výletů: první sloupec názvy řádků (jako .pk-data dt), dva stejně široké sloupce výletů.
+   Hodnoty a názvy řádků na společné účaří prvního řádku textu. */
+.vy-compare { width: 100%; table-layout: fixed; border-collapse: collapse; font: 400 17px/1.5 var(--f-sans); }
+.vy-compare th, .vy-compare td { text-align: left; padding: 16px 32px 15px 0; border-bottom: var(--linka) solid var(--papir-t); }
+.vy-compare tbody th, .vy-compare tbody td { vertical-align: baseline; }
+.vy-compare thead th, .vy-compare thead td { padding-top: 0; padding-bottom: 12px; border-bottom-color: var(--grafit); vertical-align: bottom; }
+.vy-compare-corner { width: 168px; }
+.vy-compare thead th { font: 700 20px/1.3 var(--f-sans); letter-spacing: -.005em; }
+.vy-compare thead a { color: var(--grafit); text-decoration: underline var(--linka); text-underline-offset: .2em; }
+.vy-compare thead a:hover { text-decoration-thickness: 2px; }
+.vy-compare a:focus-visible { outline: 2px solid var(--grafit); outline-offset: 2px; }
+.vy-compare tbody th { font: 700 12px/1.3 var(--f-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--s600); }
+/* Cena „od“ přesně podle Honzy, tabulkové číslice, částka se nezalamuje. Poznámka pod ní menší. */
+.vy-compare-price { display: block; font: 700 26px/1.15 var(--f-sans); letter-spacing: -.01em; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+.vy-compare-note { display: block; margin-top: 6px; font-size: 15px; line-height: 1.5; color: var(--s600); }
+/* Destinace z Kam letět (Florida Week nemá Honzův řádek Možné cíle) */
+.vy-compare-dest { list-style: none; margin: 0; padding: 0; }
+.vy-compare-dest a { color: var(--grafit); text-underline-offset: .2em; }
+
+/* ---------- 2. DETAIL VÝLETU ---------- */
+
+/* Posuvná řada fotek destinací pod záhlavím (místo .page-photo). Řada začíná na levém okraji obsahu (stejný výpočet
+   jako .fa-wrap) a přesahuje k pravému okraji obrazovky, další fotka tak vykukuje. Posun přes scroll-snap, bez
+   automatického přetáčení. Posuvník je skrytý, posun ukazují tlačítka a pozice „2 / 5“ pod řadou. */
+.vy-row { margin: 0 0 8px; }
+.vy-row-track {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-inline: max(var(--gut), calc((100% - var(--maxw)) / 2 + var(--gut)));
+  padding-inline: max(var(--gut), round(down, calc((100% - var(--maxw)) / 2 + var(--gut)), 1px));
+  scroll-padding-inline: max(var(--gut), calc((100% - var(--maxw)) / 2 + var(--gut)));
+  scroll-padding-inline: max(var(--gut), round(down, calc((100% - var(--maxw)) / 2 + var(--gut)), 1px));
+}
+.vy-row-track::-webkit-scrollbar { display: none; }
+.vy-row-track:focus-visible { outline: 2px solid var(--grafit); outline-offset: -2px; }
+@media (pointer: fine) { .vy-row-track { cursor: grab; } }
+/* Tažení myší (PhotoRow): bez scroll-snap, dokud řada po puštění nedojede na fotku */
+.vy-row-track.is-dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; }
+
+/* Fotka 4 : 3 (archivní fotky jsou většinou 4 : 3, nic se zbytečně neořízne), na počítači 680 px, na tabletu
+   tři čtvrtiny šířky. Popisek z fotobanky pod fotkou (.fig figcaption z web.css). */
+.vy-row-slide { flex: 0 0 min(680px, 78%); scroll-snap-align: start; }
+.vy-row-slide img { aspect-ratio: 4 / 3; object-fit: cover; object-position: var(--pos, 50% 50%); user-select: none; -webkit-user-drag: none; }
+
+/* Pod řadou: dovětek k fotkám vlevo, pozice a tlačítka vpravo */
+.vy-row-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-top: 20px; }
+.vy-row-credit { margin-right: auto; font: 400 14px/1.45 var(--f-sans); color: var(--s600); }
+.vy-row-pos { font: 600 15px/1 var(--f-sans); font-variant-numeric: tabular-nums lining-nums; color: var(--s600); white-space: nowrap; }
+.vy-row-now { color: var(--grafit); }
+.vy-row-btns { display: flex; gap: 8px; }
+/* Tlačítko: grafitový rámeček a šipka, při najetí grafitová plocha. Žádná tabule (ne .fa-dir), takže se nepočítá
+   do tabulových prvků v záběru. Na kraji řady tlumené, ale zaměřitelné (aria-disabled). */
+.vy-row-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  color: var(--grafit);
+  background: none;
+  border: var(--linka) solid var(--grafit);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.vy-row-btn svg { width: 17px; height: 12px; fill: currentColor; }
+.vy-row-btn--prev svg { transform: scaleX(-1); }
+.vy-row-btn:not([aria-disabled="true"]):hover { color: var(--papir); background: var(--grafit); }
+.vy-row-btn:focus-visible { outline: 2px solid var(--grafit); outline-offset: 3px; }
+.vy-row-btn[aria-disabled="true"] { color: var(--s500); border-color: var(--s200); cursor: default; }
+
+/* Destinace na trase: bílý panel vedle přehledu programu (pravý sloupec .split), řádky jako .honza-clanky */
+.vy-route h3 { font-size: 20px; margin-bottom: 16px; }
+.vy-route-list { list-style: none; margin: 0; padding: 0; border-top: var(--linka) solid var(--grafit); }
+.vy-route-list li { border-bottom: var(--linka) solid var(--papir-t); }
+.vy-route-list a { display: flex; align-items: baseline; gap: 12px; padding: 13px 0 12px; font: 600 17px/1.35 var(--f-sans); color: var(--grafit); text-decoration: none; }
+.vy-route-name { flex: 1; min-width: 0; }
+.vy-route-code { flex: none; font-size: 13px; color: var(--s600); }
+.vy-route-list a svg { flex: none; align-self: center; width: 14px; height: 10px; fill: currentColor; transition: transform .18s ease; }
+.vy-route-list a:hover .vy-route-name { text-decoration: underline var(--linka); text-underline-offset: .2em; }
+.vy-route-list a:hover svg { transform: translateX(2px); }
+.vy-route-list a:focus-visible { outline: 2px solid var(--grafit); outline-offset: 2px; }
+.vy-route-more { margin-top: 20px; }
+.vy-route-more .fa-link { font-size: 15px; }
+
+/* Na počítači panel začíná u horní linky přehledu programu (pod h2 a jeho mezerou, .pk-h2) */
+@media (min-width: 961px) {
+  .split > .vy-route { margin-top: calc(44px * 1.08 + 32px); }
+}
+
+/* ---------- MOBIL ---------- */
+@media (max-width: 600px) {
+  /* Srovnání: název řádku přes celou šířku, hodnoty obou výletů vedle sebe pod ním. Role prvků tabulky jsou v HTML
+     výslovně (TripCompare), grid by je jinak v některých prohlížečích zrušil. */
+  .vy-compare, .vy-compare thead, .vy-compare tbody { display: block; width: 100%; }
+  .vy-compare tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; padding: 14px 0 13px; border-bottom: var(--linka) solid var(--papir-t); }
+  .vy-compare th, .vy-compare td { padding: 0; border: 0; }
+  .vy-compare thead tr { padding: 0 0 10px; border-bottom-color: var(--grafit); }
+  .vy-compare-corner { display: none; }
+  .vy-compare thead th { font-size: 17px; }
+  .vy-compare tbody th { grid-column: 1 / -1; margin-bottom: 6px; }
+  .vy-compare tbody td { font-size: 16px; }
+  .vy-compare td.vy-compare-all { grid-column: 1 / -1; }
+  .vy-compare-price { font-size: 22px; }
+  .vy-compare-note { font-size: 14px; }
+
+  /* Řada fotek přes celou šířku obrazovky, jedna fotka na obrazovku, popisek s okrajem obsahu */
+  .vy-row-track { gap: 8px; padding-inline: 0; scroll-padding-inline: 0; }
+  .vy-row-slide { flex-basis: 100%; }
+  .vy-row-slide figcaption { padding-inline: var(--gut); }
+  /* Pozice vlevo, tlačítka vpravo, dovětek na samostatném řádku pod nimi */
+  .vy-row-bar { margin-top: 16px; }
+  .vy-row-pos { margin-right: auto; }
+  .vy-row-credit { order: 1; flex-basis: 100%; margin-right: 0; }
+}

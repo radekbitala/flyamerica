@@ -1,0 +1,10 @@
+/* Chybová stránka webu ((web)/error.tsx) a stránka 404 (NotFoundContent: (web)/not-found.tsx i global-not-found.tsx).
+   Načítá se v layoutu (web) a v global-not-found.tsx po web.css. Globální třídy, ne CSS modul: CSS modul chybové
+   stránky a 404 by Next přednačítal (<link rel="preload">) na každé stránce webu, i když se nepoužije, a prohlížeč
+   by hlásil „preloaded but not used“. */
+
+/* Stránka je nižší než obrazovka a pod tmavou patičkou by zůstal světlý pruh Papíru. Záhlaví proto zabere aspoň
+   výšku obrazovky pod hlavičkou, patička začíná až pod záhybem. */
+.status-page { min-height: calc(100svh - var(--hdr)); }
+.status-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px 28px; margin-top: 32px; }
+.status-actions + .kt-tel { margin-top: 28px; }

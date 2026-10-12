@@ -1,1 +1,78 @@
-/* Články Z cest, Váš mentor a zásady zpracování osobních údajů (čtecí sloupec). Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
+/* Články Z cest, Váš mentor a zásady zpracování osobních údajů (čtecí sloupec). Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css).
+
+   Čtecí rozložení (připomínka Radka 6, 12. 10. 2026): text ve sloupci 680 px (34 em písma .prose) na střed kontejneru, záhlaví stránky
+   zarovnané se sloupcem, fotky v textu a galerie širší než text. Na obrazovkách od 1200 px je obsah článku „V článku“ přilepený
+   v levém okraji vedle textu a široké fotky se rozšiřují doprava až k okraji kontejneru (do levého okraje by vjely pod obsah).
+   Článek bez obsahu a menší obrazovky: široké fotky přes celou šířku kontejneru na obě strany, obsah sbalený nad textem.
+   Šířku kontejneru znají široké prvky z jednotek cqi (.read-body je kontejner), ne ze 100vw: 100vw počítá i posuvník
+   a stránka by přetekla do strany. Bez stínů, zaoblení a přechodů. */
+
+:root { --read-col: 680px; }
+
+/* ---------- Záhlaví stránky ve sloupci textu (obal kolem PageHead) ---------- */
+.read-head .page-head > .fa-wrap { display: grid; grid-template-columns: minmax(0, var(--read-col)); justify-content: center; }
+.read-head .page-head h1 { max-width: none; }
+
+/* Velká fotka pod záhlavím (.page-photo z web.css, přes celý kontejner), výřez podle motivu přes style={{ "--pos": "50% 70%" }} */
+.read-hero img { object-position: var(--pos, 50% 50%); }
+
+/* Sekce, která přímo navazuje na záhlaví stránky (text zásad): bez druhé svislé mezery */
+.read-next { padding-top: 0; }
+
+/* ---------- Tělo: sloupec textu a široké prvky ---------- */
+.read-body { container-type: inline-size; }
+.read-body > .prose,
+.read-body > .read-col,
+.read-body > .read-toc { max-width: var(--read-col); margin-inline: auto; }
+
+/* Široká fotka nebo galerie v textu: z šířky sloupce na šířku kontejneru (na mobilu, kde je sloupec celý kontejner, beze změny).
+   Popisek pod fotkou zůstává v šířce a ose sloupce textu. */
+.read-body .prose > .read-wide { margin-inline: calc((min(var(--read-col), 100cqi) - 100cqi) / 2); }
+.read-body .prose > .read-wide > figcaption { max-width: var(--read-col); margin-inline: auto; }
+
+/* Obsah článku „V článku“ do 1199 px: bílý panel nad textem, sbalený do jednoho řádku (do 960 px to samé dělá web.css). */
+.read-body > .read-toc { margin-bottom: 40px; background: var(--bila); border: var(--linka) solid var(--papir-t); padding: 0 20px; }
+@media (min-width: 961px) and (max-width: 1199px) {
+  .read-toc summary { cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; }
+  .read-toc summary .lbl { margin: 0; color: var(--grafit); }
+  .read-toc summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid var(--grafit); border-bottom: 2px solid var(--grafit); transform: translateY(-25%) rotate(45deg); }
+  .read-toc details[open] summary::after { transform: translateY(25%) rotate(-135deg); }
+  .read-toc details[open] { padding-bottom: 20px; }
+}
+
+/* Od 1200 px: tři sloupce, levý okraj nese obsah článku (přilepený pod hlavičkou), text uprostřed, pravý okraj patří širokým
+   fotkám. Obsah je bez panelu, jen štítek a seznam s linkami jako okrajová poznámka; od textu ho dělí 40 px. */
+@media (min-width: 1200px) {
+  .read-body--toc { display: grid; grid-template-columns: minmax(0, 1fr) var(--read-col) minmax(0, 1fr); align-items: start; }
+  .read-body--toc > .read-toc {
+    grid-column: 1; grid-row: 1;
+    position: sticky; top: calc(var(--hdr) + 24px);
+    max-width: none; background: none; border: 0;
+    /* 4 px kolem pro rámeček fokusu (obsah se posouvá a ořízl by ho), záporný okraj vrací seznam k okraji kontejneru */
+    padding: 4px; margin: -4px 36px 0 -4px;
+  }
+  .read-body--toc > .prose { grid-column: 2; grid-row: 1; margin: 0; }
+  .read-body--toc .prose > .read-wide { margin-left: 0; margin-right: calc((var(--read-col) - 100cqi) / 2); }
+  .read-body--toc .prose > .read-wide > figcaption { margin-left: 0; }
+}
+
+/* ---------- Konec článku a Z cest: celý blok článku je odkaz ----------
+   Odkaz je nadpis (jméno odkazu = titulek), jeho ::after pokrývá celý blok (fotku i text). Další odkazy v bloku
+   (.diary-older: novější článek, všechny články) leží nad ním a zůstávají samostatně klikací. */
+.teaser { position: relative; }
+.teaser-link { color: inherit; text-decoration: none; }
+.teaser-link::after { content: ""; position: absolute; inset: 0; }
+.teaser-link:focus-visible { outline: none; }
+.teaser-link:focus-visible::after { outline: 2px solid var(--grafit); outline-offset: 6px; }
+.teaser:hover .teaser-link { text-decoration: underline var(--linka); text-underline-offset: .14em; }
+.teaser:hover .fa-link { text-decoration-thickness: 2px; }
+.teaser:hover .fa-link svg { transform: translateX(2px); }
+.teaser .diary-older { position: relative; z-index: 1; }
+/* „Číst článek“ je jen značka: na mobilu má .fa-link z web.css position: relative a dotykovou plochu ::after, která by klik
+   zachytila nad plochou odkazu. Klik jím proto propadne na odkaz bloku. */
+.teaser .fa-link { pointer-events: none; }
+
+/* ---------- Váš mentor: Honzovy články o přeletech ve sloupci textu ---------- */
+.mentor-posts > .lbl { display: block; margin-bottom: 16px; }
+.mentor-posts > h2 { margin-bottom: 28px; }
+.mentor-posts .sec-more { margin-top: 28px; }

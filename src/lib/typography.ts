@@ -1,16 +1,24 @@
 /**
  * Česká typografie textu z databáze (články, perexy, popisky fotek) při
- * vykreslení: pevné mezery a české uvozovky.
+ * vykreslení: pevné mezery, české uvozovky a nezalomitelné rozsahy čísel.
  *
  * Uvozovky (rozhodnutí 12. 10. 2026): rovné dvojité uvozovky "…" ze starého
  * webu se zobrazí jako české „…“. Data v databázi se nemění. Párují se
  * v rámci jednoho bloku (odstavec, položka seznamu, popisek, nadpis):
+ * - horní uvozovka “ na začátku slova (za mezerou, závorkou nebo na začátku
+ *   bloku) je chybně sázená otevírací („takové “latentní“ kdy“ ve čtyřech
+ *   archivních článcích) a zobrazí se jako dolní „,
  * - rovná uvozovka po otevřené české „ ji zavře („shutdownu" -> „shutdownu“),
  * - rovná uvozovka před českou zavírací “ ji otevře,
  * - zbylé rovné se střídají „ a “, jen když je jich v bloku sudý počet.
  *   Lichý počet nechá blok beze změny (nejde poznat, která chybí).
  * Nikdy v atributech (alt, href, title), v kódu (<code>, <pre>…) ani
  * v adrese URL v textu (https://…, www.…).
+ *
+ * Nezalomitelná místa (tieText): za spojovník v rozsahu čísel („3-3,5“,
+ * „6-8“, „2-3“) a mezi „-“ a „>“ v archivní šipce „->“ se vloží neviditelný
+ * znak WORD JOINER (U+2060), řádek se tam pak nezalomí. Znaky textu zůstávají,
+ * spojovník je dál obyčejný „-“.
  *
  * Pevné mezery podle pravidla R4 z klikacího modelu (prototyp/_PRAVIDLA.md,
  * část 3 a 7). Mění se jen druh mezery (běžná na pevnou U+00A0), slova
@@ -44,6 +52,9 @@
  */
 
 export const NBSP = " ";
+
+/** Neviditelný znak, za kterým ani před kterým se řádek nezalomí (UAX #14, třída WJ). */
+export const WORD_JOINER = "\u2060";
 
 // Mezera, kterou jde nahradit pevnou (jen jeden znak, délka textu se nemění).
 const SP = "[ \\t\\r\\n]";
@@ -124,12 +135,33 @@ const RULES: Rule[] = [
 ];
 
 /**
- * Pevné mezery a české uvozovky v souvislém textu (bez značek), celý text
- * je jeden blok. Vstup i výstup jsou prostý text.
+ * Pevné mezery, české uvozovky a nezalomitelné rozsahy čísel v souvislém
+ * textu (bez značek), celý text je jeden blok. Vstup i výstup jsou prostý text.
  */
 export function czechNbspText(text: string): string {
   if (!text) return text;
-  return applyRules(czechQuotesText(collapseSpaces(text)));
+  return tieText(applyRules(czechQuotesText(collapseSpaces(text))));
+}
+
+// ---------------------------------------------------------------------------
+// Nezalomitelná místa
+// ---------------------------------------------------------------------------
+
+/**
+ * Místo hned za spojovníkem mezi dvěma čísly (rozsah „3-3,5“, „6-8“) a mezi
+ * „-“ a „>“ v šipce „->“ (v HTML „-&gt;“). Za spojovníkem prohlížeč jinak
+ * řádek zalomit smí („3-“ na konci řádku, „3,5 hodiny“ na dalším). Kde už
+ * WORD_JOINER je, regulární výraz nic nenajde (opakované použití nic nezmění).
+ */
+const TIE_AFTER_HYPHEN = /(?<=\p{N}-)(?=\p{N})|(?<=-)(?=>|&gt;)/gu;
+
+/**
+ * Za spojovník v rozsahu čísel a v šipce „->“ vloží WORD_JOINER. Mění délku
+ * textu, proto až po pravidlech, která pracují znak za znak.
+ */
+export function tieText(text: string): string {
+  if (!text.includes("-")) return text;
+  return text.replace(TIE_AFTER_HYPHEN, WORD_JOINER);
 }
 
 // ---------------------------------------------------------------------------
@@ -149,7 +181,7 @@ const URL_TRAILING = /[.,;:!?)\]"'»“”]+$/;
  * znak), proto jde použít i na spojené úseky textu v czechNbsp().
  */
 export function czechQuotesText(text: string): string {
-  if (!text.includes('"')) return text;
+  if (!text.includes('"') && !text.includes(CLOSE_QUOTE)) return text;
 
   const insideUrl: [number, number][] = [];
   for (const match of text.matchAll(URL_IN_TEXT)) {
@@ -165,6 +197,10 @@ export function czechQuotesText(text: string): string {
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === OPEN_QUOTE) {
+      czechOpen++;
+    } else if (ch === CLOSE_QUOTE && opensWord(text, i) && !inUrl(i)) {
+      // Horní uvozovka na začátku slova je chybně sázená otevírací (“latentní“).
+      out[i] = OPEN_QUOTE;
       czechOpen++;
     } else if (ch === CLOSE_QUOTE || ch === "”") {
       if (czechOpen > 0) czechOpen--;
@@ -184,6 +220,17 @@ export function czechQuotesText(text: string): string {
     });
   }
   return out.join("");
+}
+
+/**
+ * Znak na pozici i stojí na začátku slova: před ním začátek textu, mezera,
+ * závorka, lomítko nebo oddělovač úseků z czechNbsp(), za ním písmeno nebo
+ * číslice. Zavírací uvozovka tak stát nemůže (ta je hned za slovem).
+ */
+function opensWord(text: string, i: number): boolean {
+  const before = i === 0 ? "" : text[i - 1];
+  const after = text[i + 1] ?? "";
+  return (before === "" || /[\s\u00A0(\[/\uE000]/u.test(before)) && /[\p{L}\p{N}]/u.test(after);
 }
 
 function collapseSpaces(text: string): string {
@@ -257,8 +304,10 @@ export function czechNbsp(html: string): string {
       joined += t;
     });
     const result = applyRules(czechQuotesText(joined));
+    // tieText až po rozdělení zpět na úseky: vložený znak mění délku textu.
+    // Rozsah rozdělený značkou („3-<b>5</b>“) tak zůstane zalomitelný.
     run.forEach((partIndex, k) => {
-      parts[partIndex] = result.slice(starts[k], starts[k] + texts[k].length);
+      parts[partIndex] = tieText(result.slice(starts[k], starts[k] + texts[k].length));
     });
     run = [];
   };

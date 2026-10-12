@@ -4,10 +4,11 @@ import { getImageProps } from "next/image";
 import { Arrow } from "@/components/web/ArrowSymbol";
 import { CtaSection } from "@/components/web/CtaSection";
 import { Figure } from "@/components/web/Figure";
-import { HonzaWho } from "@/components/web/HonzaWho";
 import { Photo } from "@/components/web/Photo";
+import { SectionSign } from "@/components/web/SectionSign";
 import { inquiryHref } from "@/components/web/nav";
 import { photos } from "@/data/photos";
+import { TRIPS, formatTripSubtitle, tripFact, type Trip } from "@/data/trips";
 import { isoDate, yearOf } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { postDisplayTitle } from "@/lib/post-title";
@@ -15,9 +16,16 @@ import { getLatestPublishedPosts } from "@/lib/public-posts";
 import { ROUTES, destinationPath, postPath, tripPath } from "@/lib/routes";
 import { FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 import { NBSP, czechNbspText } from "@/lib/typography";
+import { TRIP_MEDIA } from "./letecke-vylety/_data/trip-media";
 
 // Úvodní stránka podle prototyp/index.html. Texty doslova z modelu, sekce
 // Z cest bere nejnovější publikované články z databáze.
+//
+// Polohové tabule (SectionSign, 12. 10. 2026): Letecké výlety, Kam letět
+// a Z cest, tedy každá druhá sekce. Mezi dvěma tabulemi i od kódu FA83
+// v úvodu a v patičce je vždy víc než výška obrazovky (1440 x 900
+// i 375 x 667, DESIGN.md: The One Location Sign Rule). Co za vás zařídíme,
+// Průběh přípravy a Váš mentor jsou bez štítku, nadpis stačí sám.
 export const metadata = pageMetadata({
   title: "FLY America - létání na Floridě s mentorem",
   absoluteTitle: true,
@@ -28,6 +36,33 @@ export const metadata = pageMetadata({
 
 /** sizes dlaždice tipu v .grid-4 (4 / 2 / 1 sloupec). Model ji vkládá bez srcset. */
 const TIP_SIZES = "(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 270px";
+
+/** sizes fotky karty výletu (.pkgs: 2 sloupce, pod 601 px jeden). */
+const CARD_SIZES = "(max-width: 600px) 100vw, 580px";
+
+/** sizes fotky Honzy v „Co za vás zařídíme“ (home.css: 320 px, pod 961 px 30 % šířky, pod 601 px celá šířka). */
+const SERVICE_PHOTO_SIZES = "(max-width: 600px) calc(100vw - 32px), (max-width: 960px) 30vw, 320px";
+
+/**
+ * „Co za vás zařídíme“: Honzovy řádky tabulky „Co zahrnuje cena“ (Florida
+ * Week & Fly, src/data/trips.ts) s „ANO“, v jeho pořadí, názvy i popisy
+ * doslova. Výjimka je druhý řádek (letadlo a palivo), náš text: Honzovy
+ * řádky platí jen pro jeden výlet („Pronájem C182 a palivo 12 hodin“,
+ * „Cessna 182 a palivo | 20 letových hodin včetně paliva.“) a letadlo se na
+ * úvodu jmenuje jednou, v popisu sekce výletů („Cessnou 182 Skylane“,
+ * Radkův bod 3 z 12. 10. 2026). Ubytování a letenky („NE“) jsou v poznámce
+ * pod výlety.
+ */
+const SERVICES: readonly { name: string; text: string }[] = [
+  { name: "Pilot-mentor a doprovod", text: "Briefing, navigační příprava, frazeologie a podpora přímo v kabině" },
+  { name: "Letadlo a palivo", text: "Podle výletu 12 nebo 20 letových hodin včetně paliva" },
+  {
+    name: "Pojištění letadla a poplatky FBO",
+    text: "Pojištění podle podmínek půjčovny včetně přistávacích a tie-down poplatků",
+  },
+  { name: "Místní pronájem auta", text: "Včetně rezervace a paliva" },
+  { name: "Příprava a ForeFlight", text: "Pomoc s validací FAA a naplánováním tras" },
+];
 
 export default function HomePage() {
   return (
@@ -49,71 +84,62 @@ export default function HomePage() {
         <p className="hero-cap">Jezera u&nbsp;Lake Wales. Foto: archiv FLY America</p>
       </section>
 
-      {/* ===== CO ZA VÁS ZAŘÍDÍME (nejdřív nabídka služby). Položky a popisy doslova z Honzovy tabulky „Co zahrnuje cena“ (výlet 1),
-           platí pro oba výlety. Obecný popis služby od Honzy zatím chybí. Prodejní argumenty ze schůzky nepoužívat, dokud je Honza nepotvrdí. ===== */}
+      {/* ===== CO ZA VÁS ZAŘÍDÍME (nejdřív nabídka služby). Položky v SERVICES, prodejní argumenty ze schůzky nepoužívat,
+           dokud je Honza nepotvrdí. Bez štítku nad nadpisem: tabule je u výletů níž (nejvýš jedna v záběru, kód FA83 v úvodu).
+           Rozložení (12. 10. 2026, Radek: body mají různý rozsah, mřížka na to není), zvažované varianty:
+           A) Řádky jako letištní tabule: název vlevo, popis vpravo, mezi řádky vlasová linka (jako tabulky a údaje v kartě).
+              Krátký i dlouhý popis drží stejnou osu, výška řádku roste jen s textem, nikde nezůstane prázdná buňka. VYBRÁNO.
+           B) Dva sloupce s vyrovnanými řádky (grid-auto-rows: 1fr): pět položek dá 3 + 2, jedna buňka zůstane prázdná
+              a krátké popisy („Včetně rezervace a paliva“) nechají v řádku díru stejně jako dosavadní mřížka 3 + 2.
+           Malý portrét u položky mentora (HonzaWho) nahradila jedna fotka Honzy u Cessny 182 se jménem a odkazem. ===== */}
       <section className="sec sec--tight sec--white" id="sluzba" aria-labelledby="sluzba-nadpis">
-        <div className="fa-wrap">
-          <div className="sec-head">
-            <div><span className="lbl">Služba</span><h2 id="sluzba-nadpis">Co za vás zařídíme</h2></div>
-            <p><span className="todo">[doplnit: popis služby od Honzy]</span></p>
-          </div>
-          {/* Pátá položka „Cessna 182 a palivo“: Honzův název řádku z výletu 2, bez popisu (hodiny se u výletů liší). U mentora malý portrét Honzy. */}
-          <ul className="svc grid-3">
-            <li><h3>Pilot-mentor a&nbsp;doprovod</h3><p>Briefing, navigační příprava, frazeologie a&nbsp;podpora přímo v&nbsp;kabině</p>
-              <HonzaWho /></li>
-            <li><h3>Cessna&nbsp;182 a&nbsp;palivo</h3></li>
-            <li><h3>Příprava a&nbsp;ForeFlight</h3><p>Pomoc s&nbsp;validací FAA a&nbsp;naplánováním tras</p></li>
-            <li><h3>Pojištění letadla a&nbsp;poplatky FBO</h3><p>Pojištění podle podmínek půjčovny včetně přistávacích a&nbsp;tie-down poplatků</p></li>
-            <li><h3>Místní pronájem auta</h3><p>Včetně rezervace a&nbsp;paliva</p></li>
-          </ul>
+        <div className="fa-wrap home-svc">
+          <h2 className="home-svc-title" id="sluzba-nadpis">Co za vás zařídíme</h2>
+          <dl className="home-svc-list">
+            {SERVICES.map((item) => (
+              <div key={item.name}>
+                <dt>{czechNbspText(item.name)}</dt>
+                <dd>{czechNbspText(item.text)}</dd>
+              </div>
+            ))}
+          </dl>
+          <figure className="home-svc-who">
+            <Photo photo="uvod/honza-death-valley-02" sizes={SERVICE_PHOTO_SIZES} />
+            <figcaption>
+              <span className="who-name">Honza Čermák</span>
+              <Link className="fa-link" href={ROUTES.mentor}>Kdo je Honza <Arrow /></Link>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
-      {/* ===== LETECKÉ VÝLETY (texty, údaje a ceny doslova podle Honzy, 10. 10. 2026) ===== */}
+      {/* ===== LETECKÉ VÝLETY (texty, údaje a ceny doslova podle Honzy ze src/data/trips.ts) =====
+           Nadpis 12. 10. 2026 místo „Vyberte si podle dnů a letových hodin“ (zvažované i „Dva výlety po Floridě“
+           a „12, nebo 20 letových hodin“). Letadlo je u obou výletů stejné, proto jen jednou v popisu sekce, v kartách
+           už řádek Letadlo není. Co je v ceně, říká sekce výš, co v ní není, poznámka pod kartami. Fotky karet jsou
+           místa z Honzova textu výletu (pobřeží Mexického zálivu, Florida Keys), ne letadlo, stejné jako na přehledu
+           /letecke-vylety (TRIP_MEDIA). */}
       <section className="sec" id="vylety" aria-labelledby="vylety-nadpis">
         <div className="fa-wrap">
           <div className="sec-head">
-            <div><span className="lbl">Letecké výlety</span><h2 id="vylety-nadpis">Vyberte si podle dnů a&nbsp;letových hodin</h2></div>
-            <p>V&nbsp;ceně je letadlo, palivo, pilot-mentor, letištní poplatky, pojištění a&nbsp;pronájem auta. Letenky a&nbsp;ubytování si klient hradí samostatně.</p>
+            <div><SectionSign>Letecké výlety</SectionSign><h2 id="vylety-nadpis">Týden, nebo devět dní</h2></div>
+            <p>Na obou výletech letíte Cessnou&nbsp;182 Skylane s&nbsp;mentorem v&nbsp;kabině. Výlety se liší délkou a&nbsp;počtem letových hodin.</p>
           </div>
           <div className="pkgs">
-            <article className="pkg" aria-labelledby="pkg1">
-              <div className="pkg-img"><Photo photo="cessna-182-winter-haven" sizes="(max-width: 600px) 100vw, 580px" /></div>
-              <h3 id="pkg1">Florida Week &amp; Fly</h3>
-              <p className="sub">Létání v&nbsp;USA na zkoušku</p>
-              <p>Zažijte týden VFR létání na Floridě. Procvičíte si anglickou leteckou frazeologii na amerických letištích, přistanete na ikonických ostrovních drahách, jako jsou Cedar Key nebo Albert Whitted v&nbsp;St.&nbsp;Petersburgu, a&nbsp;proletíte se podél pobřeží Mexického zálivu.</p>
-              <dl className="pkg-data">
-                <div><dt>Délka</dt><dd>6&nbsp;dní - 4&nbsp;letové a&nbsp;2&nbsp;volné dny na pláž, nákupy nebo návštěvu Universal Studios.</dd></div>
-                <div><dt>Letadlo</dt><dd>Cessna&nbsp;182 Skylane - prostorný čtyřmístný stroj vhodný pro delší lety ve 2-3&nbsp;lidech.</dd></div>
-                <div><dt>Nálet</dt><dd>12&nbsp;hodin</dd></div>
-              </dl>
-              <div className="pkg-price"><span className="from">od</span><strong>$7&nbsp;400&nbsp;USD</strong><span className="note">za osobu při 2&nbsp;pilotech. Pro 1&nbsp;pilota $13&nbsp;900&nbsp;USD.</span></div>
-              <Link className="fa-link" href={tripPath("florida-week")}>Detail výletu <Arrow /></Link>
-            </article>
-
-            <article className="pkg" aria-labelledby="pkg2">
-              <div className="pkg-img"><Photo photo="cessna-182-marco-island" sizes="(max-width: 600px) 100vw, 580px" /></div>
-              <h3 id="pkg2">Florida Grand&nbsp;Tour &amp; Fly</h3>
-              <p className="sub">9&nbsp;dní&nbsp;na&nbsp;Floridě&nbsp;• 20&nbsp;letových&nbsp;hodin&nbsp;• Cessna&nbsp;182</p>
-              <p>Intenzivní letecký pobyt zaměřený na delší navigační lety, americkou VFR komunikaci a&nbsp;létání v&nbsp;řízených prostorech. Trasy mohou vést podél pobřeží, přes Everglades, na Florida Keys nebo na sever ke St.&nbsp;Augustine.</p>
-              <dl className="pkg-data">
-                <div><dt>Délka</dt><dd>9&nbsp;dní - 6&nbsp;letových a&nbsp;3&nbsp;volné dny.</dd></div>
-                <div><dt>Letadlo</dt><dd>Cessna&nbsp;182 Skylane.</dd></div>
-                <div><dt>Nálet</dt><dd>20&nbsp;hodin, přibližně 3-3,5&nbsp;hodiny za letový den.</dd></div>
-              </dl>
-              <div className="pkg-price"><span className="from">od</span><strong>10&nbsp;800&nbsp;USD</strong><span className="note">za osobu při 2&nbsp;pilotech. Pro 1&nbsp;pilota 20&nbsp;100&nbsp;USD.</span></div>
-              <Link className="fa-link" href={tripPath("grand-tour")}>Detail výletu <Arrow /></Link>
-            </article>
+            {TRIPS.map((trip) => (
+              <HomeTripCard key={trip.slug} trip={trip} />
+            ))}
           </div>
           <p className="pkgs-note">Cena nezahrnuje letenky, ubytování, stravu ani správní poplatek FAA za validaci průkazu.</p>
         </div>
       </section>
 
-      {/* ===== JAK TO PROBÍHÁ (Honzův „Průběh přípravy“ z výletu 1). Kotva #postup je cíl přesměrování /validace/ ze starého webu. ===== */}
+      {/* ===== JAK TO PROBÍHÁ (Honzův „Průběh přípravy“ z výletu 1). Kotva #postup je cíl přesměrování /validace/ ze starého webu.
+           Bez štítku a bez tabule: tabule výletů nad touto sekcí a Kam letět pod ní jsou blíž než výška obrazovky. ===== */}
       <section className="sec sec--dark steps on-dark" id="postup" aria-labelledby="postup-nadpis">
         <div className="fa-wrap">
           <div className="sec-head">
-            <div><span className="lbl">Jak to probíhá</span><h2 id="postup-nadpis">Průběh přípravy</h2></div>
+            <div><h2 id="postup-nadpis">Průběh přípravy</h2></div>
             <p>Od ověření licence po letový program, podle výletu Florida Week &amp; Fly.</p>
           </div>
           <ol className="fa-steps" style={{ "--n": "3" } as CSSProperties}>
@@ -132,11 +158,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== KAM LETĚT (texty doslova z Honzova „Výběru destinací“, kódy letišť tak, jak je uvádí) ===== */}
+      {/* ===== KAM LETĚT (texty doslova z Honzova „Výběru destinací“, kódy letišť tak, jak je uvádí).
+           Dlaždice vedou na /kam-letet/<slug>: z webu se detail otevře v okně nad stránkou (@modal), přímá adresa je celá stránka. ===== */}
       <section className="sec sec--white" id="kam-letet" aria-labelledby="kam-letet-nadpis">
         <div className="fa-wrap">
           <div className="sec-head">
-            <div><span className="lbl">Kam letět</span><h2 id="kam-letet-nadpis">Kam z&nbsp;Orlanda doletět</h2></div>
+            <div><SectionSign>Kam letět</SectionSign><h2 id="kam-letet-nadpis">Kam z&nbsp;Orlanda doletět</h2></div>
             <p><strong>Orlando North Airpark (FA83) - Naše domovská základna</strong><br />Malé, komunitní a&nbsp;dříve zemědělské letiště s&nbsp;pohodovou atmosférou, které slouží jako ideální výchozí bod pro úniky z&nbsp;turistického shonu Orlanda.</p>
           </div>
           <div className="grid-4">
@@ -169,13 +196,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== VÁŠ MENTOR (Honzův text „O mně“, serif = mluví Honza) ===== */}
+      {/* ===== VÁŠ MENTOR (Honzův text „O mně“, serif = mluví Honza). Bez tabule: Kam letět nad touto sekcí a Z cest pod ní
+           ji mají a jsou blíž než výška obrazovky. Místo štítku „Váš mentor“ je role přímo v nadpisu. ===== */}
       <section className="sec" id="honza" aria-labelledby="honza-nadpis">
         <div className="fa-wrap about">
           <Figure photo="honza-mustang-goteborg" sizes="(max-width: 960px) 90vw, 440px" className="fig fig--34" />
           <div>
-            <span className="lbl">Váš mentor</span>
-            <h2 id="honza-nadpis">Honza Čermák</h2>
+            <h2 id="honza-nadpis">Váš mentor Honza Čermák</h2>
             <blockquote className="voice voice--quote">„Létání pro mě není jen o&nbsp;přesunu z&nbsp;bodu&nbsp;A do bodu&nbsp;B - je o&nbsp;vášni, přátelství, o&nbsp;rozhodování, důkladné přípravě a&nbsp;jistotě za řízením i&nbsp;na zemi a&nbsp;hlavně o&nbsp;nikdy nekončícím procesu učení.“</blockquote>
             <p className="voice">Velmi oblíbenou část mého leteckého života tvoří také mezinárodní přelety a&nbsp;dodávky nových i&nbsp;olétaných strojů majitelům po celé Evropě, USA a&nbsp;Blízkém východě.</p>
             <Link className="fa-link" href={ROUTES.mentor}>Víc o&nbsp;Honzovi <Arrow /></Link>
@@ -188,6 +215,44 @@ export default function HomePage() {
       {/* ===== VÝZVA K POPTÁVCE ===== */}
       <CtaSection id="poptat" />
     </>
+  );
+}
+
+/**
+ * Karta výletu z modelu (.pkg): fotka destinace (TRIP_MEDIA, stejná jako na
+ * přehledu výletů), název, Honzův podtitul, text karty, délka a nálet
+ * z přehledu programu, cena „od“ a odkaz na detail. Texty doslova ze
+ * src/data/trips.ts, pevné mezery doplní czechNbspText().
+ */
+function HomeTripCard({ trip }: { trip: Trip }) {
+  const headingId = `pkg-${trip.slug}`;
+  const card = TRIP_MEDIA[trip.slug].card;
+  const length = tripFact(trip, "length");
+  const hours = tripFact(trip, "hours");
+  return (
+    <article className="pkg" aria-labelledby={headingId}>
+      <div className="pkg-img">
+        <Photo
+          photo={card.photo}
+          alt={card.alt}
+          sizes={CARD_SIZES}
+          style={card.position ? { objectPosition: card.position } : undefined}
+        />
+      </div>
+      <h3 id={headingId}>{czechNbspText(trip.name)}</h3>
+      <p className="sub">{formatTripSubtitle(trip.subtitle)}</p>
+      <p>{czechNbspText(trip.teaser)}</p>
+      <dl className="pkg-data">
+        {length ? <div><dt>Délka</dt><dd>{czechNbspText(length)}</dd></div> : null}
+        {hours ? <div><dt>Nálet</dt><dd>{czechNbspText(hours)}</dd></div> : null}
+      </dl>
+      <div className="pkg-price">
+        <span className="from">od</span>
+        <strong>{czechNbspText(trip.price.from)}</strong>
+        <span className="note">{czechNbspText(trip.price.note)}</span>
+      </div>
+      <Link className="fa-link" href={tripPath(trip.slug)}>Detail výletu <Arrow /></Link>
+    </article>
   );
 }
 
@@ -251,6 +316,8 @@ function limitSrcSet(srcSet: string | undefined, min: number, max: number): stri
  * všechny články. Bez publikovaných článků se sekce nevykreslí. Podpis „Honza
  * Čermák“ z modelu tu není: databáze autora nemá, u archivních článků není
  * jistý (Oblet Ameriky je psaný ve třetí osobě) a stránka Z cest ho také nemá.
+ * Název sekce je polohová tabule v řádku s rokem (poslední tabule stránky:
+ * od Kam letět i od FA83 v patičce je dál než výška obrazovky).
  */
 async function HomeDiary() {
   const [latest, older] = await getLatestPublishedPosts(2);
@@ -270,7 +337,7 @@ async function HomeDiary() {
           />
         ) : null}
         <div>
-          <div className="meta"><span className="lbl">Z&nbsp;cest</span><time className="date" dateTime={isoDate(latest.publishedAt)}>{yearOf(latest.publishedAt)}</time></div>
+          <div className="meta"><SectionSign as="span">Z&nbsp;cest</SectionSign><time className="date" dateTime={isoDate(latest.publishedAt)}>{yearOf(latest.publishedAt)}</time></div>
           <h2 id="z-cest-nadpis">{czechNbspText(postDisplayTitle(latest.title))}</h2>
           {latest.perex ? <p className="voice">{czechNbspText(latest.perex)}</p> : null}
           <p className="sec-more diary-more"><Link className="fa-link" href={postPath(latest.slug)}>Číst celý článek <Arrow /></Link></p>

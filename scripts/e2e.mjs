@@ -590,6 +590,81 @@ test("veřejný web: úvod, výlet a stránky na telefonu", async (page) => {
   }
 });
 
+/** Stav okna s detailem destinace: adresa, otevřený <dialog>, zamknutý posun stránky, fokus. */
+const destinationDialogState = (page) =>
+  page.evaluate(() => ({
+    path: location.pathname + location.hash,
+    open: document.querySelector("dialog.kl-dialog")?.open ?? false,
+    locked: document.documentElement.style.overflow === "hidden",
+    focus: document.activeElement?.id || document.activeElement?.getAttribute("href") || document.activeElement?.tagName,
+  }));
+
+/** Po zavření okna: adresa /kam-letet, žádné okno, stránka se dá posouvat. */
+async function assertDialogClosed(page, when) {
+  await page.waitForURL(`${BASE_URL}/kam-letet`);
+  await page.locator("dialog.kl-dialog").waitFor({ state: "detached" });
+  const state = await destinationDialogState(page);
+  assert(!state.open && !state.locked, `${when}: okno zůstalo otevřené nebo stránka zamknutá (${JSON.stringify(state)}).`);
+}
+
+test(
+  "Kam letět: detail destinace v okně, zavření a staré kotvy",
+  async (page) => {
+    const dialog = page.locator("dialog.kl-dialog");
+    const tile = page.locator('a.tip[href="/kam-letet/cedar-key"]');
+
+    // Klik na dlaždici: okno nad rozcestníkem s adresou detailu, fokus na nadpisu okna.
+    await page.goto(`${BASE_URL}/kam-letet`);
+    await tile.click();
+    await page.waitForURL(`${BASE_URL}/kam-letet/cedar-key`);
+    await dialog.waitFor({ state: "visible" });
+    let state = await destinationDialogState(page);
+    assert(state.open && state.locked, `Okno po kliku: ${JSON.stringify(state)}`);
+    assert(state.focus === "kam-letet-okno-nadpis", `Fokus po otevření okna: ${state.focus}`);
+
+    // Escape zavře okno, adresa je zase /kam-letet a fokus se vrátí na dlaždici.
+    await page.keyboard.press("Escape");
+    await assertDialogClosed(page, "Escape");
+    state = await destinationDialogState(page);
+    assert(state.focus === "/kam-letet/cedar-key", `Fokus po zavření okna: ${state.focus}`);
+
+    // Další přepne destinaci bez nového záznamu v historii: Zavřít pak vede na /kam-letet.
+    await tile.click();
+    await dialog.waitFor({ state: "visible" });
+    await dialog.getByRole("link", { name: /^Další/ }).click();
+    await page.waitForURL(`${BASE_URL}/kam-letet/albert-whitted`);
+    await dialog.getByRole("button", { name: "Zavřít" }).click();
+    await assertDialogClosed(page, "Další a Zavřít");
+
+    // Staré kotvy otevřou okno nad rozcestníkem (i přes přesměrování /tipy-na-vylety)
+    // a Escape, Zavřít i Zpět v prohlížeči ho zavřou. Mezi pokusy jiná stránka,
+    // jinak by změna kotvy stránku znovu nenačetla.
+    for (const [start, close] of [
+      ["/kam-letet#cedar-key", "Escape"],
+      ["/tipy-na-vylety#cedar-key", "Zavřít"],
+      ["/kam-letet#cedar-key", "Zpět"],
+    ]) {
+      await page.goto("about:blank");
+      await page.goto(`${BASE_URL}${start}`);
+      await page.waitForURL(`${BASE_URL}/kam-letet/cedar-key`);
+      await dialog.waitFor({ state: "visible" });
+      if (close === "Escape") await page.keyboard.press("Escape");
+      else if (close === "Zavřít") await dialog.getByRole("button", { name: "Zavřít" }).click();
+      else await page.goBack();
+      await assertDialogClosed(page, `${start}, ${close}`);
+    }
+    // Stránka pod zavřeným oknem není neaktivní: menu funguje.
+    await page.getByRole("navigation", { name: "Hlavní menu" }).getByRole("link", { name: "Z cest" }).click();
+    await page.waitForURL(`${BASE_URL}/z-cest`);
+
+    // Přímá adresa detailu je celá stránka s h1, bez okna.
+    await page.goto(`${BASE_URL}/kam-letet/cedar-key`);
+    await page.getByRole("heading", { level: 1 }).waitFor();
+    assert((await dialog.count()) === 0, "Přímá adresa detailu otevřela okno.");
+  },
+  { viewport: { width: 1440, height: 900 } },
+);
+
 /** Vyplní poptávku na tři kroky (s JavaScriptem, Pokračovat mezi kroky). */
 async function fillInquiry(page, { email, name }) {
   const current = () => page.locator(".kt-step.is-current");
@@ -1036,7 +1111,8 @@ test(
     }
 
     // Článek 2017: podtitul v záhlaví, celý první odstavec, kapitoly h2,
-    // video jen jako odkaz (bez kliknutí žádný požadavek na YouTube a Google).
+    // video jako náhled přes náš server (bez kliknutí žádný požadavek na
+    // YouTube a Google), přehrávač youtube-nocookie až po kliknutí.
     const thirdParty = [];
     page.on("request", (request) => {
       const host = new URL(request.url()).hostname;
@@ -1055,6 +1131,20 @@ test(
     assert(video === "https://youtu.be/_m30zuQyxMI", `Odkaz na video: ${video}`);
     assert((await page.locator("iframe").count()) === 0, "Stránka vkládá iframe.");
     assert(thirdParty.length === 0, `Požadavky na cizí servery: ${[...new Set(thirdParty)].join(", ")}`);
+    // Náhled v největší velikosti, kterou video má (1280 x 720), přes /_next/image.
+    const play = page.getByRole("button", { name: "Přehrát video" });
+    const thumb = (await play.locator("img").getAttribute("src")) ?? "";
+    assert(
+      thumb.includes("/_next/image?url=") && thumb.includes("maxresdefault"),
+      `Náhled videa: ${thumb}`,
+    );
+    await play.click();
+    const player = page.locator('iframe[src^="https://www.youtube-nocookie.com/embed/_m30zuQyxMI"]');
+    await player.waitFor({ state: "attached" });
+    assert(
+      await player.evaluate((frame) => document.activeElement === frame),
+      "Po kliknutí na Přehrát video není fokus v přehrávači.",
+    );
     // Obsah s 5 položkami se vejde, posuvník nemá.
     const toc2017 = await page.locator(".dn-toc").evaluate((el) => el.scrollHeight - el.clientHeight);
     assert(toc2017 <= 0, `Obsah článku 2017 se posouvá (${toc2017} px).`);

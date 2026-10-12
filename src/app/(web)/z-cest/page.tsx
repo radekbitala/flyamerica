@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Arrow } from "@/components/web/ArrowSymbol";
 import { CtaSection } from "@/components/web/CtaSection";
 import { PageHead } from "@/components/web/PageHead";
+import { SectionSign } from "@/components/web/SectionSign";
 import { formatDate, isoDate } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { postDisplayTitle } from "@/lib/post-title";
@@ -13,8 +14,14 @@ import { PostImage } from "./_components/PostImage";
 
 // Z cest (dřív Deník) podle prototyp/denik.html: nejnovější článek nahoře, starší jako
 // karty. Všechny články jsou z databáze (jen publikované, nejnovější první),
-// každá karta je celá odkaz na článek. Stránka se obnoví po každé změně
-// článku v administraci (revalidatePublicPosts, src/lib/posts-cache.ts).
+// nejnovější článek i každá karta jsou celé odkaz na článek. Stránka se obnoví
+// po každé změně článku v administraci (revalidatePublicPosts, src/lib/posts-cache.ts).
+//
+// Polohové tabule (DESIGN.md, The One Location Sign Rule): „Z cest“ nad h1
+// a „Archiv“ nad staršími články. Mezi nimi je nejnovější článek s fotkou,
+// takže jsou od sebe víc než výšku obrazovky (1440 x 900 i 375 x 667). Bez
+// fotky by byl blok nízký a Archiv má šedý .lbl. Štítek „Nejnovější“ je hned
+// pod záhlavím, proto zůstává šedý .lbl.
 
 export const metadata = pageMetadata({
   title: "Z cest",
@@ -48,7 +55,7 @@ export default async function PostsPage() {
           <div className="fa-wrap">
             <div className="sec-head">
               <div>
-                <span className="lbl">Archiv</span>
+                {latest?.image ? <SectionSign>Archiv</SectionSign> : <span className="lbl">Archiv</span>}
                 <h2 id="starsi">Starší články</h2>
               </div>
               <p>Články z&nbsp;původního webu flyamerica.cz.</p>

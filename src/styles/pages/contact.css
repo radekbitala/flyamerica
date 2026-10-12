@@ -1,1 +1,52 @@
 /* Kontakt (/kontakt). Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
+
+/* Rozložení (rozhodnutí 12. 10. 2026, bod 7). Vlevo hlavní obsah: poptávka na tři kroky a pod ní menší blok „Nechte číslo,
+   Honza zavolá“. Vpravo krátký sloupec s kontakty (asi 400 px), který na počítači jede při posouvání s formulářem.
+   Levý sloupec měří asi 900-1050 px podle kroku poptávky, proto pravý sloupec nekončí prázdnou plochou pod kontakty:
+   je natažený na výšku levého (stretch místo start z .split) a kontakty v něm jsou přilepené. Při posouvání jsou vždy
+   vedle formuláře, na konci sekce sedí spodní hranou na konci bloku zavolání. Na mobilu pod sebou v pořadí HTML:
+   poptávka, zavolání, kontakty (úvod s telefonem je v záhlaví stránky). Pravý sloupec bez fotky a bez tabulí. */
+.split.kt-layout { align-items: stretch; }
+.kt-main { display: grid; gap: 64px; align-content: start; min-width: 0; }
+
+/* Nechte číslo, Honza zavolá: bílý panel pod poptávkou. Jméno a telefon vedle sebe, pod nimi tlačítko a informace
+   o zpracování údajů přes celou šířku. Nadpis ve velikosti Title střední (DESIGN.md: h2 v pravém sloupci kontaktu). */
+.kt-call h2 { font-size: 24px; line-height: 1.2; margin-bottom: 10px; }
+.kt-call > p { font-size: 16px; line-height: 1.5; color: var(--s600); margin-bottom: 20px; max-width: 34em; }
+.kt-call .form.kt-1 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
+.kt-call .form.kt-1 > :not(.fa-field) { grid-column: 1 / -1; }
+
+/* Kontakty: řádky popisek a údaj s vlasovými linkami jako přehled programu výletu (.pk-data), jen užší. */
+.kt-contacts { min-width: 0; }
+.kt-contacts h2 { font-size: 24px; line-height: 1.2; margin-bottom: 14px; }
+.kt-contacts h3 { font: 700 18px/1.3 var(--f-sans); letter-spacing: 0; margin: 36px 0 12px; }
+.kt-facts { margin: 0; border-top: var(--linka) solid var(--grafit); }
+.kt-facts > div {
+  display: grid; grid-template-columns: 80px minmax(0, 1fr); column-gap: 16px; align-items: baseline;
+  padding: 11px 0 10px; border-bottom: var(--linka) solid var(--papir-t);
+}
+.kt-facts dt { font: 700 12px/1.3 var(--f-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--s600); }
+.kt-facts dd { margin: 0; font: 400 17px/1.45 var(--f-sans); overflow-wrap: anywhere; }
+.kt-facts a { color: var(--grafit); text-underline-offset: .2em; }
+.kt-facts a:focus-visible { outline: 2px solid var(--grafit); outline-offset: 2px; }
+.kt-nowrap { white-space: nowrap; }
+
+/* Přilepení jen na počítači a jen při dost vysokém okně (kontakty asi 400 px + hlavička), jinak by spodek nešel vidět. */
+@media (min-width: 961px) and (min-height: 560px) {
+  .kt-contacts-in { position: sticky; top: calc(var(--hdr) + 24px); }
+}
+
+@media (max-width: 960px) {
+  .split.kt-layout { row-gap: 56px; }
+  /* Kontakty pod formuláři jen tak široké jako na počítači, řádky s linkami by jinak zůstaly napůl prázdné (jako .pk-sum, D5) */
+  .kt-contacts-in { max-width: 440px; }
+}
+
+@media (max-width: 600px) {
+  .kt-main { gap: 48px; }
+  .split.kt-layout { row-gap: 48px; }
+  .kt-call { padding: 24px 20px; }
+  .kt-call .form.kt-1 { grid-template-columns: minmax(0, 1fr); }
+  /* Dotyková plocha telefonu a e-mailu asi 44 px, výška řádku beze změny */
+  .kt-facts a { display: inline-block; padding: 10px 0; margin: -10px 0; }
+}

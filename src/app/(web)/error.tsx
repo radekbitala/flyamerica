@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Arrow } from "@/components/web/ArrowSymbol";
 import { FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 import { NBSP } from "@/lib/typography";
-import styles from "./error.module.css";
 
 /**
  * Chyba při vykreslení stránky webu (třeba výpadek databáze). Hlavička
@@ -14,12 +13,12 @@ import styles from "./error.module.css";
  */
 export default function WebError({ retry }: { error: Error & { digest?: string }; retry: () => void }) {
   return (
-    <header className={`page-head ${styles.page}`}>
+    <header className="page-head status-page">
       <div className="fa-wrap">
         <span className="lbl">Chyba</span>
         <h1>Stránku se nepodařilo načíst</h1>
         <p className="perex">Na webu se něco pokazilo. Zkuste to prosím znovu, případně za chvíli.</p>
-        <div className={styles.actions}>
+        <div className="status-actions">
           <button className="fa-dir fa-dir--grafit" type="button" onClick={() => retry()}>
             <span className="t">Zkusit znovu</span>
             <Arrow />

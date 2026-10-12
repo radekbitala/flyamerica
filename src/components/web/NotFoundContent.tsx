@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Arrow } from "@/components/web/ArrowSymbol";
-import styles from "./NotFoundContent.module.css";
 
 /**
  * Obsah stránky 404, společný pro global-not-found a not-found webu.
@@ -8,7 +7,7 @@ import styles from "./NotFoundContent.module.css";
  */
 export function NotFoundContent() {
   return (
-    <header className={`page-head ${styles.notFound}`}>
+    <header className="page-head status-page">
       <div className="fa-wrap">
         <span className="lbl">Chyba 404</span>
         <h1>Stránka nenalezena</h1>

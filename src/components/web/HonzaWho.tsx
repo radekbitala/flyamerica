@@ -5,7 +5,8 @@ import { ROUTES } from "@/lib/routes";
 
 /**
  * Malý portrét Honzy se jménem a odkazem „Kdo je Honza“ (.who, nález 1).
- * Na úvodu u položky mentora, na výletech v panelu Poptávka. Bez tabule.
+ * Na výletech v panelu Poptávka (úvod má od 12. 10. 2026 v „Co za vás
+ * zařídíme“ místo něj velkou fotku Honzy). Bez tabule.
  * Portrét se zobrazuje 60 x 80 px, sizes vybere náhled 128 px místo
  * celého souboru 240 px (model ho vkládá bez srcset).
  */

@@ -9,6 +9,7 @@ import { SiteFooter } from "@/components/web/SiteFooter";
 import "@/styles/fa-tokeny.css";
 import "@/styles/web.css";
 import "@/styles/fonts.css";
+import "@/styles/pages/status.css";
 
 // Web a administrace mají každý svůj kořenový layout, takže pro adresu,
 // která neodpovídá žádné stránce, není layout, do kterého by se 404

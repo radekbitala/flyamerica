@@ -1,21 +1,23 @@
-/* Články Z cest (dřív Deník): jen to, co css/web.css z modelu nemá. Model nemá zvětšení fotky, galerii uprostřed textu ani obsah článku delší než obrazovka.
-   Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). Bez stínů, zaoblení a přechodů. */
+/* Články Z cest (dřív Deník): jen to, co css/web.css z modelu nemá. Model nemá zvětšení fotky, galerii uprostřed textu, obsah článku delší
+   než obrazovka ani přehrávač videa. Rozložení stránky (sloupec textu, široké fotky, obsah v okraji) je v src/styles/pages/article.css.
+   Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). Bez stínů, zaoblení a přechodů kromě ztmavení fotky. */
 
 /* Fotka v galerii je odkaz na zvětšení. Bez skriptu otevře samotný soubor. */
 .zoom { display: block; cursor: zoom-in; }
 .zoom:focus-visible { outline: 2px solid var(--grafit); outline-offset: 3px; }
 
-/* Galerie uprostřed textu článku (.prose): odsazení jako fotka v textu, fotky v mřížce bez okrajů z .prose .fig */
-:global(.prose) > .inProse { margin: 2em 0; }
+/* Galerie uprostřed textu článku (.prose): svislé odsazení jako fotka v textu (šířku dává .read-wide v article.css),
+   fotky v mřížce bez okrajů z .prose .fig */
+:global(.prose) > .inProse { margin-block: 2em; }
 :global(.prose) .inProse :global(.fig) { margin: 0; }
 
 /* Víc galerií za sebou v sekci Fotky: mezera jako v mřížce, vypadají jako jedna */
 .galleries { display: grid; gap: 24px; }
 
-/* Obsah „V článku“ je na počítači sticky (web.css). Dlouhý obsah (Oblet Ameriky, 17 dní) by byl vyšší než obrazovka
-   a konec seznamu by šel otevřít až na konci textu, proto se posouvá sám. Pod 961 px je sbalený a static (web.css). */
-@media (min-width: 961px) {
-  /* Padding 28 px z .aside zůstává, rámeček fokusu odkazů se do něj vejde a posuvná plocha ho neořízne. */
+/* Obsah „V článku“ je od 1200 px přilepený v levém okraji (article.css). Dlouhý obsah (Oblet Ameriky, 17 dní) by byl vyšší než
+   obrazovka a konec seznamu by šel otevřít až na konci textu, proto se posouvá sám. Pod 1200 px je sbalený nad textem. */
+@media (min-width: 1200px) {
+  /* Vnitřní okraj 4 px (article.css) drží rámeček fokusu odkazů uvnitř posuvné plochy, jinak by ho ořízla. */
   .toc { max-height: calc(100vh - var(--hdr) - 48px); overflow-y: auto; overscroll-behavior: contain; }
 }
 
@@ -60,4 +62,29 @@
   .stage { margin: 0; }
   .foot { grid-template-columns: minmax(0, 1fr); padding-bottom: 16px; }
   .nav { justify-content: space-between; }
+}
+
+/* ---------- Video z YouTube (YouTubeVideo.tsx) ----------
+   Náhled 16 : 9 ze serveru (next/image), přes něj ztmavení grafitem a grafitová tabule „Přehrát video“ se žlutým trojúhelníkem
+   (žlutá jen na tmavém). Po kliknutí na stejném místě přehrávač youtube-nocookie. Pod náhledem odkaz na video na YouTube. */
+.video { margin-block: 2em; }
+.frame { position: relative; aspect-ratio: 16 / 9; background: var(--grafit); }
+.frame > iframe, .start { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.start { display: block; margin: 0; padding: 0; background: var(--grafit); color: var(--papir); cursor: pointer; text-decoration: none; }
+/* Náhled maxresdefault je 16 : 9, menší sddefault a hqdefault 4 : 3 s černými pruhy nahoře a dole: výřez 16 : 9 je přesně obraz videa */
+.frame .start img { width: 100%; height: 100%; object-fit: cover; }
+.start::after { content: ""; position: absolute; inset: 0; background: rgba(29, 37, 45, .28); }
+.play {
+  position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 12px;
+  height: 52px; padding: 0 20px;
+  font: 700 17.143px/1 var(--f-sans); letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
+  color: var(--papir); background: var(--grafit);
+}
+.play :global(.t) { padding-top: .2em; }
+.play svg { width: 13px; height: 15px; fill: var(--zluta); flex: none; transition: transform .18s ease; }
+.start:hover .play svg { transform: translateX(2px); }
+.start:focus-visible { outline: 2px solid var(--grafit); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .play { height: 44px; padding: 0 16px; gap: 10px; font-size: 14.286px; }
 }

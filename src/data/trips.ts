@@ -1,5 +1,4 @@
 import type { DestinationSlug } from "@/data/destinations";
-import type { PhotoName } from "@/data/photos";
 import { TRIP_SLUGS, type TripSlug } from "@/data/trip-slugs";
 import { NBSP, czechNbspText } from "@/lib/typography";
 
@@ -14,8 +13,14 @@ export { TRIP_SLUGS, type TripSlug };
  * Povolené úpravy proti podkladu (rozhodnutí 12. 10. 2026): slovo „balíček“
  * zmizelo z nadpisů a štítků („Varianty a cena balíčku“ -> „Varianty
  * a cena“, „Cena balíčku“ -> „Cena“, „Balíček 1:“ pryč). Letadlo je u obou
- * výletů stejné a uvádí se jednou (AIRCRAFT), řádek „Letadlo“ proto v
- * přehledu programu chybí.
+ * výletů stejné a uvádí se jednou a stejně (AIRCRAFT, Radkův bod 3 z 12. 10.
+ * 2026): řádek „Letadlo“ v přehledu programu chybí a podtitul Grand Tour je
+ * bez posledního údaje „• Cessna 182“ (Honza: „9 dní na Floridě • 20
+ * letových hodin • Cessna 182“). Tabulky „Co zahrnuje cena“ a „Co je v ceně“
+ * zůstávají doslova i s letadlem („Pronájem C182 a palivo 12 hodin“).
+ *
+ * Fotky výletů (karty a posuvná řada) jsou ve
+ * src/app/(web)/letecke-vylety/_data/trip-media.ts, tady jen texty.
  *
  * Slug je zároveň hodnota ?vylet= (dřív ?balicek=) v poptávce
  * (src/lib/inquiries/options.ts) a adresa /letecke-vylety/<slug>.
@@ -55,7 +60,7 @@ export interface Trip {
   order: number;
   /** Název výletu doslova. */
   name: string;
-  /** Honzův podtitul pod názvem, doslova. */
+  /** Honzův podtitul pod názvem, doslova (u Grand Tour bez letadla, viz úvod souboru). */
   subtitle: string;
   /** Úvodní odstavec (perex stránky), doslova. */
   intro: string;
@@ -76,12 +81,6 @@ export interface Trip {
   variants: TripTable;
   /** Průběh přípravy, jen u Florida Week (Honza ho napsal jen k výletu 1). */
   preparation?: readonly { when: string; text: string }[];
-  /** Velká fotka pod záhlavím a výřez (CSS --pos). */
-  photo: { name: PhotoName; position: string };
-  /** Fotka karty výletu (úvod, Kam dál na stránce druhého výletu). */
-  cardPhoto: PhotoName;
-  /** Fotky pod přehledem programu. */
-  gallery: readonly PhotoName[];
   /**
    * Destinace z „Kam letět“ (src/data/destinations.ts), které Honza
    * v textu výletu jmenuje (úvod, Možné cíle), v pořadí podle textu.
@@ -152,9 +151,6 @@ export const TRIPS: readonly Trip[] = [
       { when: "2 týdny před odletem", text: "Online probereme trasy, pravidla VFR v USA a možnosti ubytování." },
       { when: "Po příletu na Floridu", text: "Převezmete auto, ubytujete se a zahájíte letový program." },
     ],
-    photo: { name: "albert-whitted-letecky", position: "50% 62%" },
-    cardPhoto: "cessna-182-winter-haven",
-    gallery: ["cedar-key-okoli", "cedar-key-cessna-170", "cessna-182-winter-haven"],
     destinations: ["cedar-key", "albert-whitted"],
     description:
       "Letecký výlet na 6 dní po Floridě, 12 letových hodin v Cessně 182 s pilotem-mentorem. Co zahrnuje cena, varianty a průběh přípravy.",
@@ -163,7 +159,7 @@ export const TRIPS: readonly Trip[] = [
     slug: "grand-tour",
     order: 2,
     name: "Florida Grand Tour & Fly",
-    subtitle: "9 dní na Floridě • 20 letových hodin • Cessna 182",
+    subtitle: "9 dní na Floridě • 20 letových hodin",
     intro:
       "Intenzivní letecký pobyt zaměřený na delší navigační lety, americkou VFR komunikaci a létání v řízených prostorech. Trasy mohou vést podél pobřeží, přes Everglades, na Florida Keys nebo na sever ke St. Augustine.",
     teaser:
@@ -209,14 +205,28 @@ export const TRIPS: readonly Trip[] = [
         ["1 pilot (samostatná varianta)", "20 100 USD", "Všech 20 hodin jako PIC. Lze vzít partnerku nebo jiný doprovod."],
       ],
     },
-    photo: { name: "everglades-letecky", position: "50% 15%" },
-    cardPhoto: "cessna-182-marco-island",
-    gallery: ["key-west-plaz", "everglades-airpark", "cessna-182-marco-island"],
     destinations: ["cedar-key", "albert-whitted", "key-west-everglades"],
     description:
       "Letecký výlet na 9 dní po Floridě, 20 letových hodin v Cessně 182 s pilotem-mentorem. Co je v ceně a cena.",
   },
 ];
+
+/**
+ * Honzovy pojmy z přehledu programu pro stejný údaj obou výletů: Florida
+ * Week a Grand Tour ho pojmenovávají různě („Délka pobytu“ / „Délka“).
+ */
+export const TRIP_FACT_TERMS = {
+  length: ["Délka pobytu", "Délka"],
+  hours: ["Letový nálet", "Nálet"],
+} as const satisfies Record<string, readonly string[]>;
+
+export type TripFactKey = keyof typeof TRIP_FACT_TERMS;
+
+/** Text údaje z přehledu programu (délka, nálet) doslova, undefined když ho výlet nemá. */
+export function tripFact(trip: Trip, fact: TripFactKey): string | undefined {
+  const terms: readonly string[] = TRIP_FACT_TERMS[fact];
+  return trip.overview.find((item) => terms.includes(item.term))?.text;
+}
 
 /** Výlet podle slugu, undefined u neznámého. */
 export function getTrip(slug: string): Trip | undefined {
@@ -242,8 +252,8 @@ export function splitPrice(cell: string): { amount: string; rest: string } {
 
 /**
  * Podtitul s pevnými mezerami jako v modelu. Řádek údajů s tečkami
- * („9 dní na Floridě • 20 letových hodin • Cessna 182“) se láme jen za
- * tečkou, každý údaj drží pohromadě. Jiný podtitul jako běžný text.
+ * („9 dní na Floridě • 20 letových hodin“) se láme jen za tečkou, každý
+ * údaj drží pohromadě. Jiný podtitul jako běžný text.
  */
 export function formatTripSubtitle(subtitle: string): string {
   if (!subtitle.includes(" • ")) return czechNbspText(subtitle);

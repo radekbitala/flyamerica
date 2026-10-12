@@ -9,5 +9,10 @@
   white-space: normal;
 }
 
+/* Žlutý nápis i v záhlaví sekce: web.css barví odstavce v .sec-head šedě (.sec-head p, na tmavé ploše
+   .on-dark .sec-head p, specifičnost 0,2,1), tabule je tam <p> a bez tohoto pravidla měla šedý text na grafitu
+   (kontrast asi 2 : 1). Specifičnost 0,3,0 přebije obě pravidla bez ohledu na pořadí načtení CSS. */
+:global(.sec-head) .block:global(.fa-loc) { color: var(--zluta); }
+
 /* V záhlaví podstránky stejná mezera jako štítek .lbl (web.css: .page-head > .fa-wrap > .lbl) */
 :global(.page-head) .block:global(.fa-loc) { margin-bottom: calc(18px + var(--linka)); }

@@ -1,12 +1,34 @@
 import { Fragment, createElement, type Key, type ReactNode } from "react";
 import type { PostGallery } from "@/lib/db/schema";
-import { galleryIdOf, isBlank, youtubeLink, type HtmlElement, type HtmlNode } from "@/lib/post-content";
+import {
+  galleryIdOf,
+  isBlank,
+  youtubeLink,
+  youtubeVideo,
+  type HtmlElement,
+  type HtmlNode,
+} from "@/lib/post-content";
 import { PostGalleryGrid } from "./PostGalleryGrid";
 import { PostImage } from "./PostImage";
 import { VideoLink } from "./VideoLink";
+import { ArticleVideo } from "./ArticleVideo";
 
-/** sizes fotky v textu článku (.prose, nejvýš 680 px), jako v modelu. */
+/** sizes fotky v šířce sloupce textu (.prose, nejvýš 680 px), jako v modelu. */
 const TEXT_PHOTO_SIZES = "(max-width: 600px) calc(100vw - 32px), 680px";
+/**
+ * sizes široké fotky (.read-wide, src/styles/pages/article.css): do 1199 px
+ * celý kontejner, pak 1152 px, s obsahem článku v levém okraji jen sloupec
+ * textu a pravý okraj (680 + 236 px).
+ */
+const WIDE_PHOTO_SIZES = "(max-width: 600px) calc(100vw - 32px), (max-width: 1199px) calc(100vw - 48px), 1152px";
+const WIDE_PHOTO_SIZES_TOC = "(max-width: 600px) calc(100vw - 32px), (max-width: 1199px) calc(100vw - 48px), 916px";
+
+/**
+ * Fotka na šířku aspoň tak široká jde přes šířku kontejneru. Užší by se
+ * zvětšovala nad svou velikost, fotka na výšku by byla vyšší než obrazovka:
+ * ty zůstávají v šířce sloupce textu.
+ */
+const WIDE_MIN_WIDTH = 1000;
 
 /** Značky z allowlistu sanitizePostHtml, které se vykreslí bez atributů. */
 const PLAIN_TAGS = new Set(["p", "strong", "em", "ul", "li", "blockquote", "div"]);
@@ -22,6 +44,10 @@ const TODO_MARK = /\[doplnit:[^\]]*\]/g;
 
 interface Ctx {
   galleries: Map<string, PostGallery>;
+  /** Článek má obsah „V článku“ (od 1200 px v levém okraji, široké fotky jen doprava). */
+  hasToc: boolean;
+  /** Popis přehrávače videa pro čtečky. */
+  videoTitle: string;
 }
 
 /**
@@ -30,19 +56,34 @@ interface Ctx {
  * - fotka v textu (<img> samostatně nebo jako jediný obsah odstavce) je
  *   <figure class="fig"> přes next/image. Popisek je následující odstavec,
  *   ve kterém je jen <em> (tak ukládá popisky migrace, editor popisky neumí),
- *   v <figcaption> bez kurzívy jako v modelu
- * - značka <p data-gallery="ID"></p> je galerie (mřížka .gallery), neznámé
- *   id nebo galerie bez fotek se nevykreslí
- * - video z YouTube (<div data-youtube-video><iframe> z editoru) je odkaz
- *   „Video na YouTube“ jako v modelu, přehrávač se nevkládá. Iframe, ze
- *   kterého nejde vyčíst id videa, se nevykreslí
+ *   v <figcaption> bez kurzívy jako v modelu. Velká fotka na šířku je široká
+ *   (.read-wide: širší než text, až na šířku kontejneru), jen přímo v textu,
+ *   ne v citaci
+ * - značka <p data-gallery="ID"></p> je galerie (mřížka .gallery, v textu
+ *   také široká), neznámé id nebo galerie bez fotek se nevykreslí
+ * - video z YouTube (<div data-youtube-video><iframe> z editoru) je náhled
+ *   s tlačítkem „Přehrát video“, přehrávač youtube-nocookie se načte až po
+ *   kliknutí (ArticleVideo, YouTubeVideo). Uvnitř odstavce nebo nadpisu, kde blok být
+ *   nesmí, jen odkaz „Video na YouTube“. Iframe, ze kterého nejde vyčíst id
+ *   videa, se nevykreslí
  * - nadpisy mají id z obsahu článku, [doplnit: …] je <span class="todo">
  */
-export function ArticleContent({ nodes, galleries }: { nodes: HtmlNode[]; galleries: Map<string, PostGallery> }) {
-  return <>{renderBlocks(nodes, { galleries })}</>;
+export function ArticleContent({
+  nodes,
+  galleries,
+  hasToc,
+  videoTitle,
+}: {
+  nodes: HtmlNode[];
+  galleries: Map<string, PostGallery>;
+  hasToc: boolean;
+  videoTitle: string;
+}) {
+  return <>{renderBlocks(nodes, { galleries, hasToc, videoTitle }, true)}</>;
 }
 
-function renderBlocks(nodes: HtmlNode[], ctx: Ctx): ReactNode[] {
+/** topLevel: bloky přímo v .prose (jen tam smí být fotka nebo galerie široká). */
+function renderBlocks(nodes: HtmlNode[], ctx: Ctx, topLevel = false): ReactNode[] {
   const out: ReactNode[] = [];
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -53,9 +94,10 @@ function renderBlocks(nodes: HtmlNode[], ctx: Ctx): ReactNode[] {
       let next = i + 1;
       while (next < nodes.length && nodes[next].type === "text" && isBlank(nodes[next])) next++;
       const caption = next < nodes.length ? captionOf(nodes[next]) : null;
+      const wide = topLevel && isWideImage(image);
       out.push(
-        <figure className="fig" key={i}>
-          {renderImage(image)}
+        <figure className={wide ? "fig read-wide" : "fig"} key={i}>
+          {renderImage(image, wide ? (ctx.hasToc ? WIDE_PHOTO_SIZES_TOC : WIDE_PHOTO_SIZES) : TEXT_PHOTO_SIZES)}
           {caption ? <figcaption>{renderChildren(caption, ctx)}</figcaption> : null}
         </figure>,
       );
@@ -63,7 +105,7 @@ function renderBlocks(nodes: HtmlNode[], ctx: Ctx): ReactNode[] {
       continue;
     }
 
-    out.push(renderNode(node, ctx, i));
+    out.push(renderNode(node, ctx, i, false, topLevel));
   }
   return out;
 }
@@ -76,7 +118,7 @@ function renderChildren(element: HtmlElement, ctx: Ctx): ReactNode[] {
     .map((child, i) => renderNode(child, ctx, i, INLINE_CONTEXT.has(element.tag)));
 }
 
-function renderNode(node: HtmlNode, ctx: Ctx, key: Key, inline = false): ReactNode {
+function renderNode(node: HtmlNode, ctx: Ctx, key: Key, inline = false, topLevel = false): ReactNode {
   if (node.type === "text") return renderText(node.text, key);
   const { tag, attrs } = node;
 
@@ -84,9 +126,9 @@ function renderNode(node: HtmlNode, ctx: Ctx, key: Key, inline = false): ReactNo
     case "br":
       return <br key={key} />;
     case "img":
-      return <Fragment key={key}>{renderImage(node)}</Fragment>;
+      return <Fragment key={key}>{renderImage(node, TEXT_PHOTO_SIZES)}</Fragment>;
     case "iframe":
-      return videoLink(attrs.src, key, inline);
+      return video(attrs.src, key, inline, ctx);
     case "a":
       return (
         <a key={key} href={attrs.href} target={attrs.target} rel={attrs.rel}>
@@ -106,10 +148,10 @@ function renderNode(node: HtmlNode, ctx: Ctx, key: Key, inline = false): ReactNo
       const galleryId = galleryIdOf(node);
       if (galleryId === null) break;
       const gallery = ctx.galleries.get(galleryId);
-      return gallery ? <PostGalleryGrid key={key} gallery={gallery} inProse /> : null;
+      return gallery ? <PostGalleryGrid key={key} gallery={gallery} inProse wide={topLevel} /> : null;
     }
     case "div":
-      if ("data-youtube-video" in attrs) return videoLink(findTag(node, "iframe")?.attrs.src, key, inline);
+      if ("data-youtube-video" in attrs) return video(findTag(node, "iframe")?.attrs.src, key, inline, ctx);
       break;
   }
 
@@ -118,9 +160,12 @@ function renderNode(node: HtmlNode, ctx: Ctx, key: Key, inline = false): ReactNo
   return <Fragment key={key}>{renderChildren(node, ctx)}</Fragment>;
 }
 
-function videoLink(src: string | undefined, key: Key, inline: boolean): ReactNode {
+function video(src: string | undefined, key: Key, inline: boolean, ctx: Ctx): ReactNode {
+  const found = src ? youtubeVideo(src) : null;
   const href = src ? youtubeLink(src) : null;
-  return href ? <VideoLink key={key} href={href} inline={inline} /> : null;
+  if (!found || !href) return null;
+  if (inline) return <VideoLink key={key} href={href} inline />;
+  return <ArticleVideo key={key} id={found.id} start={found.start} href={href} title={ctx.videoTitle} />;
 }
 
 function renderText(text: string, key: Key): ReactNode {
@@ -141,11 +186,22 @@ function renderText(text: string, key: Key): ReactNode {
   return <Fragment key={key}>{parts}</Fragment>;
 }
 
-function renderImage(image: HtmlElement): ReactNode {
+/** Rozměr z atributu: kladné celé číslo, jinak null. */
+function size(value?: string): number | null {
+  return value && /^\d+$/.test(value) && Number(value) > 0 ? Number(value) : null;
+}
+
+function renderImage(image: HtmlElement, sizes: string): ReactNode {
   const { src, alt, width, height } = image.attrs;
   if (!src) return null;
-  const size = (value?: string) => (value && /^\d+$/.test(value) && Number(value) > 0 ? Number(value) : null);
-  return <PostImage src={src} width={size(width)} height={size(height)} alt={alt ?? ""} sizes={TEXT_PHOTO_SIZES} />;
+  return <PostImage src={src} width={size(width)} height={size(height)} alt={alt ?? ""} sizes={sizes} />;
+}
+
+/** Široká fotka: známé rozměry, na šířku a aspoň WIDE_MIN_WIDTH px. */
+function isWideImage(image: HtmlElement): boolean {
+  const width = size(image.attrs.width);
+  const height = size(image.attrs.height);
+  return width !== null && height !== null && width > height && width >= WIDE_MIN_WIDTH;
 }
 
 /** Potomci bez mezer mezi značkami. */

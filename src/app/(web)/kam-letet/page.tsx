@@ -1,18 +1,21 @@
+import Link from "next/link";
 import { CtaSection } from "@/components/web/CtaSection";
 import { PageHead } from "@/components/web/PageHead";
 import { Photo } from "@/components/web/Photo";
-import { DESTINATIONS } from "@/data/destinations";
+import { DESTINATIONS, DESTINATION_SLUGS } from "@/data/destinations";
 import { pageMetadata } from "@/lib/metadata";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES, destinationPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
-import { DestinationBody, DestinationRoute } from "./_components/DestinationBody";
+import { DestinationRoute } from "./_components/DestinationBody";
+import { LegacyAnchorRedirect } from "./_components/LegacyAnchorRedirect";
 
-// Kam letět (dřív Tipy na výlety, prototyp/tipy-na-vylety.html). Destinace
-// ze src/data/destinations.ts, texty doslova z Honzova „Výběru destinací kam
-// letět“ (10. 10. 2026), názvy a kódy letišť tak, jak je Honza napsal.
-// Zatím přehled dlaždic a pod ním všechny detaily. Kotvy destinací (#fa83,
-// #cedar-key, ...) jsou slugy z destinations.ts. Detail destinace má i vlastní
-// adresu /kam-letet/<slug> ([slug]/page.tsx).
+// Kam letět (dřív Tipy na výlety, prototyp/tipy-na-vylety.html): rozcestník
+// osmi destinací ze src/data/destinations.ts, názvy, kódy letišť a výňatky
+// tak, jak je Honza napsal (10. 10. 2026). Detail destinace má vlastní
+// adresu /kam-letet/<slug>: po kliku na webu se otevře v okně nad
+// rozcestníkem (slot @modal, zachycená adresa), bez JavaScriptu, po novém
+// načtení nebo ze sdíleného odkazu je to celá stránka ([slug]/page.tsx).
+// Dlouhé detaily pod přehledem už stránka nemá (rozhodnutí 12. 10. 2026).
 export const metadata = pageMetadata({
   title: "Kam letět",
   description:
@@ -20,7 +23,7 @@ export const metadata = pageMetadata({
   path: ROUTES.destinations,
 });
 
-/** sizes dlaždice v přehledu (.tipy-prehled: 4 / 2 sloupce, na mobilu náhled 112 px vlevo). */
+/** sizes dlaždice (.grid-4: 4 / 2 sloupce, na mobilu náhled 112 px vlevo). */
 const TILE_SIZES = "(max-width: 600px) 112px, (max-width: 1100px) 50vw, 270px";
 /** Dlaždice v první řadě jsou hned pod záhlavím: bez líného načítání (v modelu bez loading="lazy"). */
 const FIRST_ROW = 4;
@@ -28,50 +31,39 @@ const FIRST_ROW = 4;
 export default function DestinationsPage() {
   return (
     <>
-      {/* ===== ZÁHLAVÍ STRÁNKY (stránka sekce: bez drobečků) ===== */}
+      {/* Záhlaví stránky sekce: polohová tabule „Kam letět“ nad h1, bez drobečků */}
       <PageHead
         label="Kam letět"
         title={<>Kam z&nbsp;Orlanda doletět</>}
         perex={<>Výběr destinací od Honzy: domovská základna Orlando North Airpark a&nbsp;sedm míst, kam se z&nbsp;ní dá letět. U&nbsp;každého najdete zajímavosti a&nbsp;důvod, proč tam letět.</>}
       />
 
-      {/* ===== PŘEHLED: dlaždice s proklikem na detail níže (kód letiště jen v trase, Overpass Mono) ===== */}
-      <section className="sec sec--tight tipy-prehled" id="prehled" aria-labelledby="prehled-nadpis">
+      {/* Rozcestník: dlaždice s fotkou, názvem a trasou (kód letiště jen v Overpass Mono, kód s polem má až detail v okně).
+          id položky = slug, na něj vedly kotvy dřívější stránky (/kam-letet#cedar-key). Bez skriptu kotva aspoň
+          posune na dlaždici, se skriptem LegacyAnchorRedirect otevře detail. */}
+      <section className="sec sec--tight tipy-prehled" aria-labelledby="destinace-nadpis">
         <div className="fa-wrap">
-          <h2 className="vh" id="prehled-nadpis">Přehled destinací</h2>
-          <div className="grid-4">
+          <h2 className="vh" id="destinace-nadpis">
+            Destinace
+          </h2>
+          <ul className="grid-4 kl-tiles">
             {DESTINATIONS.map((destination, index) => (
-              <a key={destination.slug} className="tip" href={`#${destination.slug}`}>
-                <div className="tip-img">
-                  <Photo photo={destination.tile} sizes={TILE_SIZES} priority={index < FIRST_ROW} />
-                </div>
-                <h3>{czechNbspText(destination.name)}</h3>
-                <DestinationRoute destination={destination} />
-                <p>{czechNbspText(destination.teaser)}</p>
-              </a>
+              <li key={destination.slug} id={destination.slug}>
+                {/* scroll={false}: okno se otevře nad rozcestníkem a stránka pod ním se neposune nahoru */}
+                <Link className="tip" href={destinationPath(destination.slug)} scroll={false}>
+                  <div className="tip-img">
+                    <Photo photo={destination.tile} sizes={TILE_SIZES} priority={index < FIRST_ROW} />
+                  </div>
+                  <h3>{czechNbspText(destination.name)}</h3>
+                  <DestinationRoute destination={destination} />
+                  <p>{czechNbspText(destination.teaser)}</p>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
+          <LegacyAnchorRedirect slugs={DESTINATION_SLUGS} />
         </div>
       </section>
-
-      {/* ===== DETAILY DESTINACÍ: kód s polem (.fa-code) jen v záhlaví detailu, sekce střídají Bílou a Papír ===== */}
-      {DESTINATIONS.map((destination, index) => (
-        <section
-          key={destination.slug}
-          className={index % 2 === 0 ? "sec sec--white dest" : "sec dest"}
-          id={destination.slug}
-          aria-labelledby={`${destination.slug}-nadpis`}
-        >
-          <div className="fa-wrap">
-            <div className="dest-head">
-              <span className="fa-code">{destination.code}</span>
-              <h2 id={`${destination.slug}-nadpis`}>{czechNbspText(destination.name)}</h2>
-            </div>
-            <DestinationBody destination={destination} />
-            <p className="dest-back"><a className="fa-link" href="#prehled">Zpět na přehled destinací</a></p>
-          </div>
-        </section>
-      ))}
 
       {/* Výzva na konci stránky */}
       <CtaSection />

@@ -1,1 +1,58 @@
 /* Úvodní stránka (src/app/(web)/page.tsx). Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
+
+/* ---------- Co za vás zařídíme (#sluzba, 12. 10. 2026) ----------
+   Řádky jako letištní tabule: název vlevo, popis vpravo, grafitová linka nad prvním řádkem a linky Papír tlumený mezi
+   řádky (stejně jako tabulky a údaje v kartě výletu). Popisy jsou různě dlouhé, výška řádku roste jen s textem.
+   Vlevo jedna fotka Honzy 3 : 4 se jménem a odkazem „Kdo je Honza“ místo malého portrétu .who u položky mentora.
+   Pod 1101 px název nad popisem, pod 961 px užší fotka, pod 601 px jeden sloupec: nadpis, řádky, fotka 4 : 3. */
+.home-svc {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-areas:
+    "who title"
+    "who list";
+  grid-template-rows: auto 1fr;
+  column-gap: 64px;
+}
+.home-svc-title { grid-area: title; margin-bottom: 32px; }
+
+.home-svc-list { grid-area: list; align-self: start; margin: 0; border-top: var(--linka) solid var(--grafit); }
+.home-svc-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  column-gap: 32px;
+  align-items: baseline;
+  padding: 17px 0 16px;
+  border-bottom: var(--linka) solid var(--papir-t);
+}
+.home-svc-list dt { font: 600 18px/1.35 var(--f-sans); color: var(--grafit); }
+.home-svc-list dd { margin: 0; font: 400 16px/1.55 var(--f-sans); color: var(--s600); }
+
+.home-svc-who { grid-area: who; align-self: start; margin: 0; }
+.home-svc-who img { width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; background: var(--papir-t); }
+/* Jméno a odkaz jako u malého portrétu (.who-name z web.css) */
+.home-svc-who figcaption { display: grid; gap: 4px; justify-items: start; margin-top: 14px; }
+
+/* Pod 1101 px je sloupec vedle fotky na dvě buňky v řádku moc úzký (název by se lámal na tři řádky): název nad popisem */
+@media (max-width: 1100px) {
+  .home-svc-list > div { grid-template-columns: minmax(0, 1fr); row-gap: 4px; padding: 15px 0 14px; }
+}
+@media (max-width: 960px) {
+  .home-svc { grid-template-columns: minmax(160px, 30%) minmax(0, 1fr); column-gap: 32px; }
+}
+
+@media (max-width: 600px) {
+  .home-svc {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "list"
+      "who";
+    grid-template-rows: none;
+  }
+  .home-svc-title { margin-bottom: 24px; }
+  .home-svc-list dt { font-size: 17px; }
+  .home-svc-who { margin-top: 32px; }
+  /* Na telefonu by fotka 3 : 4 přes celou šířku zabrala celou obrazovku, výřez 4 : 3 drží Honzu a kabinu */
+  .home-svc-who img { aspect-ratio: 4 / 3; object-position: 50% 28%; }
+}

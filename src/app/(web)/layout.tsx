@@ -15,6 +15,7 @@ import "@/styles/pages/trips.css";
 import "@/styles/pages/destinations.css";
 import "@/styles/pages/article.css";
 import "@/styles/pages/contact.css";
+import "@/styles/pages/status.css";
 
 /**
  * Výchozí metadata webu. Stránky skládají svá metadata celá přes
