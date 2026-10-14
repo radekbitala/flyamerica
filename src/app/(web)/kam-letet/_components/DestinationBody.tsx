@@ -29,7 +29,9 @@ const GALLERY_SIZES: Record<DestinationBodyVariant, Record<1 | 2 | 3, string>> =
 
 /**
  * Text destinace doslova od Honzy (Zajímavosti a Proč je dobré tam letět
- * v .prose), řádek [doplnit] pro piloty a galerie s popisky z archivu.
+ * v .prose), pod ním krátký blok Tip pro piloty (Honzův text, menší písmo,
+ * štítek místo nadpisu, bez žluté plochy a bez polohové tabule), řádek
+ * [doplnit] s tím, co ještě chybí, a galerie s popisky z archivu.
  * Na celé stránce je první fotka galerie v prvním záběru největší prvek
  * (LCP), proto se načítá hned (priority). V okně se načítá líně.
  * Bez nadpisu: ten má celá stránka (h1 pod drobečky) i okno (h2 s kódem
@@ -54,11 +56,21 @@ export function DestinationBody({
           <h3>Zajímavosti</h3>
           <p>{czechNbspText(destination.highlights)}</p>
           <h3>{czechNbspText(destination.whyHeading)}</h3>
-          <p>{czechNbspText(destination.why)}</p>
+          {destination.why.map((paragraph) => (
+            <p key={paragraph}>{czechNbspText(paragraph)}</p>
+          ))}
         </div>
-        <p className="dest-todo">
-          <span className="todo">[doplnit: {czechNbspText(destination.todo)}]</span>
-        </p>
+        {destination.pilotTip ? (
+          <div className="kl-tip">
+            <h3>Tip pro piloty</h3>
+            <p>{czechNbspText(destination.pilotTip)}</p>
+          </div>
+        ) : null}
+        {destination.todo ? (
+          <p className="dest-todo">
+            <span className="todo">[doplnit: {czechNbspText(destination.todo)}]</span>
+          </p>
+        ) : null}
       </div>
       {count > 0 ? (
         <div className={galleryClass}>

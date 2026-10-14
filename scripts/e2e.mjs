@@ -522,6 +522,7 @@ const PUBLIC_PAGES = [
   "/letecke-vylety/grand-tour",
   "/kam-letet",
   "/kam-letet/fa83",
+  "/kam-letet/palatka",
   "/kam-letet/key-west-everglades",
   "/z-cest",
   "/vas-mentor",
@@ -556,6 +557,19 @@ test("veřejný web: úvod, výlet a stránky na telefonu", async (page) => {
     JSON.stringify(labels) === JSON.stringify(["Letecké výlety", "Kam letět", "Z cest", "Váš mentor", "Kontakt"]),
     `Menu: ${JSON.stringify(labels)}`,
   );
+
+  // Honzovy požadavky na piloty (13. 10. 2026) místo značky [doplnit] a sídlo provozovatele v patičce.
+  const requirements = page.locator("#postup .req");
+  assert(
+    (await plainText(requirements)).includes("je nutná úroveň anglického jazyka ICAO 4 a vyšší."),
+    "Úvod nemá Honzovy požadavky na piloty.",
+  );
+  assert((await requirements.locator(".todo").count()) === 0, "Požadavky na piloty na úvodu mají značku [doplnit].");
+  assert(
+    (await plainText(page.locator("footer.ftr"))).includes("IČO 03725235 Mezibranská 375, Kutná Hora 284 01"),
+    "Patička nemá sídlo provozovatele.",
+  );
+
   await page.goto(`${BASE_URL}/z-cest`);
   assert((await menu.getByRole("link", { name: "Z cest" }).getAttribute("aria-current")) === "page", "Z cest v menu není aktivní.");
 
@@ -567,6 +581,11 @@ test("veřejný web: úvod, výlet a stránky na telefonu", async (page) => {
     "Letecké výlety v menu nejsou na detailu výletu aktivní.",
   );
   assert((await page.getByText(/balíč/i).count()) === 0, "Stránka výletu obsahuje slovo balíček.");
+  const tripRequirements = page.locator(".pk-req");
+  assert(
+    (await tripRequirements.locator("p").count()) === 3 && (await tripRequirements.locator(".todo").count()) === 0,
+    "Výlet nemá tři odstavce Honzových požadavků na piloty.",
+  );
   await page.locator('main a[href^="/kontakt?vylet=florida-week"]').first().click();
   await page.waitForURL(/\/kontakt\?vylet=florida-week/);
   const preset = page.locator('input[name="packageSlug"][value="florida-week"]');
@@ -621,6 +640,14 @@ test(
     let state = await destinationDialogState(page);
     assert(state.open && state.locked, `Okno po kliku: ${JSON.stringify(state)}`);
     assert(state.focus === "kam-letet-okno-nadpis", `Fokus po otevření okna: ${state.focus}`);
+    // Tip pro piloty od Honzy (14. 10. 2026) místo značky [doplnit].
+    const tip = dialog.locator(".kl-tip");
+    await tip.getByRole("heading", { name: "Tip pro piloty" }).waitFor();
+    assert(
+      (await plainText(tip.locator("p"))).startsWith("Z Orlanda létáme zpravidla přes letiště Inverness"),
+      "Okno Cedar Key nemá Honzův tip pro piloty.",
+    );
+    assert((await dialog.locator(".todo").count()) === 0, "Okno Cedar Key má značku [doplnit].");
 
     // Escape zavře okno, adresa je zase /kam-letet a fokus se vrátí na dlaždici.
     await page.keyboard.press("Escape");
@@ -661,6 +688,18 @@ test(
     await page.goto(`${BASE_URL}/kam-letet/cedar-key`);
     await page.getByRole("heading", { level: 1 }).waitFor();
     assert((await dialog.count()) === 0, "Přímá adresa detailu otevřela okno.");
+
+    // Palatka: kód 28J podle Honzovy opravy (14. 10. 2026), tip pro piloty, chybějící fotky zůstávají [doplnit].
+    await page.goto(`${BASE_URL}/kam-letet/palatka`);
+    await page.getByRole("heading", { level: 1 }).waitFor();
+    const route = await plainText(page.locator(".kl-page-route"));
+    assert(route === "FA83 28J", `Trasa Palatky: ${route}`);
+    await page.locator(".kl-tip").getByRole("heading", { name: "Tip pro piloty" }).waitFor();
+    assert(
+      (await plainText(page.locator(".dest-todo"))) === "[doplnit: fotky letiště Palatka]",
+      "Palatka nemá značku chybějících fotek.",
+    );
+    assert((await page.getByText("KFLZ").count()) === 0, "Stránka Palatky má starý kód KFLZ.");
   },
   { viewport: { width: 1440, height: 900 } },
 );
@@ -671,7 +710,13 @@ async function fillInquiry(page, { email, name }) {
   // Krok 1 bez licence: hláška z modelu a fokus na první volbu.
   await current().getByRole("button", { name: "Pokračovat" }).click();
   await page.locator(".fa-err", { hasText: "Vyberte licenci, nebo možnost Nemám." }).waitFor();
+  // Ultralight a Nemám: nápověda z Honzových požadavků na piloty, u PPL zase zmizí.
+  const note = page.locator("#f-licence-pozn");
+  await page.locator('input[name="licence"][value="Ultralight"]').check();
+  await note.waitFor();
+  assert((await plainText(note)).startsWith("Pro ostatní ať už piloty UL"), "Nápověda u Ultralight nesedí.");
   await page.locator('input[name="licence"][value="PPL"]').check();
+  await note.waitFor({ state: "detached" });
   await current().getByRole("button", { name: "Pokračovat" }).click();
   await page.locator("#krok-2.is-current").waitFor();
 
@@ -777,6 +822,8 @@ test(
       // Chybu najde až server, hodnoty zůstanou ve formuláři.
       await page.getByRole("button", { name: "Odeslat poptávku" }).click();
       await page.locator(".fa-err", { hasText: "Zadejte e-mail ve tvaru jmeno@domena.cz." }).waitFor();
+      // Licence Nemám: nápověda z požadavků na piloty i bez skriptu (po návratu ze serveru).
+      await page.locator("#f-licence-pozn").waitFor();
       assert(
         (await page.locator("#f-jmeno").inputValue()) === `E2E Bez JS ${stamp}`,
         "Po chybě ze serveru zmizelo jméno.",

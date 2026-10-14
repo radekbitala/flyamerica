@@ -110,6 +110,10 @@
   .split > .vy-route { margin-top: calc(44px * 1.08 + 32px); }
 }
 
+/* Požadavky na piloty pod přehledem programu (.pk-req z web.css): Honzovy tři odstavce (src/data/pilot-requirements.ts)
+   pod sebou vedle štítku, na mobilu pod ním. */
+.pk-req-text > p + p { margin-top: 10px; }
+
 /* ---------- MOBIL ---------- */
 @media (max-width: 600px) {
   /* Srovnání: název řádku přes celou šířku, hodnoty obou výletů vedle sebe pod ním. Role prvků tabulky jsou v HTML

@@ -5,6 +5,7 @@ import { Arrow } from "@/components/web/ArrowSymbol";
 import { CtaSection } from "@/components/web/CtaSection";
 import { Figure } from "@/components/web/Figure";
 import { Photo } from "@/components/web/Photo";
+import { PilotRequirements } from "@/components/web/PilotRequirements";
 import { SectionSign } from "@/components/web/SectionSign";
 import { inquiryHref } from "@/components/web/nav";
 import { photos } from "@/data/photos";
@@ -147,9 +148,10 @@ export default function HomePage() {
             <li><span className="fa-step-n" aria-hidden="true">02</span><h3>2&nbsp;týdny před odletem</h3><p>Online probereme trasy, pravidla VFR v&nbsp;USA a&nbsp;možnosti ubytování.</p></li>
             <li><span className="fa-step-n" aria-hidden="true">03</span><h3>Po příletu na Floridu</h3><p>Převezmete auto, ubytujete se a&nbsp;zahájíte letový program.</p></li>
           </ol>
+          {/* Honzovy požadavky na piloty (13. 10. 2026), text v src/data/pilot-requirements.ts */}
           <div className="req">
             <h3>Požadavky na piloty</h3>
-            <p><span className="todo">[doplnit od Honzy: požadavky na piloty - jaká licence, úroveň angličtiny (ICAO) a&nbsp;průkaz radiotelefonisty; co nabídne pilotům UL a&nbsp;lidem bez licence]</span></p>
+            <PilotRequirements className="req-text" />
           </div>
           <div className="steps-cta">
             <Link className="fa-dir" href={inquiryHref()}><span className="t">Poptat termín</span><Arrow /></Link>
@@ -177,13 +179,13 @@ export default function HomePage() {
               <div className="tip-img"><Photo photo="albert-whitted-letecky" sizes={TIP_SIZES} /></div>
               <h3>Albert Whitted, St.&nbsp;Petersburg</h3>
               <div className="route">FA83 <Arrow /> KSPG</div>
-              <p>Přiblížení (approach) s&nbsp;výhledem na mrakodrapy a&nbsp;tyrkysovou hladinu zálivu je nezapomenutelný zážitek.</p>
+              <p>Přiblížení s&nbsp;výhledem na nedaleké mrakodrapy a&nbsp;tyrkysovou hladinu zálivu je nezapomenutelný zážitek.</p>
             </Link>
             <Link className="tip" href={destinationPath("merritt-island")}>
               <div className="tip-img"><Photo photo="merritt-island-pristani" sizes={TIP_SIZES} /></div>
               <h3>Merritt Island</h3>
               <div className="route">FA83 <Arrow /> KCOI</div>
-              <p>Je to ideální a&nbsp;nejbližší letecká brána pro půldenní exkurzi do Kennedy Space Center.</p>
+              <p>Je to ideální a&nbsp;nejbližší letecká brána pro cca půldenní exkurzi do Kennedy Space Center.</p>
             </Link>
             <Link className="tip" href={destinationPath("key-west-everglades")}>
               <div className="tip-img"><Photo photo="key-west-plaz" sizes={TIP_SIZES} /></div>

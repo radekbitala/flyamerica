@@ -9,6 +9,12 @@
 .split.kt-layout { align-items: stretch; }
 .kt-main { display: grid; gap: 64px; align-content: start; min-width: 0; }
 
+/* Nápověda pod volbou licence po výběru Ultralight nebo Nemám (Honzův odstavec z požadavků na piloty, InquiryForm).
+   Prázdná oblast zůstává v HTML kvůli aria-live, záporný okraj vyruší mezeru mřížky .fa-field (8 px), takže bez nápovědy
+   pod volbami nezůstane prázdný řádek. */
+.kt-licence-note:empty { margin-top: -8px; }
+.kt-licence-note .fa-hint { max-width: 34em; }
+
 /* Nechte číslo, Honza zavolá: bílý panel pod poptávkou. Jméno a telefon vedle sebe, pod nimi tlačítko a informace
    o zpracování údajů přes celou šířku. Nadpis ve velikosti Title střední (DESIGN.md: h2 v pravém sloupci kontaktu). */
 .kt-call h2 { font-size: 24px; line-height: 1.2; margin-bottom: 10px; }

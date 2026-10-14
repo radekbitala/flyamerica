@@ -11,7 +11,7 @@ import { LegacyAnchorRedirect } from "./_components/LegacyAnchorRedirect";
 
 // Kam letět (dřív Tipy na výlety, prototyp/tipy-na-vylety.html): rozcestník
 // osmi destinací ze src/data/destinations.ts, názvy, kódy letišť a výňatky
-// tak, jak je Honza napsal (10. 10. 2026). Detail destinace má vlastní
+// tak, jak je Honza napsal (10. a 14. 10. 2026). Detail destinace má vlastní
 // adresu /kam-letet/<slug>: po kliku na webu se otevře v okně nad
 // rozcestníkem (slot @modal, zachycená adresa), bez JavaScriptu, po novém
 // načtení nebo ze sdíleného odkazu je to celá stránka ([slug]/page.tsx).

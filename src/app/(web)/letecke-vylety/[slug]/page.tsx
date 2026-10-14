@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Arrow } from "@/components/web/ArrowSymbol";
 import { Crumbs } from "@/components/web/PageHead";
 import { Photo } from "@/components/web/Photo";
+import { PilotRequirements } from "@/components/web/PilotRequirements";
 import { TripAsk } from "@/components/web/TripAsk";
 import { inquiryHref } from "@/components/web/nav";
 import {
@@ -98,9 +99,10 @@ export default async function TripPage({ params }: TripPageProps) {
               <dl className="pk-data">
                 <Overview trip={trip} />
               </dl>
+              {/* Honzovy požadavky na piloty (13. 10. 2026), stejné u obou výletů, text v src/data/pilot-requirements.ts */}
               <div className="pk-req">
                 <h3>Požadavky na piloty</h3>
-                <p><span className="todo">[doplnit od Honzy: požadavky na piloty - jaká licence, úroveň angličtiny (ICAO) a&nbsp;průkaz radiotelefonisty; co nabídne pilotům UL a&nbsp;lidem bez licence]</span></p>
+                <PilotRequirements className="pk-req-text" />
               </div>
             </div>
             <TripRoute trip={trip} />

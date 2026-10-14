@@ -29,5 +29,13 @@ export const FA_PHONE = "+420 602 214 719";
 /** Telefon pro odkaz tel: (bez mezer). */
 export const FA_PHONE_HREF = `tel:${FA_PHONE.replaceAll(" ", "")}`;
 
+/**
+ * Sídlo provozovatele SKYSHARE s.r.o. (IČO 03725235) doslova od Honzy
+ * (13. 10. 2026, ověřeno v ARES). Pevné mezery jsou rovnou v textu
+ * (\u00a0): řádek se zalomí jen za čárkou, město s PSČ zůstane pohromadě.
+ * Na Kontaktu, v patičce a v zásadách.
+ */
+export const FA_COMPANY_SEAT = "Mezibranská\u00a0375, Kutná\u00a0Hora\u00a0284\u00a001";
+
 /** Barva lišty prohlížeče na mobilu (Grafit z fa-tokeny.css). */
 export const THEME_COLOR = "#1D252D";

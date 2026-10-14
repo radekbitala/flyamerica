@@ -38,6 +38,16 @@
 .kl-pager-prev:hover .kl-pager-dir svg { transform: rotate(180deg) translateX(2px); }
 .kl-pager-link:focus-visible { outline: 2px solid var(--grafit); outline-offset: 4px; }
 
+/* ---------- TIP PRO PILOTY (detail na stránce i v okně) ----------
+   Honzův tip pod textem destinace (texty ze 14. 10. 2026): krátký blok oddělený vlasovou linkou, štítek verzálkami jako
+   popisky údajů (label-sm, jako Požadavky na piloty u výletu) a Honzův text v serifu o stupeň menší než text destinace
+   (v podkladu je tip menším písmem). Bez plochy, rámečku a polohové tabule (DESIGN.md, The One Location Sign Rule).
+   Šířka jako sloupec .prose (34 em při 20 px). */
+.kl-tip { margin-top: 36px; padding-top: 18px; border-top: var(--linka) solid var(--papir-t); max-width: 680px; }
+.kl-tip h3 { font: 700 12px/1.3 var(--f-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--s600); margin-bottom: 10px; }
+.kl-tip p { font: 400 18px/1.6 var(--f-serif); }
+.kl-tip + .dest-todo { margin-top: 20px; }
+
 /* Jedna fotka v galerii (Kissimmee): nejvýš 370 px, nezvětšuje se nad soubor 580 px. Dvě třídy kvůli
    .dest-gal:not(.dest-gal--2) z web.css (601-960 px), které by jinak fotku stáhlo na třetinu šířky. */
 @media (min-width: 601px) { .dest-gal.dest-gal--1 { grid-template-columns: minmax(0, 370px); } }
@@ -104,6 +114,8 @@
 @media (max-width: 600px) {
   .kl-pager { margin-top: 48px; gap: 16px; }
   .kl-pager-name { font-size: 17px; }
+  .kl-tip { margin-top: 28px; }
+  .kl-tip p { font-size: 17px; }
 
   /* Okno přes celou obrazovku, lišta jako hlavička webu na mobilu */
   .kl-dialog { width: 100%; height: 100%; max-height: none; margin: 0; }

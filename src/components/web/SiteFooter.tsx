@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { NAV_ITEMS, inquiryHref } from "@/components/web/nav";
-import { FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
+import { FA_COMPANY_SEAT, FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 
 /**
  * Patička webu, stejná na všech stránkách (je v layoutu (web)). Texty
- * doslova z modelu. Podle systému bez loga, polohová tabule FA83 je jediný
- * tabulový prvek.
+ * doslova z modelu, u provozovatele navíc sídlo od Honzy (13. 10. 2026).
+ * Podle systému bez loga, polohová tabule FA83 je jediný tabulový prvek.
  */
 export function SiteFooter() {
   return (
@@ -48,6 +48,7 @@ export function SiteFooter() {
             <ul>
               <li>SKYSHARE s.r.o.</li>
               <li>IČO 03725235</li>
+              <li>{FA_COMPANY_SEAT}</li>
             </ul>
           </div>
         </div>

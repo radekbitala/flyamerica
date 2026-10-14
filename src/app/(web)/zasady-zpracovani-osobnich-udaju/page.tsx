@@ -18,7 +18,7 @@ import { PageHead } from "@/components/web/PageHead";
 import { pageMetadata } from "@/lib/metadata";
 import { TRACE_RETENTION_DAYS } from "@/lib/inquiries/spam";
 import { ROUTES } from "@/lib/routes";
-import { FA_EMAIL } from "@/lib/site";
+import { FA_COMPANY_SEAT, FA_EMAIL } from "@/lib/site";
 import styles from "./page.module.css";
 
 export const metadata = pageMetadata({
@@ -47,8 +47,8 @@ export default function PrivacyPage() {
             <div className={`prose ${styles.policy}`}>
               <h2>Kdo údaje zpracovává</h2>
               <p>
-                Správcem osobních údajů je SKYSHARE s.r.o., IČO&nbsp;03725235, se sídlem{" "}
-                <span className="todo">[doplnit: sídlo firmy]</span>, provozovatel webu FLY America. Ve věcech
+                Správcem osobních údajů je SKYSHARE s.r.o., IČO&nbsp;03725235, se sídlem {FA_COMPANY_SEAT},
+                provozovatel webu FLY America. Ve věcech
                 osobních údajů nám napište na {email}.
               </p>
 

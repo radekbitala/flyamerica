@@ -33,6 +33,10 @@
 /* Jméno a odkaz jako u malého portrétu (.who-name z web.css) */
 .home-svc-who figcaption { display: grid; gap: 4px; justify-items: start; margin-top: 14px; }
 
+/* ---------- Požadavky na piloty v Průběhu přípravy (#postup, .req z web.css) ----------
+   Honzovy tři odstavce (src/data/pilot-requirements.ts) v pravém sloupci pod sebou, vzhled odstavce z web.css. */
+.req-text > p + p { margin-top: 12px; }
+
 /* Pod 1101 px je sloupec vedle fotky na dvě buňky v řádku moc úzký (název by se lámal na tři řádky): název nad popisem */
 @media (max-width: 1100px) {
   .home-svc-list > div { grid-template-columns: minmax(0, 1fr); row-gap: 4px; padding: 15px 0 14px; }

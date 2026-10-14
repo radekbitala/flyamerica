@@ -3,7 +3,7 @@ import { PageHead } from "@/components/web/PageHead";
 import { packageFromParam } from "@/lib/inquiries/options";
 import { createFormToken } from "@/lib/inquiries/spam";
 import { pageMetadata } from "@/lib/metadata";
-import { FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
+import { FA_COMPANY_SEAT, FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 import { NBSP } from "@/lib/typography";
 import { CallbackForm } from "./CallbackForm";
 import { InquiryForm } from "./InquiryForm";
@@ -119,9 +119,7 @@ export default async function ContactPage({
                 </div>
                 <div>
                   <dt>Sídlo</dt>
-                  <dd>
-                    <span className="todo">[doplnit: sídlo firmy]</span>
-                  </dd>
+                  <dd>{FA_COMPANY_SEAT}</dd>
                 </div>
               </dl>
             </div>

@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { Arrow } from "@/components/web/ArrowSymbol";
+import { PILOT_REQUIREMENTS_NO_LICENCE } from "@/data/pilot-requirements";
 import {
   INQUIRY_FIELDS,
   INQUIRY_STEPS,
@@ -65,6 +66,9 @@ import {
  *    (withSendFallback ve form-helpers.tsx), ne chybová stránka.
  * 4. Po odeslání potvrzení se shrnutím a místo „Upravit poptávku“ z modelu
  *    „Poslat další poptávku“ (prázdný formulář od kroku 1, _PRAVIDLA.md 7).
+ * 5. Po volbě licence Ultralight nebo Nemám je pod volbami nápověda: Honzův
+ *    odstavec z požadavků na piloty pro piloty UL a zájemce bez licence
+ *    (src/data/pilot-requirements.ts). Bez skriptu až po návratu ze serveru.
  *
  * Kroky jsou skryté už v HTML ze serveru (třídy kt-js a is-current), aby se
  * formulář po načtení skriptu neskládal. Bez skriptu je ukáže <noscript>
@@ -108,6 +112,10 @@ const IDS: Record<InquiryField, string> = {
 
 const errorId = (field: InquiryField) => `${IDS[field]}-chyba`;
 
+/** Licence, po jejichž volbě je pod volbami nápověda pro piloty UL a zájemce bez licence. */
+const NO_LICENCE_NOTE_FOR: readonly string[] = ["Ultralight", "Nemám"] satisfies (typeof LICENCES)[number][];
+const LICENCE_NOTE_ID = "f-licence-pozn";
+
 const PILOT_LABELS: Record<string, ReactNode> = {
   "1": "1",
   "2": "2",
@@ -146,6 +154,8 @@ interface View {
   errors: Errors;
   /** Zaškrtnutý výlet (kvůli řádku „Poptáváte“). */
   pkg: string;
+  /** Zaškrtnutá licence (kvůli nápovědě u Ultralight a Nemám). */
+  licence: string;
   /** Poslední platný token, chybový stav nese nový, úspěch žádný. */
   token: string | undefined;
   /** Po „Poslat další poptávku“: místo potvrzení prázdný formulář. */
@@ -164,6 +174,7 @@ function viewFor(state: InquiryFormState, prev?: View): View {
     step,
     errors: state.errors,
     pkg: state.ok ? "" : (state.values.packageSlug ?? ""),
+    licence: state.ok ? "" : (state.values.licence ?? ""),
     token: state.token ?? prev?.token,
     again: false,
   };
@@ -231,6 +242,7 @@ export function InquiryForm({
   // Po odeslání prázdná pole (pro další poptávku), při chybě vyplněné hodnoty.
   const values: Values = state.ok ? {} : state.values;
   const chosen = preset && !done ? chosenName(view.pkg) : undefined;
+  const licenceNote = NO_LICENCE_NOTE_FOR.includes(view.licence);
   const err = (field: InquiryField) => view.errors[field];
 
   // Fokus po přepnutí kroku nebo po chybě v prohlížeči (po vykreslení).
@@ -286,6 +298,7 @@ export function InquiryForm({
     const value = fieldValue(e.currentTarget, field);
     const patch: Partial<View> = {};
     if (field === "packageSlug") patch.pkg = value;
+    if (field === "licence") patch.licence = value;
     if (view.errors[field]) {
       const errors = { ...view.errors };
       const message = checkInquiryField(field, value);
@@ -304,7 +317,7 @@ export function InquiryForm({
   function sendAnother(e: MouseEvent<HTMLAnchorElement>) {
     // Bez skriptu odkaz načte prázdnou stránku Kontakt, se skriptem stačí ukázat formulář.
     e.preventDefault();
-    update({ again: true, step: 0, errors: {}, pkg: "" });
+    update({ again: true, step: 0, errors: {}, pkg: "", licence: "" });
     pendingFocus.current = { kind: "step" };
   }
 
@@ -409,12 +422,24 @@ export function InquiryForm({
               <span className="vh">Krok&nbsp;1 ze 3: </span>Pilotní licence a&nbsp;pár slov o&nbsp;vás
             </h2>
           </div>
-          <fieldset className={fieldClass(err("licence"), true)} id="f-licence" aria-describedby="f-licence-hint">
+          <fieldset
+            className={fieldClass(err("licence"), true)}
+            id="f-licence"
+            aria-describedby={describedBy("f-licence-hint", licenceNote && LICENCE_NOTE_ID)}
+          >
             <legend>Pilotní licence</legend>
             <div className="checks">{radios("licence", LICENCES, (v) => v)}</div>
             <span className="fa-hint" id="f-licence-hint">
               Jinou licenci napište do pole Pár slov o&nbsp;vás.
             </span>
+            {/* Oblast je v HTML pořád (aria-live ohlásí nápovědu po volbě), prázdná nezabírá místo (contact.css). */}
+            <div className="kt-licence-note" aria-live="polite">
+              {licenceNote ? (
+                <p className="fa-hint" id={LICENCE_NOTE_ID}>
+                  {czechNbspText(PILOT_REQUIREMENTS_NO_LICENCE)}
+                </p>
+              ) : null}
+            </div>
             {fieldError("licence")}
           </fieldset>
           <div className={fieldClass(err("aboutPilot"), true)}>
