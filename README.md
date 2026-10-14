@@ -43,8 +43,8 @@ src/
   data/
     trips.ts               letecké výlety: texty, tabulky a ceny doslova od Honzy, letadlo jednou (AIRCRAFT)
     trip-slugs.ts          slugy výletů (adresy a ?vylet=), samostatně kvůli menu v prohlížeči
-    destinations.ts        destinace Kam letět: názvy, kódy, texty a tipy pro piloty doslova od Honzy, fotky
-    pilot-requirements.ts  požadavky na piloty doslova od Honzy (úvod, oba výlety, nápověda licence na Kontaktu)
+    destinations.ts        destinace Kam letět: názvy, kódy, texty a tipy pro piloty od Honzy (opravený jen pravopis), fotky
+    pilot-requirements.ts  požadavky na piloty od Honzy, opravený jen pravopis (úvod, oba výlety, nápověda licence na Kontaktu)
     photos.ts              fotky stránek: z modelu a sloučené sady z fotobanky (photos-home/trips/destinations/article.ts)
     redirects.json         přesměrování starých adres (načte next.config.ts)
   lib/
@@ -87,7 +87,7 @@ scripts/
   e2e.mjs                  e2e testy (administrace i veřejný web)
   test-redirects.mjs       test přesměrování starých adres proti běžícímu serveru
   test-inquiry-action.mjs  test validace poptávky bez serveru a databáze
-  test-typography.mjs      test pevných mezer (texty z modelu) a českých uvozovek
+  test-typography.mjs      test pevných mezer (texty z modelu), českých uvozovek a smajlíků
 eslint-rules/              vlastní pravidlo local/require-admin
 ```
 
@@ -184,7 +184,7 @@ Pomocné moduly: `src/lib/routes.ts` (adresy stránek), `src/components/web/nav.
 
 ### Výlety a destinace
 
-Texty výletů a destinací nejsou ve stránkách, ale v datech, ze kterých stránky skládají obsah. Texty jsou doslova z Honzových podkladů (`../podklady-od-Honzy/2026-10-10_balicky-o-mne-destinace.md`, u destinací kromě FA83 novější `2026-10-14_destinace-texty-a-tipy-pro-piloty.md`, požadavky na piloty `2026-10-13_pozadavky-na-piloty-a-sidlo.md`) s běžnými mezerami, pevné mezery doplní při vykreslení `czechNbspText()`. Zjevné překlepy v Honzových textech zůstávají doslova (seznam na konci podkladu ze 14. 10.), opravy jen po Radkově rozhodnutí.
+Texty výletů a destinací nejsou ve stránkách, ale v datech, ze kterých stránky skládají obsah. Texty jsou doslova z Honzových podkladů (`../podklady-od-Honzy/2026-10-10_balicky-o-mne-destinace.md`, u destinací kromě FA83 novější `2026-10-14_destinace-texty-a-tipy-pro-piloty.md`, požadavky na piloty `2026-10-13_pozadavky-na-piloty-a-sidlo.md`) s běžnými mezerami, pevné mezery doplní při vykreslení `czechNbspText()`. Opravuje se jen pravopis a jen po Radkově rozhodnutí: 14. 10. 2026 překlepy z konce podkladu ze 14. 10. (Orlanda, international, základny, Merritt, Caesar, opustila, u Merritt Islandu „jsme“) a v požadavcích na piloty („zájemce“, „angličtina“). Formulace, čárky a zápis času („1:30 minut“, „0:50 minut“) zůstávají, podklady v `../podklady-od-Honzy` se nemění. Smajlíky z Honzova dokumentu (za „plachetnic“ u Albert Whitted a za „salátem“ u Vero Beach) jsou na webu jako znak 😀.
 
 - `src/data/trips.ts`: `TRIPS` (pořadí na webu), `getTrip(slug)`, `otherTrip(slug)`, `AIRCRAFT` a pomocníci `formatTripSubtitle()` (řádek „9 dní na Floridě • 20 letových hodin“ se láme jen za tečkou), `tripFact(trip, "length" | "hours")` (délka a nálet z přehledu programu, Honza je u výletů pojmenoval různě) a `splitPrice()` (částka v buňce ceny). Výlet: `slug` (`florida-week`, `grand-tour`, i hodnota `?vylet=`), `name`, `subtitle`, `intro` (perex), `teaser` (text karty), `numbers` (`days`, `flightDays`, `freeDays`, `hours`), `overview` (řádky přehledu programu `{ term, text }` bez řádku Letadlo), `price` (`from` přesně podle Honzy, `note`), `included` a `variants` (tabulky `{ title, intro?, columns, rows, note? }`), `preparation?` (průběh přípravy, jen Florida Week), `destinations` (slugy destinací, které Honza u výletu jmenuje), `description`. Letadlo je u obou výletů stejné a uvádí se jednou a stejně (Radkův bod 3 z 12. 10. 2026): `AIRCRAFT` = „Cessna 182 Skylane“ a Honzův popis z výletu 1, v přehledu programu a ve srovnání výletů jeden řádek Letadlo, na úvodu jednou v popisu sekce výletů. Proto je podtitul Grand Tour bez Honzova posledního údaje „• Cessna 182“. Tabulky cen zůstávají doslova i s letadlem. Slugy jsou i v `src/data/trip-slugs.ts`, aby menu v prohlížeči nestahovalo texty výletů.
 - `src/app/(web)/letecke-vylety/_data/trip-media.ts`: fotky výletů (`TRIP_MEDIA[slug]`), jen fotky destinací z Honzova textu, ne letadlo. `card` je fotka karty výletu, stejná na úvodu, na přehledu `/letecke-vylety` a v Kam dál (Florida Week zátoka Crystal River, Grand Tour silnice na Florida Keys), `slides` posuvná řada v záhlaví výletu (`_components/PhotoRow.tsx` a `TripPhotoRow.tsx`: bez automatického přetáčení, tlačítka Předchozí a Další, tažení, šipky, Home a End, první fotka se načte hned). Srovnání výletů na přehledu je `_components/TripCompare.tsx`, destinace na trase vedle přehledu programu `_components/TripRoute.tsx`.
@@ -217,7 +217,7 @@ Náhradní písma (`adjustFontFallback`) next/font negeneruje, používají se r
 
 `czechNbsp(html)` a `czechNbspText(text)` ze `src/lib/typography.ts` doplní pevné mezery podle pravidla R4 z `prototyp/_PRAVIDLA.md`: za jednopísmennými předložkami a spojkami, mezi číslem a jednotkou nebo počítaným slovem, v tisících a telefonu, u dat a v celcích (Key West, St. Augustine, Cessna 182), s výjimkou pro označení za slovem (bodu A, Saturn V). Mění jen druh mezery a jen v textu, nikdy v atributech a značkách. Rozsah čísel („3-3,5 hodiny“, „6-8 týdnů“) a archivní šipka „->“ se za spojovníkem nezalomí (`tieText()`: neviditelný znak WORD JOINER U+2060, spojovník zůstává obyčejný „-“, data v databázi beze změny). Text článků z databáze se prožene `czechNbsp()` při vykreslení, perexy, titulky a popisky fotek `czechNbspText()`, texty výletů a destinací z `src/data` také. Statické texty stránek mají pevné mezery rovnou z modelu (`&nbsp;` v JSX).
 
-Obě funkce zároveň převádějí rovné dvojité uvozovky na české (`czechQuotesText()`, rozhodnutí 12. 10. 2026): data v databázi zůstávají beze změny, „…“ je jen při zobrazení. Páruje se v rámci bloku (odstavec, položka, nadpis, popisek), i přes řádkové značky. Horní uvozovka “ na začátku slova je chybně sázená otevírací a zobrazí se jako „ (články 2010, 2018, 2019 a 2022 mají „“latentní““). Rovná uvozovka po české „ ji zavře (článek 2025 má „shutdownu"), rovná před českou “ ji otevře, ostatní rovné se střídají „ a “ jen při sudém počtu v bloku, lichý počet nechá blok beze změny. Nikdy v atributech, v `<code>`, `<pre>` a podobných značkách ani v adrese URL v textu. Entita `&quot;` v textu se převádí také. Test: `node scripts/test-typography.mjs`.
+Obě funkce zároveň převádějí rovné dvojité uvozovky na české (`czechQuotesText()`, rozhodnutí 12. 10. 2026): data v databázi zůstávají beze změny, „…“ je jen při zobrazení. Páruje se v rámci bloku (odstavec, položka, nadpis, popisek), i přes řádkové značky. Horní uvozovka “ na začátku slova je chybně sázená otevírací a zobrazí se jako „ (články 2010, 2018, 2019 a 2022 mají „“latentní““). Rovná uvozovka po české „ ji zavře (článek 2025 má „shutdownu"), rovná před českou “ ji otevře, ostatní rovné se střídají „ a “ jen při sudém počtu v bloku, lichý počet nechá blok beze změny. Nikdy v atributech, v `<code>`, `<pre>` a podobných značkách ani v adrese URL v textu. Entita `&quot;` v textu se převádí také. Smajlíky (😀 v textech destinací, 🙂 na konci článku 2025) zůstávají beze změny, pevná mezera před nimi se nevkládá. Test: `node scripts/test-typography.mjs`.
 
 ### Z cest (články)
 

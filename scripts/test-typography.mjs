@@ -345,3 +345,42 @@ describe("české uvozovky", () => {
     assert.equal(czechNbsp(once), once);
   });
 });
+
+describe("smajlíky (Honzovy texty 14. 10. 2026)", () => {
+  // Smajlík je mimo základní rovinu Unicode (v JavaScriptu dvojice náhradních
+  // znaků). Pravidla ho nesmí rozdělit na půlky (na webu by byl „�“) ani změnit.
+  const intact = (text) => text.isWellFormed() && !text.includes("�");
+
+  test("destinace: smajlík zůstává, pevné mezery jako jinde", () => {
+    const tip = "se vyhnout stěžňům plachetnic 😀. Délka letu";
+    assert.equal(czechNbspText(tip), tip);
+    assert.equal(
+      czechNbspText("Dobrá letištní restaurace s vynikajícím Caesar salátem 😀."),
+      nb("Dobrá letištní restaurace s~vynikajícím Caesar salátem 😀."),
+    );
+  });
+
+  test("článek: smajlík na konci odstavce v HTML", () => {
+    assert.equal(
+      czechNbsp("<p>třeba opět přes oceán v o něco vyšší letové hladině 🙂.</p>"),
+      nb("<p>třeba opět přes oceán v~o~něco vyšší letové hladině 🙂.</p>"),
+    );
+  });
+
+  test("smajlík vedle uvozovek a jednopísmenných předložek", () => {
+    assert.equal(czechNbspText('Říkáme mu "obývák" 😀 a v kabině'), nb("Říkáme mu „obývák“ 😀 a~v~kabině"));
+    assert.equal(czechNbspText("v 😀 kabině"), nb("v~😀 kabině"));
+  });
+
+  test("smajlík se nerozpadne a nezmizí, ani při opakovaném použití", () => {
+    for (const text of ["plachetnic 😀. Délka", "salátem 😀.", "hladině 🙂.", "😀😀 a v 🙂"]) {
+      const once = czechNbspText(text);
+      assert.ok(intact(once));
+      assert.equal(once.replaceAll(NBSP, " "), text);
+      assert.equal(czechNbspText(once), once);
+      const html = czechNbsp(`<p>${text}</p>`);
+      assert.ok(intact(html));
+      assert.equal(html.replaceAll(NBSP, " "), `<p>${text}</p>`);
+    }
+  });
+});

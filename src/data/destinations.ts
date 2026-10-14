@@ -7,8 +7,10 @@ import type { PhotoName } from "@/data/photos";
  * destinací jsou z Honzových nových textů ze 14. 10. 2026
  * (../podklady-od-Honzy/2026-10-14_destinace-texty-a-tipy-pro-piloty.md),
  * Orlando North (FA83) v nich není a zůstává z 10. 10. Názvy, kódy letišť
- * a texty doslova i se zjevnými překlepy (o nich rozhodne Radek), s běžnými
- * mezerami: pevné mezery doplní při vykreslení czechNbspText()
+ * a texty doslova, jen s opraveným pravopisem (rozhodnutí Radka 14. 10. 2026:
+ * překlepy a gramatika, formulace, čárky a zápis času „1:30 minut“ beze změny)
+ * a se dvěma smajlíky z Honzova dokumentu (za „plachetnic“ a „salátem“).
+ * Běžné mezery: pevné mezery doplní při vykreslení czechNbspText()
  * (src/lib/typography.ts).
  *
  * Kód je vždy tak, jak ho napsal Honza. U Palatky ho 14. 10. 2026 opravil na
@@ -119,7 +121,7 @@ export const DESTINATIONS: readonly Destination[] = [
       "Přiblížení s výhledem na nedaleké mrakodrapy a tyrkysovou hladinu zálivu je nezapomenutelný zážitek. Letiště má skvělou restauraci s terasou přímo na ploše, odkud můžete sledovat provoz na dráze a skvěle poobědvat.",
     ],
     pilotTip:
-      "Let z Orladna North si obvykle zpestřujeme přistáním ve Winter Haven, Wauchula nebo případně Lakeland pro zkušenost s řízeným letištěm. POZOR: Občas je potřeba se vyhnout stěžňům plachetnic. Délka letu pak záleží jak moc se cestou zdržíme, ale obvykle jsme za 1:30 minut již na terase v restauraci.",
+      "Let z Orlanda North si obvykle zpestřujeme přistáním ve Winter Haven, Wauchula nebo případně Lakeland pro zkušenost s řízeným letištěm. POZOR: Občas je potřeba se vyhnout stěžňům plachetnic 😀. Délka letu pak záleží jak moc se cestou zdržíme, ale obvykle jsme za 1:30 minut již na terase v restauraci.",
     teaser:
       "Městské letiště umístěné přímo na nábřeží v zálivu Tampa Bay, jen pár kroků od muzea Salvadora Dalího a přístavu.",
     tile: "albert-whitted-letecky",
@@ -132,10 +134,10 @@ export const DESTINATIONS: readonly Destination[] = [
     name: "Vero Beach Regional Airport",
     shortName: "Vero Beach",
     highlights:
-      "Moderní a výborně vybavené regionální letiště s několika drahami nedaleko pobřeží Atlantiku, které dýchá bohatou historií spojenou s výcvikem pilotů a leteckým průmyslem. Sídlí zde společnost Piper a většina těchto strojů, které u nás potkáváme opustilo jednoho dne právě tuto továrnu.",
+      "Moderní a výborně vybavené regionální letiště s několika drahami nedaleko pobřeží Atlantiku, které dýchá bohatou historií spojenou s výcvikem pilotů a leteckým průmyslem. Sídlí zde společnost Piper a většina těchto strojů, které u nás potkáváme opustila jednoho dne právě tuto továrnu.",
     whyHeading: "Proč je dobré tam letět",
     why: [
-      "Spojení perfektní infrastruktury s okamžitou dostupností krásných klidných pláží a příjemných restaurací u oceánu. Dobrá letištní restaurace s vynikajícím Cesar salátem.",
+      "Spojení perfektní infrastruktury s okamžitou dostupností krásných klidných pláží a příjemných restaurací u oceánu. Dobrá letištní restaurace s vynikajícím Caesar salátem 😀.",
     ],
     pilotTip:
       "Řízené letiště s občas hustým výcvikovým provozem. Nedaleké jezero Okeechobee je zážitek, protože svou velikostí připomíná spíše moře. Cestou z Orlanda si procvičíme průlet (transition) řízeným prostorem letiště Kissimmee. Doba letu je pak cca 0:50 minut.",
@@ -178,7 +180,7 @@ export const DESTINATIONS: readonly Destination[] = [
       "Leží strategicky blízko zábavních parků a atrakcí střední Floridy a nabízí zajímavou zkušenost z trochu více vytíženého letiště.",
     ],
     pilotTip:
-      "Z naší základny Orlando North je to opravdu kousek asi jen 20 minut letu na jihovýchod. Jen krátce podletíme řízené prostory mezinárodního letiště KMCO (Orlando McCoy intenational) a jsme připraveni sednout na jednu z mnoha místních drah.",
+      "Z naší základny Orlando North je to opravdu kousek asi jen 20 minut letu na jihovýchod. Jen krátce podletíme řízené prostory mezinárodního letiště KMCO (Orlando McCoy international) a jsme připraveni sednout na jednu z mnoha místních drah.",
     teaser:
       "Rušnější a perfektně vybavené řízené letiště jižně od Orlanda, které je oblíbenou základnou pro soukromá a byznysová letadla, ale skvěle připravené i pro menší stroje našeho typu.",
     todo: "další fotka letiště Kissimmee",
@@ -199,7 +201,7 @@ export const DESTINATIONS: readonly Destination[] = [
       "Na stojánce jsou někdy k vidění zajímavá letadla nejen na amerických značkách.",
     ],
     pilotTip:
-      "Z Orlanda přes Kissimmee jsem za 45 minut v Merrit Islandu, zde se obvykle zařadíme do hustého výcvikového provozu a dáme si několik letmých přistání. Sídlí zde poměrně značně vytížená škola na Piper 28 a mladíci z celého světa zde získávají své licence.",
+      "Z Orlanda přes Kissimmee jsme za 45 minut v Merritt Islandu, zde se obvykle zařadíme do hustého výcvikového provozu a dáme si několik letmých přistání. Sídlí zde poměrně značně vytížená škola na Piper 28 a mladíci z celého světa zde získávají své licence.",
     teaser:
       "Letiště situované na stejnojmenném ostrově v zálivu u Atlantiku v těsné blízkosti vesmírného pobřeží (Space Coast).",
     // Fotka „Přistání na Merritt Island (MCOI)“ jen jako dlaždice: Honza uvádí KCOI, kód čeká na potvrzení.
@@ -219,7 +221,7 @@ export const DESTINATIONS: readonly Destination[] = [
       "Let nad celým řetězcem ostrovů Florida Keys (Overseas Highway z ptačí perspektivy nemá konkurenci). Kombinace s návštěvou Everglades, kde si objednáte jízdu na rychlém člunu (airboat) mezi mangrovy a zblízka pozorujete aligátory, tvoří absolutní vrchol každé floridské expedice.",
     ],
     pilotTip:
-      "Jedná se asi o nejvzdálenější destinaci z naší základy, ale nikde není dáno, že nemůžeme na Key Westu nebo kdekoliv jinde přespat. Cestou si děláme kromě přistání v Everglades i cvičná přistání v Marco Island, Arcadia, Page Field apod.",
+      "Jedná se asi o nejvzdálenější destinaci z naší základny, ale nikde není dáno, že nemůžeme na Key Westu nebo kdekoliv jinde přespat. Cestou si děláme kromě přistání v Everglades i cvičná přistání v Marco Island, Arcadia, Page Field apod.",
     teaser: "Přistání na Key Westu nabízí ikonické panorama korálových ostrovů a tyrkysového moře pod křídly.",
     tile: "key-west-plaz",
     gallery: ["key-west-plaz", "tipy-florida-keys-silnice", "everglades-letecky"],
