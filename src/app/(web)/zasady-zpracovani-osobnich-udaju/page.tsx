@@ -47,7 +47,7 @@ export default function PrivacyPage() {
             <div className={`prose ${styles.policy}`}>
               <h2>Kdo údaje zpracovává</h2>
               <p>
-                Správcem osobních údajů je SKYSHARE s.r.o., IČO&nbsp;03725235, se sídlem {FA_COMPANY_SEAT},
+                Správcem osobních údajů je SKYSHARE&nbsp;s.r.o., IČO&nbsp;03725235, se sídlem {FA_COMPANY_SEAT},
                 provozovatel webu FLY America. Ve věcech
                 osobních údajů nám napište na {email}.
               </p>
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
 
               <h2>Kdo k&nbsp;údajům má přístup</h2>
               <p>
-                Poptávky čte Honza Čermák za SKYSHARE s.r.o. Dál s&nbsp;údaji pracuje jen provozovatel webu, u&nbsp;kterého
+                Poptávky čte Honza Čermák za SKYSHARE&nbsp;s.r.o. Dál s&nbsp;údaji pracuje jen provozovatel webu, u&nbsp;kterého
                 běží web a&nbsp;databáze, a&nbsp;e-mailová služba, přes kterou odchází upozornění na novou poptávku
                 a&nbsp;potvrzení vám. Oba smí údaje použít jen pro nás. Nikomu dalšímu je nepředáváme.{" "}
                 <span className="todo">[doplnit: názvy poskytovatelů a&nbsp;zda údaje opouštějí EU]</span>
