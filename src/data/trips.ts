@@ -95,7 +95,7 @@ export const TRIPS: readonly Trip[] = [
     slug: "florida-week",
     order: 1,
     name: "Florida Week & Fly",
-    subtitle: "Létání v USA na zkoušku",
+    subtitle: "Létání v USA na zkoušku • od 12 letových hodin",
     intro:
       "Zažijte týden VFR létání na Floridě. Procvičíte si anglickou leteckou frazeologii na amerických letištích, přistanete na ikonických ostrovních drahách, jako jsou Cedar Key nebo Albert Whitted v St. Petersburgu, a proletíte se podél pobřeží Mexického zálivu. O veškerou organizaci a servis se postaráme a v kabině vás bude doprovázet zkušený mentor.",
     teaser:
