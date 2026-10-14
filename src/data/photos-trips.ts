@@ -29,6 +29,17 @@ export const tripPhotos = {
     alt: "Zátoka Crystal River s ostrůvky a loděmi pod křídlem letadla",
     caption: "Zátoka Crystal River u Mexického zálivu se hemží vodní technikou různého druhu po většinu roku",
   },
+  // Karta Florida Week (úvod, přehled výletů, Kam dál na Grand Tour): výřez 16 : 9 stejné fotky (úprava 27 z auditu,
+  // rozhodnutí 14. 10. 2026). Karta má 16 : 9, fotka 4 : 3, takže object-position může výřez posunout jen svisle a pak
+  // je vidět buď křídlo nahoře, nebo napůl rám okna kabiny vpravo dole. Výřez 2080 x 1170 z varianty 2400 (od x 0,
+  // y 250) zmenšený na 1600 x 900, bez metadat, nemá ani jedno. Alt a popisek doslova z fotobanky.
+  "vylety/florida-z-vysky-crystal-river-07-karta": {
+    src: "/img/vylety/florida-z-vysky-crystal-river-07-karta.jpg",
+    width: 1600,
+    height: 900,
+    alt: "Zátoka Crystal River s ostrůvky a loděmi pod křídlem letadla",
+    caption: "Zátoka Crystal River u Mexického zálivu se hemží vodní technikou různého druhu po většinu roku",
+  },
   // Florida Grand Tour & Fly: Everglades a St. Augustine.
   "vylety/destinace-everglades-19": {
     src: "/img/vylety/destinace-everglades-19.jpg",
@@ -51,5 +62,14 @@ export const tripPhotos = {
     alt: "Pevnost Castillo de San Marcos ve St. Augustine z výšky",
     // Popisek z fotobanky doslova („St. Augustin“, Honza píše „St. Augustine“), oprava čeká na Radka.
     caption: "St. Augustin",
+  },
+  // Úprava 9 z auditu (rozhodnutí 14. 10. 2026): letiště a letadla místo pláže.
+  // Bez caption (viditelný popisek je alt): popisek ve fotobance má kód KEYW,
+  // vedle Honzova EYW se neukazuje.
+  "vylety/destinace-key-west-15": {
+    src: "/img/vylety/destinace-key-west-15.jpg",
+    width: 1600,
+    height: 1200,
+    alt: "Červenostříbrný Cirrus SR22 po přistání na letišti Key West, v pozadí business jety",
   },
 } as const satisfies Record<string, Photo>;

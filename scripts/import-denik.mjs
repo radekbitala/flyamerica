@@ -23,7 +23,8 @@
  *   "denik" je "<slug>/<soubor>.jpg", adresa <SUPABASE_URL>/storage/v1/object/public/denik/<cesta>.
  *   Lokálně (--local) http://127.0.0.1:8816/<cesta>, kde fotky servíruje python3 -m http.server
  *   nad <zdroj>/storage (README, Lokální vývoj).
- * - Titulek bez přípony „ | 2016“ (_meta.titleMain), přípona se nikam neukládá.
+ * - Titulek bez přípony „ | 2016“ (_meta.titleMain). Rok z přípony jde do trip_year (Rok cesty), jen když
+ *   se liší od roku publikace (článek „Po vynucené pauze opět v USA | 2022“ vyšel v roce 2023).
  * - Galerie NextGEN jako PostGallery { id, items } v pořadí podle "order". alt jen tam, kde se liší
  *   od popisku (GalleryItem.alt).
  * - Blokové galerie WordPressu (fotky s popisky pod sebou v článcích 2019, 2022 a 2023) se převedou
@@ -75,6 +76,8 @@ registerHooks({
 // Stejné čištění a stejná validace jako v administraci.
 const { sanitizePostHtml } = await import("../src/lib/sanitize.ts");
 const { postSchema } = await import("../src/lib/post-form.ts");
+const { titleLabelYear } = await import("../src/lib/post-year.ts");
+const { yearOf } = await import("../src/lib/dates.ts");
 
 /** DENIK_BUCKET v src/lib/supabase/admin.ts. */
 const BUCKET = "denik";
@@ -554,6 +557,12 @@ function preparePost(post, base) {
   if (publishedAt && Number.isNaN(publishedAt.getTime())) {
     throw new ImportError(`${where}: neplatné datum ${post.publishedAt}`);
   }
+  // Rok cesty (úprava 33 z auditu): štítek původního titulku („Po vynucené
+  // pauze opět v USA | 2022“) se do titulku neukládá. Když se jeho rok liší
+  // od roku publikace (článek 2022 vyšel 19. 11. 2023), jde do trip_year,
+  // jinak by web u článku ukazoval rok publikace.
+  const labelYear = titleLabelYear(post.title ?? "");
+  const tripYear = labelYear && publishedAt && String(labelYear) !== yearOf(publishedAt) ? labelYear : null;
 
   const images = imageIndex(post);
   const fixer = captionFixer(post.slug);
@@ -651,6 +660,7 @@ function preparePost(post, base) {
     gallery: galleries,
     status: post.status,
     publishedAt,
+    tripYear,
     categories: post.categories ?? [],
   };
 
@@ -703,6 +713,7 @@ function preparePost(post, base) {
     categoryIds: [],
     newCategories: [],
     status: post.status,
+    tripYear: tripYear ?? "",
   });
   if (!check.success) {
     const messages = new Map();
@@ -873,6 +884,7 @@ async function writeDatabase(databaseUrl, rows, categories, { update, ssl }) {
               image_height = ${row.imageHeight}, image_blur = ${row.imageBlur},
               image_alt = ${row.imageAlt}, video_url = ${row.videoUrl},
               gallery = ${gallery}, status = ${row.status}::post_status,
+              trip_year = ${row.tripYear},
               published_at = ${publishedAt}::timestamptz,
               created_at = coalesce(${publishedAt}::timestamptz, created_at),
               updated_at = now()
@@ -883,11 +895,11 @@ async function writeDatabase(databaseUrl, rows, categories, { update, ssl }) {
           const [created] = await tx`
             insert into posts (slug, title, perex, content, image_url, image_width,
               image_height, image_blur, image_alt, video_url, gallery, status,
-              published_at, created_at, updated_at)
+              trip_year, published_at, created_at, updated_at)
             values (${row.slug}, ${row.title}, ${row.perex}, ${row.content}, ${row.imageUrl},
               ${row.imageWidth}, ${row.imageHeight}, ${row.imageBlur}, ${row.imageAlt},
               ${row.videoUrl}, ${gallery}, ${row.status}::post_status,
-              ${publishedAt}::timestamptz, coalesce(${publishedAt}::timestamptz, now()), now())
+              ${row.tripYear}, ${publishedAt}::timestamptz, coalesce(${publishedAt}::timestamptz, now()), now())
             returning id`;
           id = created.id;
           stats.inserted += 1;
@@ -1010,7 +1022,8 @@ async function main() {
     const date = row.publishedAt ? row.publishedAt.toISOString().slice(0, 10) : "bez data  ";
     const galleries = info.nextgen + info.blocks;
     log(
-      `  ${row.status === "draft" ? "koncept " : "publikov."} ${date}  ${row.slug}\n` +
+      `  ${row.status === "draft" ? "koncept " : "publikov."} ${date}  ${row.slug}` +
+        `${row.tripYear ? `  (rok cesty ${row.tripYear})` : ""}\n` +
         `      galerie ${galleries}${info.blocks ? ` (z toho ${info.blocks} z bloků WordPressu)` : ""}, ` +
         `fotky v galeriích ${info.photos}, fotky v textu ${info.inline}, ` +
         `kategorie ${row.categories.join(", ") || "-"}, perex z ${info.perex}` +

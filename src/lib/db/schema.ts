@@ -120,6 +120,12 @@ export const posts = pgTable("posts", {
   gallery: jsonb("gallery").$type<PostGallery[]>().notNull().default([]),
   status: postStatusEnum("status").notNull().default("draft"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
+  /**
+   * Rok cesty, o které článek je (úprava 33 z auditu, rozhodnutí 14. 10. 2026).
+   * Prázdný = rok ze štítku na konci titulku („| 2022“), jinak rok publikace
+   * (postYear() v src/lib/post-year.ts).
+   */
+  tripYear: smallint("trip_year"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

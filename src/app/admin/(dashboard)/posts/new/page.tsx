@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdminPage } from "@/lib/admin-guard";
-import { isStorageConfigured } from "@/lib/post-files";
+import { allowedImagePrefixes, isStorageConfigured } from "@/lib/post-files";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { PostForm } from "@/components/admin/PostForm";
 import { createPost } from "../actions";
@@ -26,6 +26,7 @@ export default async function NewPostPage() {
         categories={categories}
         action={createPost}
         uploadsEnabled={isStorageConfigured()}
+        allowedImagePrefixes={allowedImagePrefixes()}
       />
     </div>
   );

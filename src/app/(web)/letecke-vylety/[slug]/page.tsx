@@ -76,13 +76,18 @@ export default async function TripPage({ params }: TripPageProps) {
             <p className="perex">{czechNbspText(trip.intro)}</p>
           </div>
           {/* Cena a výzva hned v záhlaví (nález Impeccable 2): na počítači vpravo vedle perexu, pod 961 px pod perexem a nad řadou fotek.
-               V záběru 3 tabulové prvky: logo, drobečky Letecké výlety a tato výzva. */}
+               V záběru 3 tabulové prvky: logo, drobečky Letecké výlety a tato výzva.
+               Pod výzvou dva textové odkazy se stejným názvem u obou výletů (úprava 14, rozhodnutí 14. 10. 2026): na tabulku
+               variant (Honzův nadpis je „Varianty a cena“, nebo jen „Cena“) a na tabulku Co zahrnuje cena / Co je v ceně. */}
           <aside className="aside pk-sum" aria-labelledby="cena-od">
             <span className="lbl" id="cena-od">Cena od</span>
             <p className="pk-price">{czechNbspText(trip.price.from)}</p>
             <p className="pk-price-note">{czechNbspText(trip.price.note)}</p>
             <Link className="fa-dir fa-dir--grafit" href={inquiryHref(trip.slug)}><span className="t">Poptat tento výlet</span><Arrow /></Link>
-            <p className="pk-sum-more"><a className="fa-link" href="#cena">{czechNbspText(trip.variants.title)} <Arrow /></a></p>
+            <ul className="pk-sum-more">
+              <li><a className="fa-link" href="#cena">Ceny pro 1&nbsp;a&nbsp;2&nbsp;piloty <Arrow /></a></li>
+              <li><a className="fa-link" href="#v-cene">Co zahrnuje cena <Arrow /></a></li>
+            </ul>
           </aside>
         </div>
       </header>

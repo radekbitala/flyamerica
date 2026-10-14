@@ -15,12 +15,16 @@ export function tripDestinations(trip: Trip): Destination[] {
  * u výletu píše, s kódem letiště doslova (Overpass Mono, bez štítku s polem)
  * a odkazem na detail destinace (na webu v okně nad stránkou). Vyplňuje
  * pravý sloupec .split, který dřív zůstával prázdný.
+ *
+ * Panel je <section> s názvem z nadpisu, ne <aside> (úprava 38 z auditu,
+ * rozhodnutí 14. 10. 2026): destinace patří k programu výletu, nejsou
+ * doplňkový obsah. Vzhled se nemění (třídy .aside .vy-route).
  */
 export function TripRoute({ trip }: { trip: Trip }) {
   const destinations = tripDestinations(trip);
   if (destinations.length === 0) return null;
   return (
-    <aside className="aside vy-route" aria-labelledby="na-trase">
+    <section className="aside vy-route" aria-labelledby="na-trase">
       <h3 id="na-trase">Destinace na trase</h3>
       <ul className="vy-route-list">
         {destinations.map((destination) => (
@@ -38,6 +42,6 @@ export function TripRoute({ trip }: { trip: Trip }) {
           Všechny destinace <Arrow />
         </Link>
       </p>
-    </aside>
+    </section>
   );
 }

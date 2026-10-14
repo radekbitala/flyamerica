@@ -59,8 +59,8 @@ interface Ctx {
  *   v <figcaption> bez kurzívy jako v modelu. Velká fotka na šířku je široká
  *   (.read-wide: širší než text, až na šířku kontejneru), jen přímo v textu,
  *   ne v citaci
- * - značka <p data-gallery="ID"></p> je galerie (mřížka .gallery, v textu
- *   také široká), neznámé id nebo galerie bez fotek se nevykreslí
+ * - značka <p data-gallery="ID"></p> je galerie (mřížka náhledů bez popisků,
+ *   v textu také široká), neznámé id nebo galerie bez fotek se nevykreslí
  * - video z YouTube (<div data-youtube-video><iframe> z editoru) je náhled
  *   s tlačítkem „Přehrát video“, přehrávač youtube-nocookie se načte až po
  *   kliknutí (ArticleVideo, YouTubeVideo). Uvnitř odstavce nebo nadpisu, kde blok být
@@ -148,7 +148,7 @@ function renderNode(node: HtmlNode, ctx: Ctx, key: Key, inline = false, topLevel
       const galleryId = galleryIdOf(node);
       if (galleryId === null) break;
       const gallery = ctx.galleries.get(galleryId);
-      return gallery ? <PostGalleryGrid key={key} gallery={gallery} inProse wide={topLevel} /> : null;
+      return gallery ? <PostGalleryGrid key={key} gallery={gallery} inProse wide={topLevel} toc={ctx.hasToc} /> : null;
     }
     case "div":
       if ("data-youtube-video" in attrs) return video(findTag(node, "iframe")?.attrs.src, key, inline, ctx);

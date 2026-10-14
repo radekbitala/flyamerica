@@ -24,6 +24,34 @@ export const POST_LIMITS = {
 export const UPLOADS_DISABLED_MESSAGE =
   "Nahrávání fotek zatím není nastavené, článek jde uložit bez nich.";
 
+/**
+ * Rok cesty (pole „Rok cesty“, sloupec trip_year): nejstarší povolený rok
+ * a nejnovější je příští rok (článek o cestě, která se teprve chystá).
+ * Nejstarší článek ze starého webu je z roku 2010.
+ */
+export const TRIP_YEAR_MIN = 1950;
+
+export function tripYearMax(): number {
+  return new Date().getFullYear() + 1;
+}
+
+/**
+ * Značka chybějícího obsahu z podkladů („[doplnit: …]“, na webu žlutý
+ * rámeček .todo). Publikovaný článek ji mít nesmí (úprava 7 z auditu:
+ * na webu ani v publikovaných článcích žádná značka), koncept s ní jde
+ * uložit. Hlášky podle pole, kde značka je.
+ */
+const TODO_MARK = /\[doplnit/i;
+
+export function todoMarkErrors(fields: { title: string; perex?: string; content: string }): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const hint = "Před publikováním ji nahraďte textem, koncept jde uložit i s ní.";
+  if (TODO_MARK.test(fields.title)) errors.title = `Název obsahuje značku [doplnit…]. ${hint}`;
+  if (TODO_MARK.test(fields.perex ?? "")) errors.perex = `Perex obsahuje značku [doplnit…]. ${hint}`;
+  if (TODO_MARK.test(fields.content)) errors.content = `Text obsahuje značku [doplnit…]. ${hint}`;
+  return errors;
+}
+
 /** Adresa z názvu: bez diakritiky, malými písmeny, slova spojená spojovníkem. */
 export function slugify(text: string): string {
   return slugifyLoose(text).replace(/^-+|-+$/g, "");
@@ -134,7 +162,7 @@ export const postSchema = z
     imageWidth: dimension.optional().catch(undefined),
     imageHeight: dimension.optional().catch(undefined),
     imageBlur: blur,
-    imageAlt: optionalText(POST_LIMITS.imageAlt, "Popis fotky je příliš dlouhý."),
+    imageAlt: optionalText(POST_LIMITS.imageAlt, "Popisek fotky je příliš dlouhý."),
     videoUrl: z.preprocess(
       emptyToUndefined,
       z
@@ -165,13 +193,25 @@ export const postSchema = z
       )
       .max(10),
     status: z.enum(["draft", "published"]),
+    // Prázdné = rok z názvu nebo rok publikace (postYear v src/lib/post-year.ts).
+    // Import deníku pole neposílá, proto nepovinné.
+    tripYear: z.preprocess(
+      emptyToUndefined,
+      z.coerce
+        .number({ error: "Rok cesty napište číslem, například 2022." })
+        .int("Rok cesty napište celým číslem, například 2022.")
+        .refine((year) => year >= TRIP_YEAR_MIN && year <= tripYearMax(), {
+          error: () => `Rok cesty musí být mezi ${TRIP_YEAR_MIN} a ${tripYearMax()}.`,
+        })
+        .optional(),
+    ),
   })
   .superRefine((data, ctx) => {
     if (data.imageUrl && !data.imageAlt) {
       ctx.addIssue({
         code: "custom",
         path: ["imageAlt"],
-        message: "Popište titulní fotku. Text čtou nevidomí a vyhledávače.",
+        message: "Chybí popisek titulní fotky.",
       });
     }
   });

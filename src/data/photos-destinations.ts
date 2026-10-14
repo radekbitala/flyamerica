@@ -19,4 +19,30 @@ import type { Photo } from "./photos";
  *     caption: "Naše expediční Cessna 182 na letišti ve Winter Haven (KGIF)",
  *   },
  */
-export const destinationPhotos = {} as const satisfies Record<string, Photo>;
+export const destinationPhotos = {
+  // Úprava 9 z auditu (rozhodnutí 14. 10. 2026): letiště a letadla místo pláže.
+  // Výjimky z pravidla caption = popisek: fotka bez caption má jako viditelný
+  // popisek alt (Figure). Cape Canaveral má v popisku překlep („Canareval“).
+  "kam-letet/destinace-cape-canaveral-13": {
+    src: "/img/kam-letet/destinace-cape-canaveral-13.jpg",
+    width: 1600,
+    height: 1067,
+    alt: "Přistávací dráha raketoplánů na Cape Canaveral z výšky, v pozadí montážní hala",
+  },
+  "kam-letet/letadla-vero-beach-07": {
+    src: "/img/kam-letet/letadla-vero-beach-07.jpg",
+    width: 1600,
+    height: 1200,
+    alt: "Stříbrný Cirrus SR22 N874CZ na stojánce ve Vero Beach pod kupovitými mraky",
+    caption: "S novým letadlem ve Vero Beach, Florida",
+  },
+  // Soubor z klikacího modelu (public/img/everglades-airpark.jpg, dřív v MODEL_PHOTOS
+  // v photos.ts s alt „Everglades“), ve fotobance destinace-everglades-18: alt odtud,
+  // popisek ve fotobance je jen název souboru („005_Everglades“), proto bez caption.
+  "everglades-airpark": {
+    src: "/img/everglades-airpark.jpg",
+    width: 1600,
+    height: 1200,
+    alt: "Naše Cessna 182 Skylane s otevřenými dveřmi před budovou letiště Everglades Airpark, palmy a modrá obloha s mraky",
+  },
+} as const satisfies Record<string, Photo>;

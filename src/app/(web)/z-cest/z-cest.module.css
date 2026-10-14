@@ -11,8 +11,11 @@
 :global(.prose) > .inProse { margin-block: 2em; }
 :global(.prose) .inProse :global(.fig) { margin: 0; }
 
-/* Víc galerií za sebou v sekci Fotky: mezera jako v mřížce, vypadají jako jedna */
+/* Víc galerií za sebou v sekci Fotky: mezera jako v mřížce náhledů (.gallery--nahledy v article.css), vypadají jako jedna */
 .galleries { display: grid; gap: 24px; }
+@media (max-width: 960px) {
+  .galleries { gap: 16px; }
+}
 
 /* Obsah „V článku“ je od 1200 px přilepený v levém okraji (article.css). Dlouhý obsah (Oblet Ameriky, 17 dní) by byl vyšší než
    obrazovka a konec seznamu by šel otevřít až na konci textu, proto se posouvá sám. Pod 1200 px je sbalený nad textem. */

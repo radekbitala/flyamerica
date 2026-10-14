@@ -50,10 +50,10 @@ export default async function AdminInquiriesPage({
       {!isEmailConfigured() && (
         <div className="flex items-start gap-3 rounded-xl border border-yellow-dark bg-white p-4 text-sm text-foreground">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+          {/* Bez názvů proměnných prostředí, Honza je nenastavuje (úprava 48 z auditu). */}
           <p>
-            <strong>E-maily zatím neodcházejí.</strong> Poptávky se ukládají sem, ale
-            upozornění ani potvrzení zájemcům nechodí. Zapne se doplněním proměnných
-            RESEND_API_KEY, RESEND_FROM a NOTIFY_TO.
+            <strong>E-maily o nových poptávkách zatím nechodí, Radek je zapne.</strong>{" "}
+            Poptávky se mezitím ukládají sem.
           </p>
         </div>
       )}

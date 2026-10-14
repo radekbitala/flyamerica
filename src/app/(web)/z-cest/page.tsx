@@ -3,9 +3,10 @@ import { Arrow } from "@/components/web/ArrowSymbol";
 import { CtaSection } from "@/components/web/CtaSection";
 import { PageHead } from "@/components/web/PageHead";
 import { SectionSign } from "@/components/web/SectionSign";
-import { formatDate, isoDate } from "@/lib/dates";
+import { isoDate } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { postDisplayTitle } from "@/lib/post-title";
+import { postDateLabel } from "@/lib/post-year";
 import { getPublishedPosts, type PublicPostSummary } from "@/lib/public-posts";
 import { ROUTES, postPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
@@ -74,7 +75,10 @@ export default async function PostsPage() {
   );
 }
 
-/** Karta staršího článku: celá je odkaz (.dn-post-link), fotka 4 : 3, datum, nadpis, perex v serifu. */
+/**
+ * Karta staršího článku: celá je odkaz (.dn-post-link), fotka 4 : 3, datum, nadpis, perex v serifu.
+ * Datum publikace, u článku s jiným rokem cesty s předponou „vydáno“ (postDateLabel, úprava 33).
+ */
 function PostCard({ post }: { post: PublicPostSummary }) {
   const headingId = `c-${post.slug}`;
   return (
@@ -94,7 +98,7 @@ function PostCard({ post }: { post: PublicPostSummary }) {
         ) : null}
         <div className="dn-post-meta">
           <time className="date" dateTime={isoDate(post.publishedAt)}>
-            {formatDate(post.publishedAt)}
+            {postDateLabel(post)}
           </time>
         </div>
         <h3 id={headingId}>{czechNbspText(postDisplayTitle(post.title))}</h3>

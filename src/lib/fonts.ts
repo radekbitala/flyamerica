@@ -42,6 +42,14 @@ export const faSans = localFont({
 // Každá podmnožina je vlastní rodina s vlastním unicode-range, v CSS jdou za
 // sebou (latin první). Prohlížeč tak stáhne jen soubory se znaky, které na
 // stránce jsou, stejně jako u @font-face v modelu.
+//
+// Soubory latin-ext mají od 14. 10. 2026 jen českou a slovenskou diakritiku
+// mimo latin (úprava 32 z auditu): Č Ď Ě Ĺ Ľ Ň Ŕ Ř Š Ť Ů Ž a malá písmena.
+// Jiné znaky z rozsahu latin-ext texty webu nemají (seznam vypisuje
+// ../prototyp/_nastroje/pisma.py web, který soubory i rozsah vyrábí). Serif
+// latin-ext klesl ze 40 na 8 kB, kurzíva ze 44 na 9 kB, Overpass Mono z 33
+// na 4 kB. Znak mimo rozsah (třeba polské ł) by nakreslilo náhradní písmo,
+// po takové změně textů skript spustit znovu a rozsah sem přepsat.
 
 /** Overpass Mono 500-600, jen kódy letišť a čísla kroků. */
 export const faMonoLatin = localFont({
@@ -74,7 +82,7 @@ export const faMonoLatinExt = localFont({
     {
       prop: "unicode-range",
       value:
-        "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF",
+        "U+010C-010F, U+011A-011B, U+0139-013A, U+013D-013E, U+0147-0148, U+0154-0155, U+0158-0159, U+0160-0161, U+0164-0165, U+016E-016F, U+017D-017E",
     },
   ],
 });
@@ -113,7 +121,7 @@ export const faSerifLatinExt = localFont({
     {
       prop: "unicode-range",
       value:
-        "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF",
+        "U+010C-010F, U+011A-011B, U+0139-013A, U+013D-013E, U+0147-0148, U+0154-0155, U+0158-0159, U+0160-0161, U+0164-0165, U+016E-016F, U+017D-017E",
     },
   ],
 });

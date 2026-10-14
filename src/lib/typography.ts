@@ -38,6 +38,14 @@
  * - u dat: „10.&nbsp;10.&nbsp;2026“, „14.&nbsp;dubna“
  * - v celcích: Key&nbsp;West, St.&nbsp;Augustine, Grand&nbsp;Tour a název
  *   s číslem (Cessna&nbsp;182, Generace&nbsp;6, Den&nbsp;1, Dash&nbsp;8)
+ * - před samostatným spojovníkem a lomítkem mezi slovy, aby jimi nezačínal
+ *   řádek: „6 dní&nbsp;- 4 letové“, „Palatka Municipal Airport&nbsp;/ Kay
+ *   Larkin Airport“ (úprava 29 z auditu 13. 10. 2026). Spojovník ve slově
+ *   (Pilot-mentor, SR-22), lomítko bez mezer (Class B/C/D) a šipka „->“
+ *   zůstávají
+ * - v názvech výletů kolem „&“: Florida Week&nbsp;&&nbsp;Fly, Florida
+ *   Grand&nbsp;Tour&nbsp;&&nbsp;Fly (v HTML i jako entita „&amp;“), název se
+ *   na konci řádku neroztrhne (úprava 29)
  *
  * Funguje jen v textu, nikdy v atributech (alt, title, href) a značkách.
  * Obsah <option>, <script>, <style>, <pre>, <code>, <textarea> a <title>
@@ -64,6 +72,9 @@ const OPEN = "(?:^|[\\s\\u00A0(\\[„“\"'‚‘/])";
 // ani čárka. Spojovník jen v rozsahu (2-3) nebo před záporným číslem (-20),
 // ne v označení typu (SR-22, L-410, AN-2).
 const NUM_START = "(?:^|[^\\p{L}\\p{N}.,\\-]|(?<=^|[\\s\\u00A0\\p{N}])-)";
+
+/** Znak „&“ v prostém textu i jako entita „&amp;“ v HTML (czechNbsp entitu nepřevádí). */
+const AMP = "&(?:amp;)?";
 
 /** Malá písmena, která za číslem nejsou jednotka, ale předložka nebo spojka. */
 const SINGLE_LETTER_WORDS = new Set(["k", "s", "v", "z", "o", "u", "a", "i"]);
@@ -132,6 +143,12 @@ const RULES: Rule[] = [
   { re: new RegExp(`(?<=(?:^|[^\\p{L}])(?:St|Sv)\\.)${SP}(?=\\p{Lu})`, "gu") },
   { re: new RegExp(`(?<=(?:^|[^\\p{L}])Key)${SP}(?=West)`, "gu") },
   { re: new RegExp(`(?<=(?:^|[^\\p{L}])Grand)${SP}(?=Tour)`, "gu") },
+  // Samostatný spojovník nebo lomítko mezi slovy: pevná mezera před ním, za ním běžná
+  // („6 dní~- 4 letové“). Řádek se tak zalomí až za znakem, nikdy před ním.
+  { re: new RegExp(`(?<=[^\\s\\u00A0])${SP}(?=[-/][ \\t\\r\\n\\u00A0]+[^\\s\\u00A0])`, "gu") },
+  // Názvy výletů „Week & Fly“ a „Tour & Fly“ (v HTML „&amp;“): pevné mezery před i za „&“.
+  { re: new RegExp(`(?<=(?:^|[^\\p{L}])(?:Week|Tour))${SP}(?=${AMP}[ \\u00A0]Fly(?!\\p{L}))`, "gu") },
+  { re: new RegExp(`(?<=(?:^|[^\\p{L}])(?:Week|Tour)[ \\u00A0]${AMP})${SP}(?=Fly(?!\\p{L}))`, "gu") },
 ];
 
 /**

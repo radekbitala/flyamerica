@@ -47,6 +47,12 @@ interface DragState {
  * aktuální fotku po změně ohlásí skrytý stav (aria-live="polite"), při
  * načtení stránky se nic neohlašuje. Tlačítka na kraji řady jsou
  * aria-disabled (zůstávají zaměřitelná, fokus se neztratí).
+ *
+ * Fotky, které nejsou celé v záběru (vykukující další fotka), mají třídu
+ * is-cut a trips.css jim na tabletu a počítači skryje popisek jen
+ * průhledností (úprava 41, rozhodnutí 14. 10. 2026). Před prvním měřením
+ * platí, že celá je jen první fotka (začátek řady), bez skriptu se třída
+ * nepoužije (media scripting v trips.css).
  */
 export function PhotoRow({ label, captions, credit, children }: PhotoRowProps) {
   const slides = Children.toArray(children);
@@ -60,6 +66,7 @@ export function PhotoRow({ label, captions, credit, children }: PhotoRowProps) {
   const targetRef = useRef<{ left: number; timer: number } | null>(null);
   const [index, setIndex] = useState(0);
   const [edges, setEdges] = useState({ start: true, end: count <= 1 });
+  const [cut, setCut] = useState<readonly boolean[]>(() => slides.map((_, i) => i > 0));
   const [announcement, setAnnouncement] = useState("");
   const [dragging, setDragging] = useState(false);
 
@@ -72,6 +79,13 @@ export function PhotoRow({ label, captions, credit, children }: PhotoRowProps) {
     const left = track.scrollLeft;
     const max = track.scrollWidth - track.clientWidth;
     const atEnd = left >= max - 2;
+    // Celá v záběru = celá uvnitř viditelné šířky řady (řada je přes celou šířku okna).
+    const box = track.getBoundingClientRect();
+    const nextCut = Array.from(track.children, (slide) => {
+      const rect = slide.getBoundingClientRect();
+      return rect.left < box.left - 1 || rect.right > box.right + 1;
+    });
+    setCut((prev) => (prev.length === nextCut.length && prev.every((value, i) => value === nextCut[i]) ? prev : nextCut));
     // Když se celá řada vejde (max 0), aktuální je první fotka, ne poslední.
     const current = atEnd && max > 2 ? stops.length - 1 : nearestIndex(stops, left);
     setEdges((prev) =>
@@ -223,7 +237,7 @@ export function PhotoRow({ label, captions, credit, children }: PhotoRowProps) {
         {slides.map((slide, i) => (
           <div
             key={i}
-            className="vy-row-slide"
+            className={cut[i] ? "vy-row-slide is-cut" : "vy-row-slide"}
             role="group"
             aria-roledescription="fotka"
             aria-label={`${i + 1} z ${count}`}

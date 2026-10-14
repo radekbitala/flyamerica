@@ -71,7 +71,13 @@ const FLORIDA_WEEK_SLIDES: readonly TripPhoto[] = [
   },
 ];
 
-/** Florida Grand Tour & Fly: Florida Keys, Key West, Everglades a St. Augustine (úvod výletu a Možné cíle). */
+/**
+ * Florida Grand Tour & Fly: Florida Keys, Key West, Everglades a St. Augustine (úvod výletu a Možné cíle).
+ * 2. fotka je od 14. 10. 2026 Cirrus po přistání na Key Westu místo pláže s palmami (úprava 9 z auditu: letiště
+ * a letadla místo pláže, s mostem by pláž tvořila celý první záběr a výlet by působil jako dovolená). Pláž zůstává
+ * v galerii Key West na Kam letět. Na fotce je Cirrus, Grand Tour se létá Cessnou 182 (poznámka auditu k úpravě 9,
+ * Cessna 182 před Everglades Airpark je na úvodu u dlaždice Key West & Everglades).
+ */
 const GRAND_TOUR_SLIDES: readonly TripPhoto[] = [
   {
     // fotobanka destinace-florida-keys-17, pravopis opravený (_ZMENY č. 6)
@@ -79,12 +85,9 @@ const GRAND_TOUR_SLIDES: readonly TripPhoto[] = [
     alt: "Dlouhý most Overseas Highway nad tyrkysovým mořem Florida Keys z výšky",
     caption: "Dobře známá silnice spojující Miami s nejjižnějším cípem kontinentálních USA, tedy Key West.",
   },
-  {
-    // fotobanka destinace-key-west-16
-    photo: "key-west-plaz",
-    alt: "Písečná pláž s palmami a rozcestníkem na Key Westu",
-    caption: "Floridský Key West je jedno z mála míst v USA s celoročně subtropickým až tropickým klimatem.",
-  },
+  // fotobanka destinace-key-west-15 (photos-trips.ts): viditelný popisek je alt z fotobanky, archivní popisek
+  // má kód KEYW a vedle Honzova EYW se neukazuje (stejně jako popisky s CDK, viz úvod souboru)
+  { photo: "vylety/destinace-key-west-15" },
   // fotobanka destinace-everglades-19, destinace-everglades-20 a florida-z-vysky-st-augustine-10 (photos-trips.ts)
   { photo: "vylety/destinace-everglades-19" },
   { photo: "vylety/destinace-everglades-20" },
@@ -94,11 +97,14 @@ const GRAND_TOUR_SLIDES: readonly TripPhoto[] = [
 /**
  * Karta Florida Week je zátoka Crystal River (pobřeží Mexického zálivu, kolem
  * kterého výlet vede), ne letecký snímek Albert Whitted: ten má na úvodu
- * dlaždice destinace pod kartami. Výřez nechává okraj křídla mimo.
+ * dlaždice destinace pod kartami. Karta má vlastní výřez 16 : 9 bez křídla
+ * nahoře a bez rámu okna kabiny vpravo dole (úprava 27 z auditu, rozhodnutí
+ * 14. 10. 2026, photos-trips.ts). Posunem object-position to nejde: fotka
+ * 4 : 3 v kartě 16 : 9 se ořezává jen nahoře a dole.
  */
 export const TRIP_MEDIA: Record<TripSlug, TripMedia> = {
   "florida-week": {
-    card: { ...FLORIDA_WEEK_SLIDES[3], position: "50% 60%" },
+    card: { photo: "vylety/florida-z-vysky-crystal-river-07-karta" },
     slides: FLORIDA_WEEK_SLIDES,
   },
   "grand-tour": {

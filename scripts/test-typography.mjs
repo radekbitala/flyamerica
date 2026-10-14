@@ -13,14 +13,21 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
 // package.json nemá "type", bez tohohle by Node u .ts varoval.
+// Alias @/ z tsconfig.json pro data výletů a destinací (src/data importuje @/lib/typography apod.).
+const SRC = new URL("../src/", import.meta.url);
 registerHooks({
   resolve(specifier, context, next) {
+    if (specifier.startsWith("@/")) {
+      return { url: new URL(`${specifier.slice(2)}.ts`, SRC).href, format: "module-typescript", shortCircuit: true };
+    }
     const resolved = next(specifier, context);
     return resolved.url.endsWith(".ts") ? { ...resolved, format: "module-typescript" } : resolved;
   },
 });
 
 const { czechNbsp, czechNbspText, czechQuotesText, tieText, NBSP, WORD_JOINER } = await import("../src/lib/typography.ts");
+const { TRIPS } = await import("../src/data/trips.ts");
+const { DESTINATIONS } = await import("../src/data/destinations.ts");
 
 /** Zápis očekávaného textu: „~“ = pevná mezera, „^“ = WORD JOINER (nezalomitelné místo). */
 const nb = (s) => s.replaceAll("~", NBSP).replaceAll("^", WORD_JOINER);
@@ -43,13 +50,14 @@ const MODEL_TEXTS = [
   ],
   ["Pilot-mentor a doprovod", "Pilot-mentor a~doprovod"],
   ["Cessna 182 a palivo", "Cessna~182 a~palivo"],
+  // Před samostatným spojovníkem pevná mezera navíc proti modelu (úprava 29 z auditu 13. 10. 2026).
   [
     "6 dní - 4 letové a 2 volné dny na pláž, nákupy nebo návštěvu Universal Studios.",
-    "6~dní - 4~letové a~2~volné dny na pláž, nákupy nebo návštěvu Universal Studios.",
+    "6~dní~- 4~letové a~2~volné dny na pláž, nákupy nebo návštěvu Universal Studios.",
   ],
   [
     "Cessna 182 Skylane - prostorný čtyřmístný stroj vhodný pro delší lety ve 2-3 lidech.",
-    "Cessna~182 Skylane - prostorný čtyřmístný stroj vhodný pro delší lety ve 2-^3~lidech.",
+    "Cessna~182 Skylane~- prostorný čtyřmístný stroj vhodný pro delší lety ve 2-^3~lidech.",
   ],
   ["20 hodin, přibližně 3-3,5 hodiny za letový den.", "20~hodin, přibližně 3-^3,5~hodiny za letový den."],
   ["6-8 týdnů před odletem", "6-^8~týdnů před odletem"],
@@ -59,7 +67,7 @@ const MODEL_TEXTS = [
   ],
   [
     "„Létání pro mě není jen o přesunu z bodu A do bodu B - je o vášni, přátelství, o rozhodování, důkladné přípravě a jistotě za řízením i na zemi a hlavně o nikdy nekončícím procesu učení.“",
-    "„Létání pro mě není jen o~přesunu z~bodu~A do bodu~B - je o~vášni, přátelství, o~rozhodování, důkladné přípravě a~jistotě za řízením i~na zemi a~hlavně o~nikdy nekončícím procesu učení.“",
+    "„Létání pro mě není jen o~přesunu z~bodu~A do bodu~B~- je o~vášni, přátelství, o~rozhodování, důkladné přípravě a~jistotě za řízením i~na zemi a~hlavně o~nikdy nekončícím procesu učení.“",
   ],
   [
     "Grónsko má největší ledovec na severní polokouli. Sahá do výšky přes 2100 metrů a říká se mu ledová čepice, Ice cap.",
@@ -69,7 +77,8 @@ const MODEL_TEXTS = [
   ["Nebo zavolejte Honzovi: +420 602 214 719", "Nebo zavolejte Honzovi: +420~602~214~719"],
   ["Létání s českými piloty na Floridě.", "Létání s~českými piloty na Floridě."],
   ["Key West & Everglades", "Key~West & Everglades"],
-  ["Florida Grand Tour & Fly", "Florida Grand~Tour & Fly"],
+  // Název výletu drží pohromadě i kolem „&“ (úprava 29).
+  ["Florida Grand Tour & Fly", "Florida Grand~Tour~&~Fly"],
   ["Albert Whitted, St. Petersburg", "Albert Whitted, St.~Petersburg"],
   ["jako jsou Cedar Key nebo Albert Whitted v St. Petersburgu", "jako jsou Cedar Key nebo Albert Whitted v~St.~Petersburgu"],
   ["na sever ke St. Augustine.", "na sever ke St.~Augustine."],
@@ -233,13 +242,92 @@ describe("czechNbsp: HTML", () => {
 
   test("entity a znak > v atributu", () => {
     const html = '<p title="a > b">Week &amp; Fly a v&nbsp;kabině</p>';
-    assert.equal(czechNbsp(html), nb('<p title="a > b">Week &amp; Fly a~v~kabině</p>'));
+    assert.equal(czechNbsp(html), nb('<p title="a > b">Week~&amp;~Fly a~v~kabině</p>'));
   });
 
   test("opakované použití nic dalšího nezmění", () => {
     const html = "<p>Letiště v <em>Key West</em>, 1. 11. 2017 a $7 400 USD.</p>";
     const once = czechNbsp(html);
     assert.equal(czechNbsp(once), once);
+  });
+});
+
+describe("úprava 29: spojovník, lomítko a názvy výletů", () => {
+  // Věty z src/data/trips.ts a src/data/destinations.ts (Honzovy texty doslova).
+  const CASES = [
+    ["9 dní - 6 letových a 3 volné dny.", "9~dní~- 6~letových a~3~volné dny."],
+    ["Orlando North Airpark - Naše domovská základna", "Orlando North Airpark~- Naše domovská základna"],
+    ["Albert Whitted Airport - St. Petersburg", "Albert Whitted Airport~- St.~Petersburg"],
+    [
+      "Absolutní letecká klasika - přistanete a kousek od letiště se můžete projít po dřevěných molech",
+      "Absolutní letecká klasika~- přistanete a~kousek od letiště se můžete projít po dřevěných molech",
+    ],
+    ["Palatka Municipal Airport / Kay Larkin Airport", "Palatka Municipal Airport~/ Kay Larkin Airport"],
+    // Názvy výletů (trips.ts, volby poptávky v src/lib/inquiries/options.ts).
+    ["Florida Week & Fly", "Florida Week~&~Fly"],
+    ["Florida Week & Fly, 6 dní, 12 letových hodin", "Florida Week~&~Fly, 6~dní, 12~letových hodin"],
+    ["Florida Grand Tour & Fly, 9 dní, 20 letových hodin", "Florida Grand~Tour~&~Fly, 9~dní, 20~letových hodin"],
+    ["podle výletu Florida Week & Fly.", "podle výletu Florida Week~&~Fly."],
+  ];
+  for (const [input, expected] of CASES) {
+    test(input.slice(0, 60), () => {
+      assert.equal(czechNbspText(input), nb(expected));
+      assert.equal(czechNbspText(input).replaceAll(NBSP, " "), input);
+      assert.equal(czechNbspText(czechNbspText(input)), czechNbspText(input));
+    });
+  }
+
+  test("spojovník ve slově, lomítko bez mezer, šipka a začátek textu beze změny", () => {
+    for (const text of ["Pilot-mentor", "Cirrus SR-22", "prostory Class B/C/D", "- na začátku", "konec -", "35,-kč/min", "teplota -20"]) {
+      assert.equal(czechNbspText(text), text);
+    }
+    assert.equal(czechNbspText("Utah -> Brackett Field"), nb("Utah -^> Brackett Field"));
+    // „&“ jinde než v názvu výletu zůstává.
+    assert.equal(czechNbspText("Key West & Everglades"), nb("Key~West & Everglades"));
+    assert.equal(czechNbspText("Week & Flyer"), "Week & Flyer");
+  });
+
+  test("spojovník za pevnou mezerou i před řádkovou značkou", () => {
+    assert.equal(czechNbspText("6\u00a0dní - 4 letové"), nb("6~dní~- 4~letové"));
+    assert.equal(czechNbspText("A / B"), nb("A~/ B"));
+  });
+
+  test("HTML článku: text ano, atributy, adresy a kód ne", () => {
+    assert.equal(
+      czechNbsp("<p>Výlet <strong>Florida Week &amp; Fly</strong> - 6 dní / 12 hodin</p>"),
+      nb("<p>Výlet <strong>Florida Week~&amp;~Fly</strong>~- 6~dní~/ 12~hodin</p>"),
+    );
+    assert.equal(czechNbsp("<p><em>Grand Tour</em> &amp; Fly</p>"), nb("<p><em>Grand~Tour</em>~&amp;~Fly</p>"));
+    assert.equal(
+      czechNbsp("<h2>Den 6: Bryce Canyon, Utah - Brackett Field</h2>"),
+      nb("<h2>Den~6: Bryce Canyon, Utah~- Brackett Field</h2>"),
+    );
+    const untouched =
+      '<img alt="Week & Fly - a / b" src="https://x.cz/a - b.jpg"><a href="https://x.cz/a/b" title="a - b">odkaz</a>' +
+      "<code>a - b / c</code><pre>Week &amp; Fly - x</pre>";
+    assert.equal(czechNbsp(untouched), untouched);
+    // Blokové značky dělí text: spojovník na začátku odstavce zůstává.
+    assert.equal(czechNbsp("<p>slovo</p><p>- odrážka</p>"), "<p>slovo</p><p>- odrážka</p>");
+  });
+
+  test("texty výletů a destinací: před samostatným spojovníkem a lomítkem nikdy běžná mezera", () => {
+    const texts = [];
+    const collect = (value) => {
+      if (typeof value === "string") texts.push(value);
+      else if (Array.isArray(value)) value.forEach(collect);
+      else if (value && typeof value === "object") Object.values(value).forEach(collect);
+    };
+    collect(TRIPS);
+    collect(DESTINATIONS);
+    const standalone = /[^\s\u00a0][ \u00a0][-/][ \u00a0]+[^\s\u00a0]/;
+    const found = texts.filter((text) => standalone.test(text));
+    assert.ok(found.length >= 5, `Málo vět se samostatným spojovníkem nebo lomítkem: ${found.length}.`);
+    for (const text of found) {
+      const out = czechNbspText(text);
+      assert.doesNotMatch(out, /[^\s\u00a0] [-/][ \u00a0]/, out);
+      assert.equal(out.replaceAll(NBSP, " ").replaceAll(WORD_JOINER, ""), text.replaceAll(NBSP, " "));
+    }
+    for (const trip of TRIPS) assert.match(czechNbspText(trip.name), /(?:Week|Tour)\u00a0&\u00a0Fly$/u, trip.name);
   });
 });
 

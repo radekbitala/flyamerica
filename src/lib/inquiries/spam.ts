@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { MIN_FILL_MS } from "./fields";
 
 /**
  * Ochrana veřejných formulářů na stránce Kontakt proti robotům.
@@ -11,8 +12,8 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
  * by odradila i piloty.
  */
 
-/** Rychleji formulář na tři kroky vyplnit nejde, rychleji ho odešle jen robot. */
-export const MIN_FILL_MS = 3_000;
+/** Nejkratší doba od vykreslení do odeslání (fields.ts, sdílí ji formulář v prohlížeči). */
+export { MIN_FILL_MS };
 
 /** Starší token se nepřijme. Kdo nechá formulář otevřený přes noc, dostane nový. */
 export const MAX_FORM_AGE_MS = 24 * 60 * 60 * 1000;

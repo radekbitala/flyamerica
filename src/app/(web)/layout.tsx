@@ -16,6 +16,8 @@ import "@/styles/pages/destinations.css";
 import "@/styles/pages/article.css";
 import "@/styles/pages/contact.css";
 import "@/styles/pages/status.css";
+// Společné styly všech stránek (hlavička, výběr textu, zalamování), po stylech stránek.
+import "@/styles/pages/site.css";
 
 /**
  * Výchozí metadata webu. Stránky skládají svá metadata celá přes

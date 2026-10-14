@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { AdminHelpContact } from "@/components/admin/AdminHelpContact";
 
 /**
  * Chyba při vykreslení stránky administrace. Next 16 předává error,
@@ -26,6 +27,7 @@ export default function AdminError({
         Stránku se nepodařilo načíst. Zkuste to znovu, a když chyba trvá,
         dejte vědět Radkovi.
       </p>
+      <AdminHelpContact />
       <button
         type="button"
         onClick={() => retry()}

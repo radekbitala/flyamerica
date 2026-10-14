@@ -6,6 +6,7 @@ import {
   startTransition,
   useActionState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -32,19 +33,25 @@ import {
   REFERRAL_SOURCES,
   type PackageSlug,
 } from "@/lib/inquiries/options";
-import { ROUTES } from "@/lib/routes";
-import { FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
+import { FA_PHONE, FA_PHONE_HREF, FA_REPLY_TIME } from "@/lib/site";
 import { NBSP, czechNbspText } from "@/lib/typography";
 import { submitInquiry } from "./actions";
 import {
+  DRAFT_KEYS,
   FormGuard,
+  SENDING,
   SEND_FAILED,
+  SendingStatus,
+  clearDraft,
   describedBy,
   fieldClass,
   fieldValue,
   focusField,
   focusFormError,
+  readDraft,
+  rememberTokenShown,
   withSendFallback,
+  writeDraft,
 } from "./form-helpers";
 
 /*
@@ -69,6 +76,14 @@ import {
  * 5. Po volbě licence Ultralight nebo Nemám je pod volbami nápověda: Honzův
  *    odstavec z požadavků na piloty pro piloty UL a zájemce bez licence
  *    (src/data/pilot-requirements.ts). Bez skriptu až po návratu ze serveru.
+ * 6. Rozepsaná poptávka (hodnoty polí a krok) je v sessionStorage karty
+ *    (DRAFT_KEYS v form-helpers.tsx, úprava 8 z auditu). Obnoví se až po
+ *    hydrataci, aby se HTML ze serveru a z prohlížeče nelišilo. Výlet
+ *    z adresy má přednost před uloženým. Po odeslání a po „Poslat další
+ *    poptávku“ se smaže.
+ * 7. Během odesílání tlačítko „Odesílám…“ s aria-disabled (fokus na něm
+ *    zůstane), formulář aria-busy a čtečka to uslyší z oblasti aria-live
+ *    (SendingStatus). Druhé odeslání se zahodí, dokud první neskončí.
  *
  * Kroky jsou skryté už v HTML ze serveru (třídy kt-js a is-current), aby se
  * formulář po načtení skriptu neskládal. Bez skriptu je ukáže <noscript>
@@ -111,6 +126,10 @@ const IDS: Record<InquiryField, string> = {
 };
 
 const errorId = (field: InquiryField) => `${IDS[field]}-chyba`;
+
+/** Uloží rozepsanou poptávku s krokem, kde návštěvník je. */
+const rememberDraft = (form: HTMLFormElement, step: number) =>
+  writeDraft(DRAFT_KEYS.inquiry, form, INQUIRY_FIELDS, step);
 
 /** Licence, po jejichž volbě je pod volbami nápověda pro piloty UL a zájemce bez licence. */
 const NO_LICENCE_NOTE_FOR: readonly string[] = ["Ultralight", "Nemám"] satisfies (typeof LICENCES)[number][];
@@ -160,6 +179,11 @@ interface View {
   token: string | undefined;
   /** Po „Poslat další poptávku“: místo potvrzení prázdný formulář. */
   again: boolean;
+  /**
+   * Hodnoty rozepsané poptávky obnovené ze sessionStorage, pole je mají jako
+   * výchozí místo hodnot ze stavu. Nový stav ze serveru je zahodí.
+   */
+  restored?: Values;
 }
 
 function viewFor(state: InquiryFormState, prev?: View): View {
@@ -214,11 +238,14 @@ function checkStep(form: HTMLFormElement, step: number, errors: Errors): Inquiry
 export function InquiryForm({
   token,
   preset,
+  packageLabels,
 }: {
   /** Podepsaný čas vykreslení (createFormToken), stránka ho vytváří při každém požadavku. */
   token: string;
   /** Výlet z ?vylet= (nebo ?balicek=) v adrese. */
   preset: PackageSlug | null;
+  /** Popisky voleb výletu s délkou a cenou (page.tsx skládá ze src/data/trips.ts). */
+  packageLabels: Record<PackageSlug, string>;
 }) {
   // Bez skriptu formulář odešle prohlížeč rovnou server action (action
   // formuláře) a výsledek přijde v HTML nové stránky jako serverState.
@@ -237,10 +264,15 @@ export function InquiryForm({
   const formRef = useRef<HTMLFormElement>(null);
   const firstState = useRef(state);
   const pendingFocus = useRef<FocusTarget | null>(null);
+  // Odeslání běží od kliknutí do odpovědi. pending z useActionState se
+  // může ukázat až s dalším vykreslením, druhé kliknutí hned za prvním
+  // proto hlídá i tenhle příznak.
+  const sending = useRef(false);
 
   const done = state.ok && !view.again;
-  // Po odeslání prázdná pole (pro další poptávku), při chybě vyplněné hodnoty.
-  const values: Values = state.ok ? {} : state.values;
+  // Po odeslání prázdná pole (pro další poptávku), při chybě vyplněné
+  // hodnoty, po návratu na stránku rozepsaná poptávka ze sessionStorage.
+  const values: Values = view.restored ?? (state.ok ? {} : state.values);
   const chosen = preset && !done ? chosenName(view.pkg) : undefined;
   const licenceNote = NO_LICENCE_NOTE_FOR.includes(view.licence);
   const err = (field: InquiryField) => view.errors[field];
@@ -252,11 +284,44 @@ export function InquiryForm({
     if (target && formRef.current) moveFocus(formRef.current, target);
   });
 
+  // Čas, kdy prohlížeč ukázal formulář s tokenem ze stránky: odeslání
+  // obnoveného formuláře hned po načtení počká na MIN_FILL_MS (form-helpers).
+  useEffect(() => {
+    rememberTokenShown(token);
+  }, [token]);
+
+  // Rozepsaná poptávka ze sessionStorage, až po hydrataci (HTML ze serveru
+  // ji nezná). Layout effect, aby se před obnovou nevykreslil krok 1.
+  // Stav ze serveru bez skriptu (chyby, potvrzení) má přednost.
+  useLayoutEffect(() => {
+    const initial = firstState.current;
+    if (initial.ok) {
+      clearDraft(DRAFT_KEYS.inquiry);
+      return;
+    }
+    if (initial.formError || Object.keys(initial.errors).length > 0) return;
+    const draft = readDraft(DRAFT_KEYS.inquiry, INQUIRY_FIELDS);
+    if (!draft) return;
+    // Výlet z odkazu „Poptat tento výlet“ má přednost před uloženým.
+    const restored: Values = preset ? { ...draft.values, packageSlug: preset } : draft.values;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage jde číst až v prohlížeči po hydrataci
+    setSaved((prev) => ({
+      ...prev,
+      rev: prev.rev + 1,
+      step: Math.min(draft.step, LAST_STEP),
+      restored,
+      pkg: restored.packageSlug ?? "",
+      licence: restored.licence ?? "",
+    }));
+  }, [preset]);
+
   // Odpověď serveru: potvrzení, nebo první chyba. Ne při prvním vykreslení.
   useEffect(() => {
     const form = formRef.current;
     if (state === firstState.current || !form) return;
+    sending.current = false;
     const errorField = firstErrorField(state.errors);
+    if (state.ok) clearDraft(DRAFT_KEYS.inquiry);
     if (state.ok) moveFocus(form, { kind: "done" });
     else if (errorField) moveFocus(form, { kind: "field", field: errorField });
     else if (state.formError) focusFormError(form);
@@ -270,14 +335,17 @@ export function InquiryForm({
       pendingFocus.current = focus;
     };
     // Odeslaná poptávka ještě běží, druhé odeslání by ji zdvojilo.
-    if (pending) {
+    if (pending || sending.current) {
       e.preventDefault();
       return;
     }
     const errors = { ...view.errors };
     const bad = checkStep(form, view.step, errors);
     if (bad) return stop({ errors }, { kind: "field", field: bad });
-    if (view.step < LAST_STEP) return stop({ errors, step: view.step + 1 }, { kind: "step" });
+    if (view.step < LAST_STEP) {
+      rememberDraft(form, view.step + 1);
+      return stop({ errors, step: view.step + 1 }, { kind: "step" });
+    }
     for (let step = 0; step < LAST_STEP; step++) {
       const field = checkStep(form, step, errors);
       if (field) return stop({ errors, step }, { kind: "field", field });
@@ -287,6 +355,7 @@ export function InquiryForm({
     e.preventDefault();
     update({ errors });
     const formData = new FormData(form);
+    sending.current = true;
     startTransition(() => send(formData));
   }
 
@@ -294,6 +363,7 @@ export function InquiryForm({
   function onChange(e: ChangeEvent<HTMLFormElement>) {
     const name = (e.target as unknown as { name?: string }).name ?? "";
     if (!(INQUIRY_FIELDS as readonly string[]).includes(name)) return;
+    rememberDraft(e.currentTarget, view.step);
     const field = name as InquiryField;
     const value = fieldValue(e.currentTarget, field);
     const patch: Partial<View> = {};
@@ -310,6 +380,7 @@ export function InquiryForm({
   }
 
   function goTo(step: number) {
+    if (formRef.current) rememberDraft(formRef.current, step);
     update({ step });
     pendingFocus.current = { kind: "step" };
   }
@@ -317,6 +388,7 @@ export function InquiryForm({
   function sendAnother(e: MouseEvent<HTMLAnchorElement>) {
     // Bez skriptu odkaz načte prázdnou stránku Kontakt, se skriptem stačí ukázat formulář.
     e.preventDefault();
+    clearDraft(DRAFT_KEYS.inquiry);
     update({ again: true, step: 0, errors: {}, pkg: "", licence: "" });
     pendingFocus.current = { kind: "step" };
   }
@@ -377,7 +449,7 @@ export function InquiryForm({
     ["Telefon", singleLine(state.values.phone ?? "")],
   ];
 
-  return (
+  const formElement = (
     <form
       ref={formRef}
       className="kt-form kt-js"
@@ -385,6 +457,7 @@ export function InquiryForm({
       action={serverAction}
       noValidate
       aria-labelledby="poptavka-nadpis"
+      aria-busy={pending || undefined}
       onSubmit={onSubmit}
       onChange={onChange}
     >
@@ -470,13 +543,10 @@ export function InquiryForm({
           </div>
           <fieldset className={fieldClass(err("packageSlug"), true)} id="f-vylet">
             <legend>Výlet</legend>
+            {/* Délka a cena od u voleb, bez odkazu pryč z formuláře (úprava 8 z auditu). */}
             <div className="checks kt-col">
-              {radios("packageSlug", PACKAGE_SLUGS, (v) => packageLabel(v as PackageSlug))}
+              {radios("packageSlug", PACKAGE_SLUGS, (v) => packageLabels[v as PackageSlug])}
             </div>
-            <span className="fa-hint">
-              <span className="todo">[doplnit: 3. výlet od Honzy]</span>{" "}
-              <Link href={ROUTES.trips}>Porovnat výlety</Link>
-            </span>
             {fieldError("packageSlug")}
           </fieldset>
           <div className={fieldClass(err("travelDate"))}>
@@ -491,7 +561,7 @@ export function InquiryForm({
               {...a11y("travelDate", "f-kdy-hint")}
             />
             <span className="fa-hint" id="f-kdy-hint">
-              Stačí měsíc nebo rozmezí.
+              Stačí měsíc nebo rozmezí. Když ještě nevíte, napište to.
             </span>
             {fieldError("travelDate")}
           </div>
@@ -626,8 +696,9 @@ export function InquiryForm({
             </p>
           ) : null}
           <div className="kt-nav">
-            <button className="fa-dir fa-dir--grafit" type="submit">
-              <span className="t">Odeslat poptávku</span>
+            {/* Během odesílání aria-disabled, ne disabled: fokus zůstane na tlačítku. */}
+            <button className="fa-dir fa-dir--grafit" type="submit" aria-disabled={pending || undefined}>
+              <span className="t">{pending ? SENDING : "Odeslat poptávku"}</span>
               <Arrow />
             </button>
             {back}
@@ -639,8 +710,7 @@ export function InquiryForm({
         <div className="kt-done" id="kt-hotovo">
           <h2 tabIndex={-1}>Děkujeme, poptávka je odeslaná</h2>
           <p>
-            Honza se vám ozve na e-mail <strong>{(state.values.email ?? "").trim()}</strong>{" "}
-            <span className="todo">[doplnit: do kdy se Honza ozve, od Honzy]</span>.
+            Honza se vám ozve na e-mail <strong>{(state.values.email ?? "").trim()}</strong> {FA_REPLY_TIME}.
           </p>
           <p className="kt-done-tel">
             Spěcháte? Zavolejte Honzovi: <a href={FA_PHONE_HREF}>{FA_PHONE.replaceAll(" ", NBSP)}</a>
@@ -664,5 +734,13 @@ export function InquiryForm({
 
       <FormGuard id="f-web" token={view.token ?? token} />
     </form>
+  );
+
+  // Ohlášení odesílání stojí za formulářem, ne v něm (aria-busy, SendingStatus).
+  return (
+    <>
+      {formElement}
+      <SendingStatus pending={pending} />
+    </>
   );
 }

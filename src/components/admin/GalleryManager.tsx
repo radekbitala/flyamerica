@@ -9,9 +9,10 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { ACCEPTED_IMAGE_TYPES, photoCount, uploadImage } from "./image-upload";
 
 const smallButton =
-  "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-field bg-white px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-field bg-white px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0 pointer-coarse:min-h-11";
+// Šipky a koš: na dotyku aspoň 44 x 44 px (úprava 51 z auditu).
 const iconButton =
-  "cursor-pointer rounded p-1.5 text-text-secondary hover:bg-gray-100 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30";
+  "inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded text-text-secondary hover:bg-gray-100 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30 sm:h-8 sm:w-8 pointer-coarse:h-11 pointer-coarse:w-11";
 
 function newGalleryId(existing: PostGallery[]): string {
   const taken = new Set(existing.map((g) => g.id));
@@ -40,6 +41,7 @@ export function GalleryManager({
   onUploadingChange,
   onPlace,
   onRemoveFromText,
+  onUploaded,
 }: {
   galleries: PostGallery[];
   setGalleries: React.Dispatch<React.SetStateAction<PostGallery[]>>;
@@ -49,6 +51,8 @@ export function GalleryManager({
   onUploadingChange: (busy: boolean) => void;
   onPlace: (id: string) => void;
   onRemoveFromText: (id: string) => void;
+  /** Do galerie přibyla aspoň jedna fotka (galerie mimo text se vloží na konec textu). */
+  onUploaded: (id: string) => void;
 }) {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -71,6 +75,29 @@ export function GalleryManager({
       [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
+
+  /**
+   * Odebrání fotky jde vrátit z hlášky. Fotka se vrátí na původní místo,
+   * pokud mezitím nezmizela celá galerie.
+   */
+  const removeItem = (galleryId: string, index: number) => {
+    const item = galleries.find((g) => g.id === galleryId)?.items[index];
+    if (!item) return;
+    updateItems(galleryId, (items) => items.filter((_, i) => i !== index));
+    toast("Fotka odebrána", {
+      duration: 10_000,
+      action: {
+        label: "Vrátit",
+        onClick: () =>
+          updateItems(galleryId, (items) => {
+            if (items.some((it) => it.path === item.path)) return items;
+            const next = [...items];
+            next.splice(Math.min(index, next.length), 0, item);
+            return next;
+          }),
+      },
+    });
+  };
 
   const addGallery = () =>
     setGalleries((prev) => [...prev, { id: newGalleryId(prev), items: [] }]);
@@ -96,10 +123,12 @@ export function GalleryManager({
 
     setProgress({ galleryId, done: 0, total: queue.length });
     onUploadingChange(true);
+    let uploaded = 0;
     try {
       for (const [index, file] of queue.entries()) {
         try {
           const image = await uploadImage(file);
+          uploaded++;
           updateItems(galleryId, (items) => [
             ...items,
             {
@@ -122,6 +151,7 @@ export function GalleryManager({
       setProgress(null);
       onUploadingChange(false);
     }
+    if (uploaded > 0) onUploaded(galleryId);
   }
 
   const removingGallery = galleries.find((g) => g.id === removing);
@@ -129,16 +159,22 @@ export function GalleryManager({
   return (
     <div className="space-y-4">
       <p className="text-sm text-text-secondary">
-        Galerie se na webu ukáže tam, kde je v textu její značka. Klikněte do
-        textu na místo, kam galerie patří, a pak na Vložit do textu. Čísla
-        galerií jdou podle pořadí v textu.
+        Galerie se na webu ukáže tam, kde je v textu její značka. Nová galerie
+        se po nahrání fotek sama vloží na konec textu. Jinam ji dáte tak, že
+        kliknete do textu a pak na Přesunout na místo kurzoru. Čísla galerií
+        jdou podle pořadí v textu. Fotky ve formátu HEIC uložte jako JPEG.
       </p>
       {!uploadsEnabled && (
         <p className="rounded-lg bg-warm-gray px-4 py-3 text-sm text-foreground">
           {UPLOADS_DISABLED_MESSAGE}
         </p>
       )}
-      {error && <p className="text-sm font-medium text-salmon">{error}</p>}
+      {error && (
+        // tabIndex: po neúspěšném uložení sem jde fokus (PostForm).
+        <p id="post-gallery-error" tabIndex={-1} className="text-sm font-medium text-salmon">
+          {error}
+        </p>
+      )}
 
       {galleries.map((gallery, galleryIndex) => {
         const number = galleryIndex + 1;
@@ -170,7 +206,7 @@ export function GalleryManager({
                   onClick={() => onPlace(gallery.id)}
                   className={smallButton}
                 >
-                  {inText ? "Přesunout na místo kurzoru" : "Vložit do textu"}
+                  {inText ? "Přesunout na místo kurzoru" : "Vložit na místo kurzoru"}
                 </button>
                 <button
                   type="button"
@@ -189,7 +225,7 @@ export function GalleryManager({
                   )}
                   {busy && progress
                     ? `Nahrávám ${Math.min(progress.done + 1, progress.total)} z ${progress.total}`
-                    : "Nahrát fotky"}
+                    : "Nahrát fotky z počítače nebo telefonu"}
                 </button>
                 <button
                   type="button"
@@ -261,11 +297,7 @@ export function GalleryManager({
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          updateItems(gallery.id, (items) =>
-                            items.filter((_, i) => i !== index),
-                          )
-                        }
+                        onClick={() => removeItem(gallery.id, index)}
                         aria-label={`Odebrat fotku ${index + 1}`}
                         className={`${iconButton} hover:text-salmon`}
                       >

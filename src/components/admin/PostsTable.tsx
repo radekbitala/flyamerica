@@ -24,14 +24,19 @@ const STATUS_META: Record<PostStatus, { label: string; className: string }> = {
   archived: { label: "Archivováno", className: "bg-warm-gray text-text-secondary" },
 };
 
-export type PostFilter = "all" | PostStatus;
+// Archivace článků v administraci není (stav archived jen ve schématu),
+// filtr Archivované by byl vždy prázdný.
+export type PostFilter = "all" | "published" | "draft";
 
 const FILTERS: { value: PostFilter; label: string }[] = [
   { value: "all", label: "Všechny" },
   { value: "published", label: "Publikované" },
   { value: "draft", label: "Koncepty" },
-  { value: "archived", label: "Archivované" },
 ];
+
+// Ikony v řádku: na telefonu a dotyku aspoň 44 x 44 px (úprava 51 z auditu).
+const rowAction =
+  "inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:bg-white hover:text-accent-ink sm:h-8 sm:w-8 pointer-coarse:h-11 pointer-coarse:w-11";
 
 const dateFormat = new Intl.DateTimeFormat("cs-CZ", { timeZone: "Europe/Prague" });
 
@@ -60,7 +65,7 @@ export function PostsTable({
   }, [posts, search, filter]);
 
   const counts = useMemo(() => {
-    const c = { all: posts.length, published: 0, draft: 0, archived: 0 };
+    const c: Record<PostStatus | "all", number> = { all: posts.length, published: 0, draft: 0, archived: 0 };
     for (const p of posts) c[p.status]++;
     return c;
   }, [posts]);
@@ -208,9 +213,9 @@ export function PostsTable({
                           href={`/admin/posts/${post.id}/edit`}
                           title="Upravit"
                           aria-label={`Upravit článek ${post.title}`}
-                          className="rounded-md p-1.5 text-text-secondary hover:bg-white hover:text-accent-ink"
+                          className={rowAction}
                         >
-                          <Pencil size={16} />
+                          <Pencil size={16} aria-hidden />
                         </Link>
                         {post.status === "published" && (
                           <a
@@ -219,9 +224,9 @@ export function PostsTable({
                             rel="noopener noreferrer"
                             title="Zobrazit na webu"
                             aria-label={`Zobrazit článek ${post.title} na webu`}
-                            className="rounded-md p-1.5 text-text-secondary hover:bg-white hover:text-accent-ink"
+                            className={rowAction}
                           >
-                            <ExternalLink size={16} />
+                            <ExternalLink size={16} aria-hidden />
                           </a>
                         )}
                       </div>

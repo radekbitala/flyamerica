@@ -84,7 +84,7 @@ export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
   new: "Nová",
   in_progress: "Rozpracovaná",
   done: "Vyřízená",
-  archived: "Archivovaná",
+  archived: "Archiv",
 };
 
 export const INQUIRY_STATUSES = Object.keys(INQUIRY_STATUS_LABELS) as [

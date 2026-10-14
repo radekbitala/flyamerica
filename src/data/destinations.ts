@@ -56,9 +56,17 @@ export interface Destination {
    * FA83 ho nemá.
    */
   pilotTip?: string;
-  /** Co ještě chybí od Honzy, na webu jako „[doplnit: …]“. */
+  /**
+   * Interní poznámka, co ještě chybí od Honzy. Na webu se neukazuje ani jako
+   * značka chybějícího podkladu (úprava 7 z auditu, 14. 10. 2026: chybějící
+   * obsah se skryje), seznam toho, co chybí, je
+   * v ../design/audit-2026-10-13/BACKLOG-po-spusteni.md.
+   */
   todo?: string;
-  /** Fotka dlaždice (4 : 3). */
+  /**
+   * Fotka dlaždice (4 : 3): letiště z výšky nebo letadlo na stojánce, ne pláž
+   * (úprava 9 z auditu, 14. 10. 2026).
+   */
   tile: PhotoName;
   /** Fotky v detailu destinace, s popisky z archivu. */
   gallery: readonly PhotoName[];
@@ -143,7 +151,8 @@ export const DESTINATIONS: readonly Destination[] = [
       "Řízené letiště s občas hustým výcvikovým provozem. Nedaleké jezero Okeechobee je zážitek, protože svou velikostí připomíná spíše moře. Cestou z Orlanda si procvičíme průlet (transition) řízeným prostorem letiště Kissimmee. Doba letu je pak cca 0:50 minut.",
     teaser:
       "Moderní a výborně vybavené regionální letiště s několika drahami nedaleko pobřeží Atlantiku, které dýchá bohatou historií spojenou s výcvikem pilotů a leteckým průmyslem.",
-    tile: "vero-beach-stojanka",
+    // Dlaždice: Cirrus na stojánce z fotobanky místo business jetů (úprava 9), galerie beze změny.
+    tile: "kam-letet/letadla-vero-beach-07",
     gallery: ["vero-beach-stojanka", "vero-beach-po-bource", "vero-beach-nase-letadlo"],
     galleryColumns: 3,
   },
@@ -204,8 +213,9 @@ export const DESTINATIONS: readonly Destination[] = [
       "Z Orlanda přes Kissimmee jsme za 45 minut v Merritt Islandu, zde se obvykle zařadíme do hustého výcvikového provozu a dáme si několik letmých přistání. Sídlí zde poměrně značně vytížená škola na Piper 28 a mladíci z celého světa zde získávají své licence.",
     teaser:
       "Letiště situované na stejnojmenném ostrově v zálivu u Atlantiku v těsné blízkosti vesmírného pobřeží (Space Coast).",
-    // Fotka „Přistání na Merritt Island (MCOI)“ jen jako dlaždice: Honza uvádí KCOI, kód čeká na potvrzení.
-    tile: "merritt-island-pristani",
+    // Dlaždice: dráha raketoplánů na Cape Canaveral z výšky z fotobanky místo rozmazané vrtule (úprava 9),
+    // galerie beze změny. Archivní fotka „Přistání na Merritt Island (MCOI)“ se v Kam letět už nepoužívá.
+    tile: "kam-letet/destinace-cape-canaveral-13",
     gallery: ["merritt-island-space-coast", "merritt-island-fbo"],
     galleryColumns: 3,
   },
@@ -223,7 +233,8 @@ export const DESTINATIONS: readonly Destination[] = [
     pilotTip:
       "Jedná se asi o nejvzdálenější destinaci z naší základny, ale nikde není dáno, že nemůžeme na Key Westu nebo kdekoliv jinde přespat. Cestou si děláme kromě přistání v Everglades i cvičná přistání v Marco Island, Arcadia, Page Field apod.",
     teaser: "Přistání na Key Westu nabízí ikonické panorama korálových ostrovů a tyrkysového moře pod křídly.",
-    tile: "key-west-plaz",
+    // Dlaždice: naše Cessna 182 před Everglades Airpark místo pláže (úprava 9). Pláž zůstává jen v galerii.
+    tile: "everglades-airpark",
     gallery: ["key-west-plaz", "tipy-florida-keys-silnice", "everglades-letecky"],
     galleryColumns: 3,
   },

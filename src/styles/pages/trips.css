@@ -1,8 +1,37 @@
 /* Letecké výlety: přehled /letecke-vylety a detail výletu. Načítá se v layoutu (web) po web.css. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css).
    Třídy vy-* jsou nové (12. 10. 2026), pk-* a pkg-* z web.css (model) se používají dál.
+   0. Karta výletu (.pkg) na úvodu i na přehledu: odkazy, najetí myší a vyrovnání v řadě (úpravy 28 a 39)
    1. Přehled: karty výletů s fotkou destinace (.vy-list, .vy-card) a srovnání výletů (.vy-compare)
    2. Detail: posuvná řada fotek destinací (.vy-row, komponenta PhotoRow) a destinace na trase (.vy-route)
    Bez stínů, zaoblení a přechodů, žlutá tu není nikde (vše na Papíru nebo bílé). */
+
+/* ---------- 0. KARTA VÝLETU (.pkg z web.css, úvod i /letecke-vylety) ----------
+   Styly karty jsou tady jednou pro obě stránky (layout načítá trips.css i na úvodu, po home.css).
+   Úprava 28 (rozhodnutí 14. 10. 2026): na detail vede nadpis, fotka (TripCardPhoto, mimo pořadí Tab) a „Detail výletu“.
+   Karta se celá odkazem nepřekrývá, text jde označit. Najetí na kartu jako u dlaždice tipu (.tip ve web.css): fotka
+   se zvětší na 1,03, nadpis se podtrhne a šipka u „Detail výletu“ se posune. Při prefers-reduced-motion vypne plynulý
+   přechod globální pravidlo ve web.css stejně jako u dlaždic. */
+.pkg-img { display: block; }
+.pkg-img img { transition: transform .5s ease; }
+.pkg:hover .pkg-img img { transform: scale(1.03); }
+.pkg h3 a, .pkg h2 a { color: inherit; text-decoration: none; }
+.pkg:hover h3 a, .pkg:hover h2 a { text-decoration: underline var(--linka); text-underline-offset: .18em; }
+.pkg h3 a:focus-visible, .pkg h2 a:focus-visible { outline: 2px solid var(--grafit); outline-offset: 3px; }
+.pkg:hover > .fa-link { text-decoration-thickness: 2px; }
+.pkg:hover > .fa-link svg { transform: translateX(2px); }
+
+/* Úprava 39: od 601 px mají karty v řadě fotku, nadpis, podtitul, text, údaje a cenu na stejné výšce, i když se nadpis
+   nebo Honzův text zalomí jinak. Karta zabírá řádky mřížky .pkgs a sdílí je přes subgrid (na úvodu 7: fotka, nadpis,
+   podtitul, text, údaje, cena, odkaz; na přehledu 5: fotka, nadpis, podtitul, text, odkaz). Mezera mezi řadami karet
+   (třetí výlet) je okraj karty, ne row-gap: ten by mřížka dala i mezi řádky uvnitř karty. Telefon beze změny (flex). */
+@media (min-width: 601px) {
+  .pkgs { row-gap: 0; }
+  .pkg { display: grid; grid-row: span 7; grid-template-rows: subgrid; }
+  .vy-card { grid-row: span 5; }
+  .pkgs > .pkg:nth-child(n + 3) { margin-top: 24px; }
+  /* V mřížce by se odkaz roztáhl přes celou kartu */
+  .pkg > .fa-link { justify-self: start; }
+}
 
 /* ---------- 1. PŘEHLED VÝLETŮ ---------- */
 
@@ -59,6 +88,14 @@
 /* Tažení myší (PhotoRow): bez scroll-snap, dokud řada po puštění nedojede na fotku */
 .vy-row-track.is-dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; }
 
+/* Úprava 41 (rozhodnutí 14. 10. 2026): na tabletu a počítači vykukuje za okraj obrazovky další fotka a její popisek byl
+   uříznutý v půlce věty. Popisek je vidět jen u fotek celých v záběru (PhotoRow přidá .is-cut ostatním), skrytý je jen
+   průhledností, čtečka ho přečte dál. Bez skriptu (scripting) se ukazují všechny popisky jako dřív. Telefon beze změny. */
+@media (min-width: 601px) and (scripting: enabled) {
+  .vy-row-slide figcaption { transition: opacity .2s ease; }
+  .vy-row-slide.is-cut figcaption { opacity: 0; }
+}
+
 /* Fotka 4 : 3 (archivní fotky jsou většinou 4 : 3, nic se zbytečně neořízne), na počítači 680 px, na tabletu
    tři čtvrtiny šířky. Popisek z fotobanky pod fotkou (.fig figcaption z web.css). */
 .vy-row-slide { flex: 0 0 min(680px, 78%); scroll-snap-align: start; }
@@ -105,6 +142,11 @@
 .vy-route-more { margin-top: 20px; }
 .vy-route-more .fa-link { font-size: 15px; }
 
+/* Panel Cena od v záhlaví výletu: pod výzvou dva textové odkazy pod sebou, Ceny pro 1 a 2 piloty a Co zahrnuje cena
+   (úprava 14, rozhodnutí 14. 10. 2026). Bez další tabule a bez žluté. Na telefonu větší mezera, aby se dotykové plochy
+   odkazů (44 px, .fa-link::after ve web.css) nepřekrývaly. */
+.pk-sum-more { list-style: none; padding: 0; display: grid; justify-items: start; gap: 12px; }
+
 /* Na počítači panel začíná u horní linky přehledu programu (pod h2 a jeho mezerou, .pk-h2) */
 @media (min-width: 961px) {
   .split > .vy-route { margin-top: calc(44px * 1.08 + 32px); }
@@ -129,6 +171,13 @@
   .vy-compare td.vy-compare-all { grid-column: 1 / -1; }
   .vy-compare-price { font-size: 22px; }
   .vy-compare-note { font-size: 14px; }
+
+  /* Tabulky Co zahrnuje cena a Varianty a cena: popisek sloupce z data-label ani u třetí buňky (úprava 24, rozhodnutí
+     14. 10. 2026). „CO JE ZAHRNUTO“ stál i u řádků s Ne. První dvě buňky ho nemají už ve web.css. */
+  .pk-table td:nth-child(3)::before { content: none; }
+
+  /* Odkazy pod cenou v záhlaví výletu: dotykové plochy 44 px se nepřekrývají */
+  .pk-sum-more { gap: 22px; }
 
   /* Řada fotek přes celou šířku obrazovky, jedna fotka na obrazovku, popisek s okrajem obsahu */
   .vy-row-track { gap: 8px; padding-inline: 0; scroll-padding-inline: 0; }

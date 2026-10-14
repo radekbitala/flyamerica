@@ -62,6 +62,9 @@ const { INQUIRY_STEPS, checkCallbackField, checkInquiryField } = await import(
 );
 const { MAX_FORM_AGE_MS, MIN_FILL_MS, checkFormToken, clientIp, createFormToken, hashIp } =
   await import("../src/lib/inquiries/spam.ts");
+const { MIN_FILL_MS: MIN_FILL_MS_BROWSER } = await import("../src/lib/inquiries/fields.ts");
+const { inquiryConfirmationEmail } = await import("../src/lib/email.ts");
+const { FA_REPLY_TIME } = await import("../src/lib/site.ts");
 
 /** Platná poptávka tak, jak ji pošle formulář (všechno řetězce). */
 const VALID = {
@@ -439,5 +442,46 @@ describe("otisk IP", () => {
       "203.0.113.9",
     );
     assert.equal(clientIp(new Headers()), null);
+  });
+});
+
+describe("potvrzovací e-mail tazateli", () => {
+  const mail = inquiryConfirmationEmail({
+    id: "e2e",
+    kind: "inquiry",
+    name: "Jan Novák",
+    email: "jan.novak@example.cz",
+    phone: "+420 777 000 111",
+    licence: "PPL",
+    packageLabel: "Florida Grand Tour & Fly",
+    travelDate: "březen 2027",
+    pilotCount: "2",
+    message: "Vlastní text návštěvníka",
+  });
+
+  test("lhůta odpovědi „do 2 dnů“ v HTML i v textové verzi (úprava 16)", () => {
+    assert.equal(FA_REPLY_TIME.replaceAll("\u00a0", " "), "do 2 dnů");
+    assert.ok(mail.html.includes(`</strong> ${FA_REPLY_TIME}.`), "HTML e-mailu nemá lhůtu odpovědi.");
+    assert.ok(
+      mail.text.includes(`Honza se vám ozve na e-mail jan.novak@example.cz ${FA_REPLY_TIME}.`),
+      "Textová verze e-mailu nemá lhůtu odpovědi.",
+    );
+  });
+
+  test("bez textu od návštěvníka: jméno, telefon, termín ani zpráva", () => {
+    for (const own of ["Jan Novák", "+420 777 000 111", "březen 2027", "Vlastní text návštěvníka"]) {
+      assert.ok(!mail.html.includes(own) && !mail.text.includes(own), `E-mail obsahuje „${own}“.`);
+    }
+    assert.ok(mail.text.includes("Výlet: Florida Grand Tour & Fly"), "Kopie voleb nemá výlet.");
+  });
+
+  test("bez dlouhé a střední pomlčky", () => {
+    assert.ok(!/[\u2013\u2014]/.test(mail.subject + mail.html + mail.text));
+  });
+});
+
+describe("rychlé odeslání v prohlížeči", () => {
+  test("formulář v prohlížeči čeká stejně dlouho, jako server vyžaduje (MIN_FILL_MS)", () => {
+    assert.equal(MIN_FILL_MS_BROWSER, MIN_FILL_MS);
   });
 });

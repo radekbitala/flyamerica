@@ -1,8 +1,12 @@
+import Link from "next/link";
+import { Fragment } from "react";
 import { Arrow } from "@/components/web/ArrowSymbol";
 import { Figure } from "@/components/web/Figure";
+import { inquiryHref } from "@/components/web/nav";
 import { HOME_BASE_CODE, type Destination } from "@/data/destinations";
-import { destinationPath } from "@/lib/routes";
-import { czechNbspText } from "@/lib/typography";
+import { TRIPS, type Trip } from "@/data/trips";
+import { destinationPath, tripPath } from "@/lib/routes";
+import { NBSP, czechNbspText } from "@/lib/typography";
 import type { DestinationNavItem } from "./destination-nav";
 
 /** Kde se detail ukazuje: celá stránka /kam-letet/<slug>, nebo okno nad stránkou (@modal). */
@@ -31,11 +35,15 @@ const GALLERY_SIZES: Record<DestinationBodyVariant, Record<1 | 2 | 3, string>> =
  * Text destinace doslova od Honzy (Zajímavosti a Proč je dobré tam letět
  * v .prose), pod ním krátký blok Tip pro piloty (Honzův text, menší písmo,
  * štítek místo nadpisu, bez žluté plochy a bez polohové tabule), řádek
- * [doplnit] s tím, co ještě chybí, a galerie s popisky z archivu.
+ * s výlety a odkazem Poptat termín (DestinationTrips) a galerie s popisky
+ * z archivu. Co od Honzy ještě chybí (pole todo), se na webu neukazuje
+ * (úprava 7 z auditu, 14. 10. 2026): FA83 je bez tipu, Palatka bez galerie.
  * Na celé stránce je první fotka galerie v prvním záběru největší prvek
  * (LCP), proto se načítá hned (priority). V okně se načítá líně.
- * Bez nadpisu: ten má celá stránka (h1 pod drobečky) i okno (h2 s kódem
- * letiště), obsah je jinak v obou stejný.
+ * Bez nadpisu destinace: ten má celá stránka (h1 pod drobečky) i okno (h2
+ * s kódem letiště), obsah je jinak v obou stejný. Mezititulky jsou proto
+ * na celé stránce h2 a v okně h3 (úprava 35), vzhled je v obou stejný
+ * (destinations.css).
  */
 export function DestinationBody({
   destination,
@@ -44,6 +52,7 @@ export function DestinationBody({
   destination: Destination;
   variant: DestinationBodyVariant;
 }) {
+  const Heading = variant === "page" ? "h2" : "h3";
   const count = destination.gallery.length;
   const columns = count === 1 ? 1 : destination.galleryColumns;
   const galleryClass = ["gallery", "dest-gal", columns === 2 ? "dest-gal--2" : null, columns === 1 ? "dest-gal--1" : null]
@@ -53,24 +62,20 @@ export function DestinationBody({
     <>
       <div className="dest-text">
         <div className="prose">
-          <h3>Zajímavosti</h3>
+          <Heading>Zajímavosti</Heading>
           <p>{czechNbspText(destination.highlights)}</p>
-          <h3>{czechNbspText(destination.whyHeading)}</h3>
+          <Heading>{czechNbspText(destination.whyHeading)}</Heading>
           {destination.why.map((paragraph) => (
             <p key={paragraph}>{czechNbspText(paragraph)}</p>
           ))}
         </div>
         {destination.pilotTip ? (
           <div className="kl-tip">
-            <h3>Tip pro piloty</h3>
+            <Heading>Tip pro piloty</Heading>
             <p>{czechNbspText(destination.pilotTip)}</p>
           </div>
         ) : null}
-        {destination.todo ? (
-          <p className="dest-todo">
-            <span className="todo">[doplnit: {czechNbspText(destination.todo)}]</span>
-          </p>
-        ) : null}
+        <DestinationTrips destination={destination} />
       </div>
       {count > 0 ? (
         <div className={galleryClass}>
@@ -85,6 +90,60 @@ export function DestinationBody({
         </div>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Výlety, na kterých se do destinace letí: výlety, které ji mají v poli
+ * destinations (src/data/trips.ts, Honza ji jmenuje v textu výletu),
+ * v pořadí výletů. Domovská základna (FA83) patří ke všem výletům.
+ */
+function destinationTrips(destination: Destination): Trip[] {
+  const trips = destination.home ? TRIPS : TRIPS.filter((trip) => trip.destinations.includes(destination.slug));
+  return [...trips].sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Řádek pod textem destinace (úprava 11 z auditu, 14. 10. 2026): na kterých
+ * výletech se sem letí, s odkazy na výlety, a textový odkaz Poptat termín.
+ * Náš text (Overpass), bez polohové tabule a bez žluté výzvy: v okně je
+ * jediný tabulový prvek kód letiště, na celé stránce drobečky. U destinace
+ * jen jednoho výletu poptávka předvyplní výlet. Vero Beach, Palatka,
+ * Kissimmee a Merritt Island nejsou v textech výletů a mají jen Poptat
+ * termín, dokud Honza neřekne, jestli se tam dá letět po domluvě
+ * (../design/audit-2026-10-13/BACKLOG-po-spusteni.md).
+ *
+ * Odkazy jsou next/link: z okna se cílová stránka otevře měkkou navigací,
+ * okno se samo zavře (DestinationDialog se ukazuje jen na /kam-letet/<slug>)
+ * a Zpět v prohlížeči vrátí okno nad stránku, ze které se otevřelo.
+ */
+function DestinationTrips({ destination }: { destination: Destination }) {
+  const trips = destinationTrips(destination);
+  // „obou“: výlety jsou dva (TRIPS), FA83 je domovská základna obou.
+  const lead = destination.home
+    ? "Domovská základna obou výletů:"
+    : trips.length === 1
+      ? "Letíte sem na výletu"
+      : "Letíte sem na výletech";
+  return (
+    <div className="kl-trips">
+      {trips.length > 0 ? (
+        <p className="kl-trips-text">
+          {lead}{" "}
+          {trips.map((trip, index) => (
+            <Fragment key={trip.slug}>
+              {index === 0 ? null : index === trips.length - 1 ? ` a${NBSP}` : ", "}
+              <Link href={tripPath(trip.slug)}>{czechNbspText(trip.name)}</Link>
+            </Fragment>
+          ))}
+        </p>
+      ) : null}
+      <p className="kl-trips-ask">
+        <Link className="fa-link" href={inquiryHref(trips.length === 1 ? trips[0].slug : null)}>
+          Poptat termín <Arrow />
+        </Link>
+      </p>
+    </div>
   );
 }
 

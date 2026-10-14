@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Arrow } from "@/components/web/ArrowSymbol";
-import { isoDate, yearOf } from "@/lib/dates";
+import { isoDate } from "@/lib/dates";
 import { postDisplayTitle } from "@/lib/post-title";
+import { postYear } from "@/lib/post-year";
 import type { PublicPostSummary } from "@/lib/public-posts";
 import { postPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
@@ -15,7 +16,10 @@ const DIARY_PHOTO_SIZES = "(max-width: 960px) 100vw, 600px";
  * Jeden článek ve velkém bloku .diary.dn-lead (fotka 4 : 3 s popiskem,
  * štítek a rok, nadpis, perex v serifu, odkaz). Nejnovější článek na /z-cest
  * a „Z cest“ na konci článku, podle modelu. Rok místo celého data jako
- * v modelu, celé datum mají karty a záhlaví článku. Bez fotky jen text.
+ * v modelu, celé datum mají karty a záhlaví článku. Rok je rok cesty
+ * (postYear, úprava 33: článek 2022 vyšel v listopadu 2023), <time dateTime>
+ * zůstává datum publikace. Bez fotky (článek 2025) jen text v jednom
+ * sloupci přes celý blok (.teaser--text, src/styles/pages/article.css).
  *
  * Celý blok je odkaz na článek jako karty starších článků: odkazem je nadpis
  * (.teaser-link, jméno odkazu je titulek) a jeho plocha pokrývá celý blok
@@ -43,7 +47,7 @@ export function DiaryTeaser({
   const image = post.image;
   return (
     <div className="fa-wrap">
-      <div className="diary dn-lead teaser">
+      <div className={image ? "diary dn-lead teaser" : "diary dn-lead teaser teaser--text"}>
         {image ? (
           <figure className="fig fig--43">
             <PostImage
@@ -62,7 +66,7 @@ export function DiaryTeaser({
           <div className="meta">
             <span className="lbl">{label}</span>
             <time className="date" dateTime={isoDate(post.publishedAt)}>
-              {yearOf(post.publishedAt)}
+              {postYear(post)}
             </time>
           </div>
           <h2 id={headingId}>

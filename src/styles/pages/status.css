@@ -8,3 +8,12 @@
 .status-page { min-height: calc(100svh - var(--hdr)); }
 .status-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px 28px; margin-top: 32px; }
 .status-actions + .kt-tel { margin-top: 28px; }
+
+/* 404 (úprava 43 z auditu): pod sebou odkaz na úvod, Letecké výlety a Kontakt, pod nimi Honzův telefon jako na chybové
+   stránce. Jen textové odkazy se šipkou, žádná další žlutá výzva. Mezera mezi odkazy na telefonu 24 px, aby se jejich
+   dotykové plochy 44 px (web.css, část 11) nepřekrývaly. */
+.status-links { list-style: none; margin: 32px 0 0; padding: 0; display: grid; justify-items: start; gap: 16px; }
+.status-links + .kt-tel { margin-top: 32px; }
+@media (max-width: 600px) {
+  .status-links { gap: 24px; }
+}

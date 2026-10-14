@@ -25,6 +25,11 @@
 .read-body > .read-col,
 .read-body > .read-toc { max-width: var(--read-col); margin-inline: auto; }
 
+/* Dlouhá webová adresa nebo slovo bez mezer v textu se zalomí, místo aby stránku na telefonu rozšířily do strany (úprava 34
+   z auditu 13. 10. 2026). Odkaz se smí zalomit kdekoli (adresa nemá kde jinde), ostatní text jen tam, kde by jinak přetekl. */
+.prose { overflow-wrap: break-word; }
+.prose a { overflow-wrap: anywhere; }
+
 /* Široká fotka nebo galerie v textu: z šířky sloupce na šířku kontejneru (na mobilu, kde je sloupec celý kontejner, beze změny).
    Popisek pod fotkou zůstává v šířce a ose sloupce textu. */
 .read-body .prose > .read-wide { margin-inline: calc((min(var(--read-col), 100cqi) - 100cqi) / 2); }
@@ -51,6 +56,9 @@
     /* 4 px kolem pro rámeček fokusu (obsah se posouvá a ořízl by ho), záporný okraj vrací seznam k okraji kontejneru */
     padding: 4px; margin: -4px 36px 0 -4px;
   }
+  /* <details> je v HTML zavřený, otevře ho až skript (ArticleToc.tsx, úprava 37). V okraji je obsah vidět hned, bez čekání na skript
+     a bez skriptu (prohlížeč bez podpory ::details-content ho ukáže po otevření skriptem). */
+  .read-body--toc > .read-toc details::details-content { display: block; content-visibility: visible; }
   .read-body--toc > .prose { grid-column: 2; grid-row: 1; margin: 0; }
   .read-body--toc .prose > .read-wide { margin-left: 0; margin-right: calc((var(--read-col) - 100cqi) / 2); }
   .read-body--toc .prose > .read-wide > figcaption { margin-left: 0; }
@@ -76,3 +84,38 @@
 .mentor-posts > .lbl { display: block; margin-bottom: 16px; }
 .mentor-posts > h2 { margin-bottom: 28px; }
 .mentor-posts .sec-more { margin-top: 28px; }
+
+/* ---------- Galerie článku: náhledy 4 : 3 bez popisků ----------
+   Úprava 12 a rozhodnutí R7 z auditu 13. 10. 2026 (ukázka 5): PostGalleryGrid dává mřížce třídu gallery--nahledy a nevykresluje
+   figcaption, popisek je doslova v okně zvětšení a v alt. Platí pro sekci Fotky z cesty i galerie v textu. Počítač 4 sloupce
+   s mezerou 24 px (jako .grid-4), tablet 3 a telefon 2 sloupce s mezerou 16 px (jako řada fotek výletu .pk-gallery a galerie
+   destinací na tabletu). Výjimka z obecného pravidla mřížek v DESIGN.md (Layout, Mřížky). Galerie destinací (.dest-gal), řada
+   fotek výletu a galerie na Váš mentor jsou bez této třídy a beze změny. sizes náhledů jsou v PostGalleryGrid.tsx. */
+.gallery--nahledy { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 960px) {
+  .gallery--nahledy { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+}
+@media (max-width: 600px) {
+  .gallery--nahledy { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+}
+
+/* ---------- Článek bez titulní fotky (úprava 6: článek 2025 zatím titulní fotku nemá) ----------
+   Blok článku v Z cest a pod jiným článkem: jeden sloupec textu, ne levý sloupec vedle prázdného místa (jako blok Z cest na úvodu).
+   Záhlaví článku bez fotky: text navazuje na záhlaví bez druhé svislé mezery sekce (třída read-next v z-cest/[slug]/page.tsx),
+   mezera mezi datem a textem je spodní okraj záhlaví (56 px, telefon 40 px) jako mezi záhlavím a fotkou. */
+.diary.teaser--text { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- Vedlejší nadpisy sekcí (úprava 40) ----------
+   Fotky z cesty v článku, Z cest a přeletů a Přelety popsané Honzou na Váš mentor jsou doplňky k hlavnímu textu, proto ve velikosti
+   Headline střední (headline-md 34 px, mobil 27 px, jako nadpis nejnovějšího článku .dn-lead h2) místo Headline 44 px. Hlavní nadpisy
+   sekcí a detail výletu beze změny. */
+.headline-md { font-size: 34px; line-height: 1.12; letter-spacing: -.01em; }
+@media (max-width: 600px) {
+  .headline-md { font-size: 27px; }
+}
+/* Hlavní text stránky nesmí mít nejmenší nadpis: „O mně“ na Váš mentor stojí v .prose (nadpisy v textu 28 px), proto
+   třída headline vrací velikost h2 sekcí (Headline 44 px, mobil 31 px). Vedlejší nadpisy pod ním mají 34 / 27 px. */
+.prose h2.headline { font-size: 44px; line-height: 1.08; letter-spacing: -.015em; }
+@media (max-width: 600px) {
+  .prose h2.headline { font-size: 31px; }
+}

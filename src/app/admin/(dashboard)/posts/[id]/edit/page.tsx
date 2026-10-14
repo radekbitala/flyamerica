@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireAdminPage } from "@/lib/admin-guard";
-import { isStorageConfigured } from "@/lib/post-files";
+import { allowedImagePrefixes, isStorageConfigured } from "@/lib/post-files";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { PostForm } from "@/components/admin/PostForm";
 import { postPath } from "@/lib/routes";
@@ -36,11 +36,13 @@ export default async function EditPostPage({
         // jak ho vyčistil server.
         key={post.updatedAt.toISOString()}
         mode="edit"
+        postId={post.id}
         categories={categories}
         action={updatePost.bind(null, post.id)}
         onDelete={deletePost.bind(null, post.id)}
         publicUrl={post.status === "published" ? postPath(post.slug) : null}
         uploadsEnabled={isStorageConfigured()}
+        allowedImagePrefixes={allowedImagePrefixes()}
         defaults={{
           title: post.title,
           slug: post.slug,
@@ -55,6 +57,8 @@ export default async function EditPostPage({
           gallery: post.gallery,
           status: post.status,
           categoryIds,
+          tripYear: post.tripYear,
+          publishedAt: post.publishedAt?.toISOString() ?? null,
         }}
       />
     </div>

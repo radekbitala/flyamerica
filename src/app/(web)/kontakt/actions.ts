@@ -11,7 +11,7 @@ import {
   type InquiryEmailData,
 } from "@/lib/email";
 import { packageName } from "@/lib/inquiries/options";
-import { FA_EMAIL } from "@/lib/site";
+import { FA_EMAIL, FA_PHONE } from "@/lib/site";
 import {
   CALLBACK_FIELDS,
   HONEYPOT_FIELD,
@@ -47,7 +47,14 @@ const MSG_STALE =
   "Formulář byl otevřený moc dlouho. Zkontrolujte údaje a odešlete ho prosím znovu.";
 const MSG_TOO_FAST = "Zkontrolujte prosím údaje a odešlete formulář znovu.";
 const MSG_RATE_LIMIT = `Z vaší adresy přišlo za poslední hodinu víc poptávek. Zkuste to prosím později, nebo napište na ${FA_EMAIL}.`;
-const MSG_FAILED = `Poptávku se nepodařilo uložit. Zkuste to prosím znovu, nebo napište na ${FA_EMAIL}.`;
+const MSG_FAILED = `Poptávku se nepodařilo odeslat. Zkuste to prosím znovu, nebo napište na ${FA_EMAIL}.`;
+/**
+ * Vlastní hlášky žádosti o zavolání (úprava 30 z auditu): kdo chce zavolat,
+ * dostane Honzovo číslo, ne e-mail. Chyba uložení má stejný text jako
+ * výpadek sítě v prohlížeči (SEND_FAILED.callback ve form-helpers.tsx).
+ */
+const MSG_CALLBACK_RATE_LIMIT = `Z vaší adresy přišlo za poslední hodinu víc žádostí. Zkuste to prosím později, nebo zavolejte Honzovi: ${FA_PHONE}.`;
+const MSG_CALLBACK_FAILED = `Číslo se nepodařilo odeslat. Zkuste to prosím znovu, nebo zavolejte Honzovi: ${FA_PHONE}.`;
 
 /**
  * token: platný token formuláře, vrací se v každém chybovém stavu. Formulář
@@ -231,8 +238,8 @@ export async function submitCallback(
   const row = { kind: "callback" as const, name: parsed.data.name, phone: parsed.data.phone };
 
   const saved = await save(row);
-  if (saved === "rate-limited") return failure(values, { formError: MSG_RATE_LIMIT, token });
-  if (saved === "failed") return failure(values, { formError: MSG_FAILED, token });
+  if (saved === "rate-limited") return failure(values, { formError: MSG_CALLBACK_RATE_LIMIT, token });
+  if (saved === "failed") return failure(values, { formError: MSG_CALLBACK_FAILED, token });
 
   sendEmails({ id: saved.id, ...row });
 

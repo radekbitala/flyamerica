@@ -1,10 +1,20 @@
 import Link from "next/link";
 import { NAV_ITEMS, inquiryHref } from "@/components/web/nav";
-import { FA_COMPANY_SEAT, FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
+import {
+  FA_COMPANY_COURT,
+  FA_COMPANY_FILE_NO,
+  FA_COMPANY_SEAT,
+  FA_EMAIL,
+  FA_PHONE,
+  FA_PHONE_HREF,
+} from "@/lib/site";
+import { NBSP } from "@/lib/typography";
 
 /**
  * Patička webu, stejná na všech stránkách (je v layoutu (web)). Texty
- * doslova z modelu, u provozovatele navíc sídlo od Honzy (13. 10. 2026).
+ * doslova z modelu, u provozovatele navíc sídlo od Honzy (13. 10. 2026)
+ * a spisová značka z obchodního rejstříku (úprava 7 z auditu, ARES
+ * 14. 10. 2026). Řádky IČO a sídlo jdou za sebou, hlídá je e2e test.
  * Podle systému bez loga, polohová tabule FA83 je jediný tabulový prvek.
  */
 export function SiteFooter() {
@@ -49,6 +59,10 @@ export function SiteFooter() {
               <li>SKYSHARE s.r.o.</li>
               <li>IČO 03725235</li>
               <li>{FA_COMPANY_SEAT}</li>
+              {/* Název soudu se nerozdělí, řádek se zalomí za čárkou. */}
+              <li>
+                Spisová značka {FA_COMPANY_FILE_NO}, {FA_COMPANY_COURT.replaceAll(" ", NBSP)}
+              </li>
             </ul>
           </div>
         </div>

@@ -44,6 +44,11 @@ export interface PublicPostSummary {
   image: PublicPostImage | null;
   /** Datum publikace (u starších článků původní datum z WordPressu). */
   publishedAt: Date;
+  /**
+   * Rok cesty z administrace, null = neuvedený. Rok k zobrazení dává
+   * postYear() ze src/lib/post-year.ts (rok cesty, rok z titulku, rok publikace).
+   */
+  tripYear: number | null;
 }
 
 export interface PublicPost extends PublicPostSummary {
@@ -81,6 +86,7 @@ const summaryColumns = {
   imageAlt: posts.imageAlt,
   imageBlur: posts.imageBlur,
   publishedAt: publishedOrCreated,
+  tripYear: posts.tripYear,
 };
 
 type SummaryRow = {
@@ -94,6 +100,7 @@ type SummaryRow = {
   imageAlt: string | null;
   imageBlur: string | null;
   publishedAt: Date | string;
+  tripYear: number | null;
 };
 
 function toSummaryJson(row: SummaryRow): SummaryJson {
@@ -114,11 +121,13 @@ function toSummaryJson(row: SummaryRow): SummaryJson {
     perex: row.perex,
     image,
     publishedAt: new Date(row.publishedAt).toISOString(),
+    tripYear: row.tripYear,
   };
 }
 
+// Záznam v cache uložený před přidáním sloupce trip_year pole tripYear nemá.
 function fromSummaryJson(json: SummaryJson): PublicPostSummary {
-  return { ...json, publishedAt: new Date(json.publishedAt) };
+  return { ...json, publishedAt: new Date(json.publishedAt), tripYear: json.tripYear ?? null };
 }
 
 const loadSummaries = unstable_cache(
@@ -182,7 +191,12 @@ export const getPublishedPostBySlug = cache(async (slug: string): Promise<Public
   await waitForRequestWithoutDatabase();
   const json = await loadPostBySlug(slug);
   if (!json) return null;
-  return { ...json, publishedAt: new Date(json.publishedAt), updatedAt: new Date(json.updatedAt) };
+  return {
+    ...json,
+    publishedAt: new Date(json.publishedAt),
+    updatedAt: new Date(json.updatedAt),
+    tripYear: json.tripYear ?? null,
+  };
 });
 
 /** Sousední publikované články podle data publikace (odkazy na konci článku). */

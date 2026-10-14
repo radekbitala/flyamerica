@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   title: "Z cest",
 };
 
-const STATUS_FILTERS = new Set<string>(["published", "draft", "archived"]);
+// Bez archivu: archivace článků v administraci není (filtr je skrytý).
+const STATUS_FILTERS = new Set<string>(["published", "draft"]);
 
 function parseFilter(value: string | string[] | undefined): PostFilter {
   const v = Array.isArray(value) ? value[0] : value;

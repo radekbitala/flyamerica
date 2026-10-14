@@ -81,8 +81,8 @@ const MODEL_PHOTOS = {
   "merritt-island-fbo": { src: "/img/merritt-island-fbo.jpg", width: 580, height: 435, alt: "Space Coast Aviation je FBO působící na letišti Merritt Island (KCOI)" },
   // Key West a Everglades; v modelu: balicek-grand-tour, index, tipy-na-vylety
   "key-west-plaz": { src: "/img/key-west-plaz.jpg", width: 1600, height: 1200, alt: "Floridský Key West je jedno z mála míst v USA s celoročně subtropickým až tropickým klimatem." },
-  // Key West a Everglades; v modelu: balicek-grand-tour
-  "everglades-airpark": { src: "/img/everglades-airpark.jpg", width: 1600, height: 1200, alt: "Everglades" },
+  // Key West a Everglades; v modelu: balicek-grand-tour. "everglades-airpark" je od 14. 10. 2026
+  // v photos-destinations.ts s popisem z fotobanky (destinace-everglades-18), stejný klíč i soubor.
   // Honza; v modelu: denik, denik-dalsi-prelet-oceanu-2025, o-honzovi
   "honza-vision-jet": { src: "/img/honza-vision-jet.jpg", width: 1600, height: 1200, alt: "Po prvním letu na Cirrus Vision Jet, Knoxville, Tennessee, USA" },
   // Honza; v modelu: o-honzovi

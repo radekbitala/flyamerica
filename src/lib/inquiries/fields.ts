@@ -55,6 +55,14 @@ export type CallbackField = (typeof CALLBACK_FIELDS)[number];
 export const HONEYPOT_FIELD = "website";
 export const TOKEN_FIELD = "formToken";
 
+/**
+ * Rychleji formulář na tři kroky vyplnit nejde, rychleji ho odešle jen robot.
+ * Server odeslání dřív než za tuto dobu od vykreslení odmítne (spam.ts),
+ * formulář se skriptem odeslání o zbytek doby pozdrží (form-helpers.tsx).
+ * Tady, ne ve spam.ts, protože spam.ts je jen pro server.
+ */
+export const MIN_FILL_MS = 3_000;
+
 export const TEXT_MAX = 2000;
 
 /** Nejvyšší délky polí. Jednořádková pole se měří po sloučení mezer. */

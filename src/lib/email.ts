@@ -1,5 +1,5 @@
 import "server-only";
-import { FA_EMAIL, FA_PHONE, SITE_URL } from "@/lib/site";
+import { FA_EMAIL, FA_PHONE, FA_REPLY_TIME, SITE_URL } from "@/lib/site";
 
 /**
  * Odesílání e-mailů přes HTTP API Resendu.
@@ -178,10 +178,14 @@ export async function sendInquiryNotification(d: InquiryEmailData): Promise<bool
  * libovolnou adresu poslat vlastní text z naší domény, potvrzení nenese
  * nic, co návštěvník napsal: oslovení je bez jména a kopie údajů obsahuje
  * jen volby z nabídky formuláře (ne termín, telefon ani zprávu).
+ *
+ * Lhůta odpovědi je stejná jako v potvrzení na webu (FA_REPLY_TIME,
+ * úprava 16 z auditu). Text skládá inquiryConfirmationEmail() zvlášť,
+ * aby ho šlo otestovat bez Resendu (scripts/test-inquiry-action.mjs).
  */
-export async function sendInquiryConfirmation(d: InquiryEmailData): Promise<boolean> {
-  if (!d.email) return false;
-
+export function inquiryConfirmationEmail(
+  d: InquiryEmailData & { email: string },
+): { subject: string; html: string; text: string } {
   const rows = inquiryRows({
     id: d.id,
     kind: d.kind,
@@ -193,15 +197,12 @@ export async function sendInquiryConfirmation(d: InquiryEmailData): Promise<bool
     referralSource: d.referralSource,
   });
 
-  return send({
-    to: d.email,
-    replyTo: FA_EMAIL,
+  return {
     subject: "Děkujeme za poptávku - FLY America",
-    logLabel: `potvrzení poptávky ${d.id}`,
     html: layout(
       `<h1 style="margin:0 0 16px;font-size:20px">Děkujeme, poptávka je odeslaná.</h1>
        <p style="margin:0 0 16px">Dobrý den,</p>
-       <p style="margin:0 0 16px">Honza se vám ozve na e-mail <strong>${esc(d.email)}</strong>.
+       <p style="margin:0 0 16px">Honza se vám ozve na e-mail <strong>${esc(d.email)}</strong> ${FA_REPLY_TIME}.
          Kdybyste chtěli něco doplnit, odpovězte na tento e-mail nebo napište na
          <a href="mailto:${FA_EMAIL}" style="color:#1D252D">${FA_EMAIL}</a>.</p>
        ${rows.length ? `<p style="margin:0 0 8px">Co jste ve formuláři vybrali:</p>${rowsHtml(rows)}` : ""}`,
@@ -209,12 +210,22 @@ export async function sendInquiryConfirmation(d: InquiryEmailData): Promise<bool
     text: [
       `Dobrý den,`,
       ``,
-      `děkujeme, poptávka je odeslaná. Honza se vám ozve na e-mail ${d.email}.`,
+      `děkujeme, poptávka je odeslaná. Honza se vám ozve na e-mail ${d.email} ${FA_REPLY_TIME}.`,
       `Kdybyste chtěli něco doplnit, odpovězte na tento e-mail nebo napište na ${FA_EMAIL}.`,
       ...(rows.length ? [``, `Co jste ve formuláři vybrali:`, ...rows.map(([k, v]) => `${k}: ${v}`)] : []),
       ``,
       `FLY America, Jan Čermák`,
       `${FA_EMAIL}, ${FA_PHONE}`,
     ].join("\n"),
+  };
+}
+
+export async function sendInquiryConfirmation(d: InquiryEmailData): Promise<boolean> {
+  if (!d.email) return false;
+  return send({
+    to: d.email,
+    replyTo: FA_EMAIL,
+    logLabel: `potvrzení poptávky ${d.id}`,
+    ...inquiryConfirmationEmail({ ...d, email: d.email }),
   });
 }

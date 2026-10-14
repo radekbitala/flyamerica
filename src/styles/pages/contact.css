@@ -56,3 +56,15 @@
   /* Dotyková plocha telefonu a e-mailu asi 44 px, výška řádku beze změny */
   .kt-facts a { display: inline-block; padding: 10px 0; margin: -10px 0; }
 }
+
+/* Během odesílání (úprava 8 z auditu) má tlačítko aria-disabled, ne disabled, aby na něm zůstal fokus. Kurzor ukáže,
+   že se čeká. Druhé odeslání zahodí formulář (InquiryForm, CallbackForm). */
+.kt-form [aria-disabled="true"], .kt-call [aria-disabled="true"] { cursor: progress; }
+
+/* Dlouhý e-mail v potvrzení poptávky (věta i shrnutí) se zalomí kdekoli, jinak by na telefonu rozšířil stránku
+   (úprava 34 z auditu). */
+.kt-done dd, .kt-done strong { overflow-wrap: anywhere; }
+
+/* Volby výletu s délkou a cenou (úprava 8) mají na telefonu dva řádky, nápověda termínu (úprava 17) v poli
+   poloviční šířky taky. Bez osamoceného slova na posledním řádku („osobu“ na 375 px, „to.“ na 1440 px). */
+#f-vylet label, .kt-form .fa-hint { text-wrap: pretty; }

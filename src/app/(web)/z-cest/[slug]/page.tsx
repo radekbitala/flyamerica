@@ -6,7 +6,7 @@ import { CtaSection } from "@/components/web/CtaSection";
 import { PAGE_PHOTO_SIZES, PHOTO_CREDIT } from "@/components/web/Figure";
 import { PageHead } from "@/components/web/PageHead";
 import { SectionSign } from "@/components/web/SectionSign";
-import { formatDate, isoDate, yearOf } from "@/lib/dates";
+import { isoDate } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import {
   articleLeadText,
@@ -19,6 +19,7 @@ import {
 } from "@/lib/post-content";
 import { modelDescription, postDescription, postShortTitle } from "@/lib/post-display";
 import { postDisplayTitle } from "@/lib/post-title";
+import { postDateLabel, postYear } from "@/lib/post-year";
 import {
   getAdjacentPosts,
   getPublishedPostBySlug,
@@ -44,6 +45,9 @@ import styles from "../z-cest.module.css";
 // Rozložení (12. 10. 2026, src/styles/pages/article.css): záhlaví a text ve
 // sloupci 680 px na střed, titulní fotka přes celý kontejner, fotky a galerie
 // v textu širší než text, obsah „V článku“ od 1200 px v levém okraji.
+// Článek bez titulní fotky (článek 2025, úprava 6) má text hned pod záhlavím.
+// U data v záhlaví „vydáno“, když je rok cesty jiný než rok publikace,
+// u odkazů na jiné články rok cesty (src/lib/post-year.ts, úprava 33).
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -142,7 +146,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         >
           <p className="dn-by">
             <time className="date" dateTime={isoDate(post.publishedAt)}>
-              {formatDate(post.publishedAt)}
+              {postDateLabel(post)}
             </time>
           </p>
         </PageHead>
@@ -168,7 +172,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       ) : null}
 
       {hasText ? (
-        <section className="sec sec--tight" aria-label="Text článku">
+        // Bez titulní fotky navazuje text na záhlaví bez druhé svislé mezery (read-next).
+        <section className={image ? "sec sec--tight" : "sec sec--tight read-next"} aria-label="Text článku">
           <div className="fa-wrap">
             <div className={hasToc ? "read-body read-body--toc" : "read-body"}>
               {hasToc ? (
@@ -202,7 +207,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <div className="sec-head">
               <div>
                 {photosSign ? <SectionSign>Fotky</SectionSign> : <span className="lbl">Fotky</span>}
-                <h2 id="fotky-nadpis">Fotky z&nbsp;cesty</h2>
+                {/* Vedlejší nadpis ve velikosti headline-md (úprava 40, article.css) */}
+                <h2 id="fotky-nadpis" className="headline-md">
+                  Fotky z&nbsp;cesty
+                </h2>
               </div>
             </div>
             <div className={styles.galleries}>
@@ -222,7 +230,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 <>
                   Novější článek:{" "}
                   <Link href={postPath(alsoNewer.slug)}>
-                    {czechNbspText(postDisplayTitle(alsoNewer.title))}, {yearOf(alsoNewer.publishedAt)}
+                    {czechNbspText(postDisplayTitle(alsoNewer.title))}, {postYear(alsoNewer)}
                   </Link>
                   <span className="dot" aria-hidden="true" />
                   <Link href={ROUTES.posts}>Všechny články</Link>

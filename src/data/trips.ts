@@ -19,6 +19,21 @@ export { TRIP_SLUGS, type TripSlug };
  * letových hodin • Cessna 182“). Tabulky „Co zahrnuje cena“ a „Co je v ceně“
  * zůstávají doslova i s letadlem („Pronájem C182 a palivo 12 hodin“).
  *
+ * Povolené úpravy podle Radkova rozhodnutí 14. 10. 2026 (audit
+ * ../design/audit-2026-10-13, úpravy 13 a 20, Honza se o nich dozví při
+ * ukázce, BACKLOG-po-spusteni.md):
+ * - 13: řádek přehledu programu Grand Tour s ostrovními přistáními a BFR
+ *   se jmenuje „Náplň programu“ jako u Florida Week (Honzův název řádku
+ *   sliboval výuku s instruktorem, na webu je Honza mentor). Text řádku
+ *   včetně „příprava na BFR“ zůstává doslova (co BFR znamená, vysvětlí
+ *   Honza, backlog).
+ * - 20: ceny všude ve tvaru „7 400 USD“ (Florida Week měla navíc znak dolaru
+ *   před částkou a USD za ní), tabulka „Co zahrnuje cena“ / „Co je v ceně“
+ *   má u obou výletů záhlaví z Florida Week (INCLUDED_COLUMNS) a hodnoty
+ *   „Ano“ a „Ne“ jako Grand Tour, varianta pro 2 piloty je u obou
+ *   „(doporučeno)“. Nadpisy tabulek, ostatní slova a podtitul Grand Tour
+ *   beze změny (podtitul napíše Honza, backlog).
+ *
  * Fotky výletů (karty a posuvná řada) jsou ve
  * src/app/(web)/letecke-vylety/_data/trip-media.ts, tady jen texty.
  *
@@ -35,6 +50,17 @@ export const AIRCRAFT = {
   name: "Cessna 182 Skylane",
   description: "prostorný čtyřmístný stroj vhodný pro delší lety ve 2-3 lidech.",
 } as const;
+
+/**
+ * Honzovy věty o tom, co cena zahrnuje a co ne, doslova. PRICE_INCLUDES je
+ * první věta nad tabulkou „Co je v ceně“ (Grand Tour), PRICE_EXCLUDES
+ * poznámka pod tabulkou variant (Florida Week). Platí pro oba výlety: perex
+ * přehledu /letecke-vylety je složený z obou (úprava 23, rozhodnutí
+ * 14. 10. 2026), PRICE_EXCLUDES je i poznámka pod kartami na úvodu.
+ */
+export const PRICE_INCLUDES = "V ceně je letadlo, palivo, pilot-mentor, letištní poplatky, pojištění a pronájem auta.";
+export const PRICE_EXCLUDES =
+  "Cena nezahrnuje letenky, ubytování, stravu ani správní poplatek FAA za validaci průkazu.";
 
 /** Tabulka z podkladu: hlavička a řádky po třech buňkách, doslova. */
 export interface TripTable {
@@ -73,11 +99,14 @@ export interface Trip {
   numbers: { days: number; flightDays: number; freeDays: number; hours: number };
   /** Přehled programu bez řádku Letadlo, pojmy a texty doslova. */
   overview: readonly TripFact[];
-  /** Cena „od“ přesně podle Honzy (Florida Week s $, Grand Tour bez) a naše poznámka pod ní. */
+  /**
+   * Cena „od“ podle Honzy ve tvaru „7 400 USD“ (úprava 20) a naše poznámka
+   * pod ní. Nejlevnější výlet dává částku odkazu v úvodu (cheapestTrip()).
+   */
   price: { from: string; note: string };
   /** Tabulka „Co zahrnuje cena“ / „Co je v ceně“. */
   included: TripTable;
-  /** Tabulka variant a cen. Buňka ceny začíná částkou („$7 400 USD za osobu“), viz splitPrice(). */
+  /** Tabulka variant a cen. Buňka ceny začíná částkou („7 400 USD za osobu“), viz splitPrice(). */
   variants: TripTable;
   /** Průběh přípravy, jen u Florida Week (Honza ho napsal jen k výletu 1). */
   preparation?: readonly { when: string; text: string }[];
@@ -89,6 +118,13 @@ export interface Trip {
   /** Popis stránky pro vyhledávače a náhled odkazu (náš text). */
   description: string;
 }
+
+/**
+ * Záhlaví tabulky „Co zahrnuje cena“ / „Co je v ceně“ u obou výletů:
+ * Honzovo záhlaví z Florida Week (úprava 20, rozhodnutí 14. 10. 2026).
+ * Grand Tour měla „Služba | Zahrnuto | Rozsah“.
+ */
+const INCLUDED_COLUMNS = ["Položka nebo služba", "V ceně?", "Co je zahrnuto"] as const;
 
 export const TRIPS: readonly Trip[] = [
   {
@@ -109,21 +145,21 @@ export const TRIPS: readonly Trip[] = [
         text: "VFR frazeologie v USA, provoz v řízeném i neřízeném vzdušném prostoru, práce s ForeFlight a příprava letadla.",
       },
     ],
-    price: { from: "$7 400 USD", note: "za osobu při 2 pilotech. Pro 1 pilota $13 900 USD." },
+    price: { from: "7 400 USD", note: "za osobu při 2 pilotech. Pro 1 pilota 13 900 USD." },
     included: {
       title: "Co zahrnuje cena",
-      columns: ["Položka nebo služba", "V ceně?", "Co je zahrnuto"],
+      columns: INCLUDED_COLUMNS,
       rows: [
-        ["Pilot-mentor a doprovod", "ANO", "Briefing, navigační příprava, frazeologie a podpora přímo v kabině"],
-        ["Pronájem C182 a palivo 12 hodin", "ANO", "Celkem 12 letových hodin v C182"],
+        ["Pilot-mentor a doprovod", "Ano", "Briefing, navigační příprava, frazeologie a podpora přímo v kabině"],
+        ["Pronájem C182 a palivo 12 hodin", "Ano", "Celkem 12 letových hodin v C182"],
         [
           "Pojištění letadla a poplatky FBO",
-          "ANO",
+          "Ano",
           "Pojištění podle podmínek půjčovny včetně přistávacích a tie-down poplatků",
         ],
-        ["Místní pronájem auta", "ANO", "Včetně rezervace a paliva"],
-        ["Příprava a ForeFlight", "ANO", "Pomoc s validací FAA a naplánováním tras"],
-        ["Ubytování a letenka", "NE", "Klient si hradí samostatně podle svých preferencí"],
+        ["Místní pronájem auta", "Ano", "Včetně rezervace a paliva"],
+        ["Příprava a ForeFlight", "Ano", "Pomoc s validací FAA a naplánováním tras"],
+        ["Ubytování a letenka", "Ne", "Klient si hradí samostatně podle svých preferencí"],
       ],
     },
     variants: {
@@ -131,17 +167,17 @@ export const TRIPS: readonly Trip[] = [
       columns: ["Varianta", "Cena", "Letové hodiny a organizace"],
       rows: [
         [
-          "2 piloti (DOPORUČENO)",
-          "$7 400 USD za osobu",
+          "2 piloti (doporučeno)",
+          "7 400 USD za osobu",
           "Každý pilot absolvuje 6 hodin jako PIC. Mentor i auto jsou společné.",
         ],
         [
           "1 pilot (individuální varianta)",
-          "$13 900 USD",
+          "13 900 USD",
           "Všech 12 hodin absolvujete jako PIC. Partnerka nebo jiný doprovod může cestovat s vámi.",
         ],
       ],
-      note: "Cena nezahrnuje letenky, ubytování, stravu ani správní poplatek FAA za validaci průkazu.",
+      note: PRICE_EXCLUDES,
     },
     preparation: [
       {
@@ -173,7 +209,8 @@ export const TRIPS: readonly Trip[] = [
         text: "Cedar Key, St. Petersburg, Florida Keys, Key West, pobřeží, Everglades nebo St. Augustine.",
       },
       {
-        term: "Výcvik",
+        // Název řádku podle rozhodnutí 13 (viz úvod souboru), text doslova.
+        term: "Náplň programu",
         text: "americká VFR frazeologie, prostory Class B/C/D, ForeFlight, ostrovní přistání a příprava na BFR.",
       },
       { term: "Volné dny", text: "pláž, Universal Studios, Kennedy Space Center nebo nákupy." },
@@ -181,9 +218,8 @@ export const TRIPS: readonly Trip[] = [
     price: { from: "10 800 USD", note: "za osobu při 2 pilotech. Pro 1 pilota 20 100 USD." },
     included: {
       title: "Co je v ceně",
-      intro:
-        "V ceně je letadlo, palivo, pilot-mentor, letištní poplatky, pojištění a pronájem auta. Letenky a ubytování si klient hradí samostatně.",
-      columns: ["Služba", "Zahrnuto", "Rozsah"],
+      intro: [PRICE_INCLUDES, "Letenky a ubytování si klient hradí samostatně."].join(" "),
+      columns: INCLUDED_COLUMNS,
       rows: [
         ["Pilot-mentor a doprovod", "Ano", "Briefingy, navigace, frazeologie a doprovod v kabině po celých 9 dní."],
         ["Cessna 182 a palivo", "Ano", "20 letových hodin včetně paliva."],
@@ -198,7 +234,7 @@ export const TRIPS: readonly Trip[] = [
       columns: ["Varianta", "Cena", "Nálet"],
       rows: [
         [
-          "2 piloti (doporučená varianta)",
+          "2 piloti (doporučeno)",
           "10 800 USD za osobu",
           "Každý pilot získá 10 hodin jako PIC. Sdílejí mentora a auto.",
         ],
@@ -242,12 +278,27 @@ export function otherTrip(slug: TripSlug): Trip {
 
 /**
  * Buňka ceny z tabulky variant rozdělená na částku a zbytek:
- * „$7 400 USD za osobu“ -> { amount: "$7 400 USD", rest: " za osobu" }.
+ * „7 400 USD za osobu“ -> { amount: "7 400 USD", rest: " za osobu" }.
  * Částka se sází tabulkovými číslicemi (.num) a nezalamuje se.
  */
 export function splitPrice(cell: string): { amount: string; rest: string } {
-  const match = /^(\$?\d[\d ]*\d USD)(.*)$/.exec(cell);
+  const match = /^(\d[\d ]*\d USD)(.*)/.exec(cell);
   return match ? { amount: match[1], rest: match[2] } : { amount: "", rest: cell };
+}
+
+/** Částka ceny jako číslo („7 400 USD“ -> 7400), pro porovnání výletů. */
+function priceValue(price: string): number {
+  const amount = splitPrice(price).amount;
+  return amount ? Number(amount.replace(/\D/g, "")) : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * Výlet s nejnižší cenou „od“. Odkaz v úvodu („Výlety od 7 400 USD za
+ * osobu“) bere částku odtud, aby po změně ceny v TRIPS nezůstala stará.
+ */
+export function cheapestTrip(): Trip {
+  const [first, ...rest] = TRIPS;
+  return rest.reduce((min, trip) => (priceValue(trip.price.from) < priceValue(min.price.from) ? trip : min), first);
 }
 
 /**

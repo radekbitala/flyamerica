@@ -9,7 +9,19 @@
  * pole formuláře, otisk IP (sha256 se solí, samotná IP se neukládá)
  * a údaj o prohlížeči (user agent). Otisk i údaj o prohlížeči se po
  * TRACE_RETENTION_DAYS (src/lib/inquiries/spam.ts) mažou, lhůta v textu
- * musí sedět. Chybějící údaje jsou [doplnit: …].
+ * musí sedět.
+ *
+ * Bez značek chybějícího obsahu (úprava 7 z auditu, rozhodnutí Radka
+ * 14. 10. 2026):
+ * - správce se sídlem a spisovou značkou z obchodního rejstříku (ARES,
+ *   FA_COMPANY_SEAT a FA_COMPANY_FILE_NO v src/lib/site.ts),
+ * - doba uchování obecně („po dobu nezbytnou k vyřízení poptávky“), žádná
+ *   lhůta, kterou Honza neurčil,
+ * - poskytovatelé podle skutečného nasazení: Vercel (funkce v regionu Dublin),
+ *   Supabase (EU, Irsko), Resend (USA). Záruky pro předání údajů do USA
+ *   tu nejsou, dokud nejsou ověřené
+ *   (../design/audit-2026-10-13/BACKLOG-po-spusteni.md),
+ * - účinnost „od spuštění nového webu“, konkrétní datum až při spuštění.
  *
  * Rozložení: záhlaví a text ve sloupci 680 px na střed (src/styles/pages/
  * article.css, stejně jako články), text navazuje přímo na záhlaví.
@@ -18,7 +30,7 @@ import { PageHead } from "@/components/web/PageHead";
 import { pageMetadata } from "@/lib/metadata";
 import { TRACE_RETENTION_DAYS } from "@/lib/inquiries/spam";
 import { ROUTES } from "@/lib/routes";
-import { FA_COMPANY_SEAT, FA_EMAIL } from "@/lib/site";
+import { FA_COMPANY_FILE_NO, FA_COMPANY_SEAT, FA_EMAIL } from "@/lib/site";
 import styles from "./page.module.css";
 
 export const metadata = pageMetadata({
@@ -48,8 +60,9 @@ export default function PrivacyPage() {
               <h2>Kdo údaje zpracovává</h2>
               <p>
                 Správcem osobních údajů je SKYSHARE&nbsp;s.r.o., IČO&nbsp;03725235, se sídlem {FA_COMPANY_SEAT},
-                provozovatel webu FLY America. Ve věcech
-                osobních údajů nám napište na {email}.
+                zapsaná v&nbsp;obchodním rejstříku vedeném Městským soudem v&nbsp;Praze pod spisovou značkou{" "}
+                {FA_COMPANY_FILE_NO}, provozovatel webu FLY America. Ve věcech osobních údajů nám napište
+                na {email}.
               </p>
 
               <h2>Jaké údaje</h2>
@@ -77,17 +90,23 @@ export default function PrivacyPage() {
               </p>
 
               <h2>Jak dlouho</h2>
-              <p>
-                <span className="todo">[doplnit: jak dlouho Honza poptávky uchovává]</span>
-              </p>
+              <p>Údaje z&nbsp;poptávek uchováváme po dobu nezbytnou k&nbsp;vyřízení poptávky.</p>
 
               <h2>Kdo k&nbsp;údajům má přístup</h2>
               <p>
-                Poptávky čte Honza Čermák za SKYSHARE&nbsp;s.r.o. Dál s&nbsp;údaji pracuje jen provozovatel webu, u&nbsp;kterého
-                běží web a&nbsp;databáze, a&nbsp;e-mailová služba, přes kterou odchází upozornění na novou poptávku
-                a&nbsp;potvrzení vám. Oba smí údaje použít jen pro nás. Nikomu dalšímu je nepředáváme.{" "}
-                <span className="todo">[doplnit: názvy poskytovatelů a&nbsp;zda údaje opouštějí EU]</span>
+                Poptávky čte Honza Čermák za SKYSHARE&nbsp;s.r.o. Dál s&nbsp;údaji pracují jen poskytovatelé
+                hostingu, u&nbsp;kterých běží web a&nbsp;databáze, a&nbsp;e-mailová služba, přes kterou odchází
+                upozornění na novou poptávku a&nbsp;potvrzení vám:
               </p>
+              <ul>
+                <li>Vercel (hosting webu, funkce webu běží v&nbsp;EU, v&nbsp;regionu Dublin),</li>
+                <li>Supabase (databáze a&nbsp;fotky, EU, Irsko),</li>
+                <li>
+                  Resend (odesílání e-mailů o&nbsp;poptávce, USA; údaje v&nbsp;těchto e-mailech tak mohou být
+                  předány do USA).
+                </li>
+              </ul>
+              <p>Všichni smí údaje použít jen pro nás. Nikomu dalšímu je nepředáváme.</p>
 
               <h2>Vaše práva</h2>
               <p>
@@ -112,9 +131,7 @@ export default function PrivacyPage() {
                 zásad.
               </p>
 
-              <p>
-                Platné od <span className="todo">[doplnit: datum spuštění webu]</span>.
-              </p>
+              <p>Platné od spuštění nového webu.</p>
             </div>
           </div>
         </div>

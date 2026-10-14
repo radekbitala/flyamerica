@@ -132,7 +132,7 @@ function GalleryMarkerView({ node, deleteNode, selected }: ReactNodeViewProps) {
           onClick={deleteNode}
           title="Odebrat galerii z textu"
           aria-label="Odebrat galerii z textu"
-          className="ml-auto cursor-pointer rounded p-1 text-text-secondary hover:bg-white hover:text-foreground"
+          className="ml-auto inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded text-text-secondary hover:bg-white hover:text-foreground sm:h-7 sm:w-7 pointer-coarse:h-11 pointer-coarse:w-11"
         >
           <X size={16} />
         </button>

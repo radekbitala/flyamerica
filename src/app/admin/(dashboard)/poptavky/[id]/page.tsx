@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Mail, Phone } from "lucide-react";
 import { z } from "zod";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { getInquiry } from "@/lib/inquiries/admin";
@@ -51,8 +51,39 @@ export default async function AdminInquiryDetailPage({
         <InquiryStatusBadge status={inquiry.status} />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+      {/* Telefon: po hovoru se zájemcem stav a poznámka hned pod jménem,
+          podrobnosti až pod nimi (úprava 53 z auditu). Počítač beze změny:
+          podrobnosti vlevo, stav, poznámka a smazání v pravém sloupci. */}
+      {(inquiry.phone || inquiry.email) && (
+        <div className="flex flex-wrap gap-3 lg:hidden">
+          {inquiry.phone && (
+            <a href={telHref(inquiry.phone)} className={contactButton}>
+              <Phone size={16} aria-hidden="true" />
+              Zavolat
+            </a>
+          )}
+          {inquiry.email && (
+            <a href={`mailto:${inquiry.email}`} className={contactButton}>
+              <Mail size={16} aria-hidden="true" />
+              Napsat e-mail
+            </a>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:grid-rows-[auto_1fr]">
+        <div className="space-y-6 lg:col-start-3 lg:row-start-1">
+          <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5">
+            <h2 className="text-sm font-semibold text-foreground">Stav</h2>
+            <InquiryStatusControls id={inquiry.id} status={inquiry.status} />
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <InquiryNoteForm id={inquiry.id} note={inquiry.internalNote} />
+          </div>
+        </div>
+
+        <div className="space-y-6 lg:col-span-2 lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <Section title="Kontakt">
             <Field label="E-mail">
               {inquiry.email && (
@@ -98,22 +129,16 @@ export default async function AdminInquiryDetailPage({
           </Section>
         </div>
 
-        <aside className="space-y-6">
-          <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="text-sm font-semibold text-foreground">Stav</h2>
-            <InquiryStatusControls id={inquiry.id} status={inquiry.status} />
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <InquiryNoteForm id={inquiry.id} note={inquiry.internalNote} />
-          </div>
-
+        <div className="self-start lg:col-start-3 lg:row-start-2">
           <DeleteInquiryButton id={inquiry.id} name={inquiry.name} />
-        </aside>
+        </div>
       </div>
     </div>
   );
 }
+
+const contactButton =
+  "inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-field bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-gray-50";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

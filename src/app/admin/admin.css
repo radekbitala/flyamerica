@@ -59,3 +59,16 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Ukázkový text v prázdných polích. Výchozí poloprůhledná barva Tailwindu
+   měla na bílé jen 3,1 : 1, šedá 500 má 5,67 : 1 (úprava 56 z auditu).
+   Pozor na mezipaměť: 14. 10. 2026 vykreslené CSS (next dev i next build)
+   změnu tohoto souboru nemělo, Turbopack vzal starší výsledek z mezipaměti
+   (.next/dev/cache/turbopack, .next/cache/turbopack). Po jejím smazání se
+   změna objevila. Barvu ve vykreslené stránce hlídá e2e test „kontrast
+   ukázkového textu v polích administrace“. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--fa-seda-500);
+  opacity: 1;
+}

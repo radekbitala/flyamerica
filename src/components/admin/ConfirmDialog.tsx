@@ -55,9 +55,10 @@ export function ConfirmDialog({
       className="m-auto rounded-xl bg-white p-0 shadow-xl backdrop:bg-black/40"
     >
       <div className="w-96 max-w-[90vw] p-6">
-        <h3 id={titleId} className="text-lg font-semibold text-foreground">
+        {/* h2: dialog leží nad stránkou s h1, h3 by v osnově přeskočil úroveň. */}
+        <h2 id={titleId} className="text-lg font-semibold text-foreground">
           {title}
-        </h3>
+        </h2>
         {description && (
           <p id={descriptionId} className="mt-2 text-sm text-text-secondary">
             {description}

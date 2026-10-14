@@ -18,6 +18,21 @@ export function isStorageConfigured(): boolean {
   );
 }
 
+/**
+ * Začátky adres fotek, které článek smí mít (stejná pravidla jako
+ * isAllowedImageUrl v src/lib/image-hosts.ts: bucket "denik", při vývoji
+ * i placehold.co a fotky z migrace). Editor podle nich v textu označí
+ * obrázek z jiného webu k nahrazení. Rozhoduje kontrola při uložení, tohle
+ * je jen nápověda v prohlížeči.
+ */
+export function allowedImagePrefixes(): string[] {
+  const prefixes = isStorageConfigured() ? [publicImageUrl("")] : [];
+  if (process.env.NODE_ENV === "development") {
+    prefixes.push("https://placehold.co/", "http://127.0.0.1:8816/");
+  }
+  return prefixes;
+}
+
 /** Adresy obrázků vložených do textu článku (<img src="...">). */
 export function contentImageUrls(html: string): string[] {
   return Array.from(html.matchAll(/<img\b[^>]*?\ssrc="([^"]+)"/g), (match) => match[1]);

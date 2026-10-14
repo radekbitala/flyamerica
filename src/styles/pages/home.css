@@ -60,3 +60,38 @@
   /* Na telefonu by fotka 3 : 4 přes celou šířku zabrala celou obrazovku, výřez 4 : 3 drží Honzu a kabinu */
   .home-svc-who img { aspect-ratio: 4 / 3; object-position: 50% 28%; }
 }
+
+/* ---------- Úvodní fotka na telefonu (úprava 27, rozhodnutí 14. 10. 2026) ----------
+   Na počítači je vpravo vzpěra křídla Cessny (88-97 % šířky fotky), takže je hned jasné, že je fotka z letadla. Na telefonu
+   je úvod užší než fotka a výchozí výřez z web.css (50 %) ukazoval jen krajinu. Výřez posunutý doprava nechá vzpěru
+   u pravého okraje. Text zůstává vlevo dole na ztmavení z web.css (.hero-in), to stačí: změřeno 14. 10. 2026 ze snímku
+   bez textu, nejhorší desetina plochy pod řádky textu na 320 až 600 px má nadpis aspoň 7,6 : 1, perex 7,6 : 1
+   a nadtitulek 5,8 : 1 (DESIGN.md: aspoň 4,5 : 1). Ztmavení se proto nezesiluje. */
+@media (max-width: 600px) {
+  .hero > picture img { object-position: 88% 55%; }
+}
+
+/* ---------- Kam letět (#kam-letet) ----------
+   Telefon (R12 a úprava 12, rozhodnutí 14. 10. 2026, ukázka 5 z auditu): stejný seznam jako na stránce Kam letět
+   (.tipy-prehled ve web.css, část 12), náhled 112 px vlevo, nadpis a trasa vpravo, mezi řádky vlasová linka. Honzův výňatek
+   (p) se na telefonu skryje, zůstává na tabletu, na počítači a v detailu destinace. Třída tipy-prehled se na úvod nepřidává,
+   nastavuje i padding-top: 0. K tomu TIP_SIZES v page.tsx (pod 601 px 112px). Úvod je na 375 px asi o 1 250 px kratší. */
+@media (max-width: 600px) {
+  #kam-letet .grid-4 { gap: 0; border-bottom: var(--linka) solid var(--papir-t); }
+  #kam-letet .tip { display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 16px; align-items: center; padding: 14px 0; border-top: var(--linka) solid var(--papir-t); }
+  #kam-letet .tip-img { grid-row: 1 / span 2; aspect-ratio: 4 / 3; }
+  #kam-letet .tip h3 { margin: 0 0 8px; font-size: 18px; align-self: end; }
+  #kam-letet .tip .route { margin: 0; align-self: start; }
+  #kam-letet .tip p { display: none; }
+}
+
+/* Tablet a počítač (úprava 39): fotka, nadpis, trasa a text dlaždic v jedné řadě na stejné výšce, i když se nadpis zalomí
+   na dva řádky. Každá dlaždice zabírá 4 řádky mřížky .grid-4 a sdílí je přes subgrid. Mezera mezi řadami dlaždic
+   (tablet, 2 sloupce) je proto okraj dlaždice, ne row-gap: ten by mřížka dala i mezi fotku a nadpis. */
+@media (min-width: 601px) {
+  #kam-letet .grid-4 { row-gap: 0; }
+  #kam-letet .tip { display: grid; grid-row: span 4; grid-template-rows: subgrid; }
+}
+@media (min-width: 601px) and (max-width: 1100px) {
+  #kam-letet .grid-4 > .tip:nth-child(n + 3) { margin-top: 40px; }
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAdmin } from "@/lib/admin-guard";
+import { AdminHelpContact } from "@/components/admin/AdminHelpContact";
 import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default async function AdminLoginPage() {
           Administrace FLY America
         </h1>
         <LoginForm />
+        <AdminHelpContact className="mt-6 text-center" />
       </div>
     </div>
   );

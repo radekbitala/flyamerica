@@ -5,9 +5,10 @@ import { CtaSection } from "@/components/web/CtaSection";
 import { Figure, PAGE_PHOTO_SIZES } from "@/components/web/Figure";
 import { PageHead } from "@/components/web/PageHead";
 import { SectionSign } from "@/components/web/SectionSign";
-import { isoDate, yearOf } from "@/lib/dates";
+import { isoDate } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { postDisplayTitle } from "@/lib/post-title";
+import { postYear } from "@/lib/post-year";
 import { getPublishedPosts } from "@/lib/public-posts";
 import { ROUTES, postPath } from "@/lib/routes";
 import { czechNbspText } from "@/lib/typography";
@@ -21,7 +22,9 @@ import { czechNbspText } from "@/lib/typography";
 // pod záhlavím přes celý kontejner, galerie přes celý kontejner. Polohové
 // tabule: „Váš mentor“ nad h1 a „Fotky“ (od záhlaví je dělí fotka a celý
 // text, od patičky galerie). Sekce článků je těsně nad výzvou a patičkou
-// s tabulí FA83, proto má šedý štítek.
+// s tabulí FA83, proto má šedý štítek. Hierarchie nadpisů (úprava 40 z auditu,
+// article.css): „O mně“ je hlavní text stránky, má velikost h2 sekcí (Headline,
+// třída headline), nadpisy obou vedlejších sekcí jsou menší (headline-md).
 export const metadata = pageMetadata({
   title: "Váš mentor",
   description:
@@ -34,8 +37,9 @@ const GALLERY_SIZES = "(max-width: 600px) 100vw, (max-width: 960px) 50vw, 370px"
 
 /**
  * Honzovy články o přeletech v pořadí z modelu (slugy z migrace/posts.json).
- * Na webu se ukáže jen publikovaný článek: článek 2025 je zatím koncept
- * a odkaz na něj by vedl na 404.
+ * Na webu se ukáže jen publikovaný článek: koncept by vedl na 404. Článek
+ * 2025 se v seznamu objeví po publikaci, i bez titulní fotky (seznam fotky
+ * nemá).
  */
 const FERRY_FLIGHT_SLUGS = ["dalsi-prelet-oceanu-2025", "druhy-prelet-atlantiku-2017"];
 
@@ -68,7 +72,7 @@ export default function MentorPage() {
         <div className="fa-wrap">
           <div className="read-body">
             <div className="prose">
-              <h2 id="omne-nadpis">O&nbsp;mně</h2>
+              <h2 id="omne-nadpis" className="headline">O&nbsp;mně</h2>
                 <p>Moje vášeň pro letectví začala už ve 14&nbsp;letech, kdy jsem v&nbsp;roce 1995 poprvé odlepil kola od země na větroních v&nbsp;kolínském aeroklubu. To, co začalo jako klukovský dětský sen, se v&nbsp;roce 2010 stalo mou plnohodnotnou profesí, když jsem se vydal na dráhu nezávislého letového instruktora.</p>
                 <p>Dnes jsem obchodním pilotem a&nbsp;instruktorem letadel i&nbsp;vrtulníků s&nbsp;celkovým náletem něco přes 6000&nbsp;hodin. V&nbsp;držení mám evropské i&nbsp;americké doložky pro jednomotorové i&nbsp;vícemotorové letouny, přístrojové létání (IFR) a&nbsp;vrtulníky. Mé zkušenosti sahají od malých pístových strojů přes vrtulníky letecké záchranné služby (HEMS) až po vícemotorové a&nbsp;proudové letouny. Jako instruktor se zaměřuji na praktický výcvik pilotů od PPL a&nbsp;CPL až po doložky NIGHT a&nbsp;IFR a&nbsp;v&nbsp;poslední době hlavně na „flight mentoring“ pilotům majitelům.</p>
                 <p>Velmi oblíbenou část mého leteckého života tvoří také mezinárodní přelety a&nbsp;dodávky nových i&nbsp;olétaných strojů majitelům po celé Evropě, USA a&nbsp;Blízkém východě.</p>
@@ -97,7 +101,9 @@ export default function MentorPage() {
           <div className="sec-head">
             <div>
               <SectionSign>Fotky</SectionSign>
-              <h2 id="foto-nadpis">Z&nbsp;cest a&nbsp;přeletů</h2>
+              <h2 id="foto-nadpis" className="headline-md">
+                Z&nbsp;cest a&nbsp;přeletů
+              </h2>
             </div>
             <p>Fotky z&nbsp;archivu FLY America.</p>
           </div>
@@ -118,7 +124,9 @@ export default function MentorPage() {
           <div className="read-body">
             <div className="read-col mentor-posts">
               <span className="lbl">Z&nbsp;cest</span>
-              <h2 id="denik-nadpis">Přelety popsané Honzou</h2>
+              <h2 id="denik-nadpis" className="headline-md">
+                Přelety popsané Honzou
+              </h2>
               <FerryFlightPosts />
               <p className="sec-more">
                 <Link className="fa-link" href={ROUTES.posts}>
@@ -140,9 +148,9 @@ export default function MentorPage() {
 }
 
 /**
- * Seznam Honzových článků o přeletech (.honza-clanky): rok a titulek
- * z databáze, jen publikované. Když není publikovaný žádný, seznam se
- * nevykreslí a zůstanou odkazy na Z cest a kontakt.
+ * Seznam Honzových článků o přeletech (.honza-clanky): rok cesty (postYear,
+ * úprava 33) a titulek z databáze, jen publikované. Když není publikovaný
+ * žádný, seznam se nevykreslí a zůstanou odkazy na Z cest a kontakt.
  */
 async function FerryFlightPosts() {
   const published = await getPublishedPosts();
@@ -152,7 +160,7 @@ async function FerryFlightPosts() {
     <ul className="honza-clanky">
       {posts.map((post) => (
         <li key={post.id}>
-          <time className="date" dateTime={isoDate(post.publishedAt)}>{yearOf(post.publishedAt)}</time>
+          <time className="date" dateTime={isoDate(post.publishedAt)}>{postYear(post)}</time>
           <Link href={postPath(post.slug)}>{czechNbspText(postDisplayTitle(post.title))}</Link>
         </li>
       ))}

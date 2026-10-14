@@ -1,0 +1,46 @@
+/* Styly pro všechny stránky webu: hlavička a mobilní menu, výběr textu, zalamování. Patří oblasti Globální prvky
+   (úpravy z auditu 13. 10. 2026). Načítá se v layoutu (web) a v global-not-found.tsx jako poslední, po web.css
+   a stylech stránek. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
+
+/* ---------- Mobilní menu na nízkém okně (úprava 26, WCAG 1.4.10 a 2.4.11) ----------
+   Rozbalené menu je uvnitř přilepené hlavičky, takže na telefonu otočeném na šířku (844 x 340) nebo při zvětšení
+   200-400 % (320 x 256) by Poptat termín zůstalo pod okrajem obrazovky a nešlo by k němu dojet. Menu proto zabere
+   nejvýš výšku okna pod lištou a posouvá se samo. Tab posune položku do okna, overscroll-behavior drží posouvání
+   v menu, stránka pod ním se nehne. 100vh je náhrada pro prohlížeče bez dvh, dvh počítá s lištou prohlížeče na mobilu. */
+.mnav {
+  max-height: calc(100vh - var(--hdr));
+  max-height: calc(100dvh - var(--hdr));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--s400) var(--asfalt);
+}
+
+/* ---------- Výběr textu a kurzor (úprava 42) ----------
+   Místo výchozí modré barvy webu: na světlém grafit s papírovým textem, na tmavém (hlavička a menu, tmavá sekce,
+   úvodní fotka, patička, okno zvětšení fotky s třídou on-dark) žlutá s grafitovým textem, žlutá tak zůstává jen
+   na tmavém (The Sodium Rule). Grafitová tabule a polohová tabule jsou tmavé i na světlé stránce, žlutá směrová
+   tabule naopak potřebuje grafit, jinak by výběr na ní nebyl vidět. */
+::selection { background: var(--grafit); color: var(--papir); }
+:where(.hdr, .on-dark, .sec--dark, .hero, .ftr, .fa-loc, .fa-dir--grafit) ::selection,
+:where(.hdr, .on-dark, .sec--dark, .hero, .ftr, .fa-loc, .fa-dir--grafit)::selection {
+  background: var(--zluta);
+  color: var(--grafit);
+}
+.fa-dir:not(.fa-dir--grafit) ::selection,
+.fa-dir:not(.fa-dir--grafit)::selection { background: var(--grafit); color: var(--papir); }
+
+/* Pole formuláře jsou bílá i v tmavé sekci, kurzor je proto vždy grafitový. */
+input, textarea { caret-color: var(--grafit); }
+
+/* ---------- Zalamování (úprava 29) ----------
+   web.css má text-wrap: pretty jen u odstavců. Stejně se zalamují i popisy v definicích, položky seznamů, popisky
+   fotek a buňky tabulek, aby řádek nekončil jedním krátkým slovem. Pevné mezery u spojovníku, lomítka a názvů
+   výletů doplňuje czechNbspText() (src/lib/typography.ts). */
+dd, li, figcaption, td { text-wrap: pretty; }
+
+/* ---------- Seznam kontaktů (úprava 21) ----------
+   Štítek WHATSAPP (72 px) je nejdelší ze tří a do šířky 72 px z web.css se nevešel: mezi ním a odkazem zbyla jen
+   mezera jednoho znaku, u Telefonu 16 px. Sloupec štítků 80 px dá WhatsAppu 13 px a odkazy zůstanou pod sebou.
+   Víc ne: v panelu Poptávka u výletu na 320 px by se e-mail zalomil pod štítek (řádek má 246 px, e-mail 158 px).
+   Sloupec kontaktů na stránce Kontakt má vlastní šířku 96 px (.kt-side .contact-list .k ve web.css). */
+.contact-list .k { min-width: 80px; }

@@ -5,8 +5,19 @@
    Osm dlaždic (4 + 4 na počítači, 2 sloupce na tabletu, na mobilu seznam s náhledem z web.css). Detaily pod přehledem už nejsou,
    otevírají se v okně (rozhodnutí 12. 10. 2026). */
 .kl-tiles { list-style: none; margin: 0; padding: 0; }
-/* Dvě řady dlaždic s textem: mezi řadami víc místa než mezi sloupci, aby se výňatek nelepil na fotku pod ním */
-@media (min-width: 1101px) { .kl-tiles { row-gap: 56px; } }
+/* Dlaždice v řadě vyrovnané (úprava 39 z auditu, 14. 10. 2026): od 601 px má každá dlaždice (li i odkaz .tip) čtyři
+   řádky mřížky rozcestníku (subgrid), takže fotka, nadpis, trasa a výňatek jsou v řadě na stejné výšce, i když se nadpis
+   zalomí na dva řádky. Odstupy uvnitř dlaždice dávají okraje z web.css. Mřížka je bez mezery mezi řádky: mezera mřížky
+   by byla i mezi fotkou, nadpisem, trasou a výňatkem a vyšší než trasa by ji roztáhla. Mezeru mezi řadami dlaždic dává
+   horní okraj dlaždic od druhé řady (2 sloupce do 1100 px, 4 od 1101 px). Na počítači je mezi řadami víc místa než
+   mezi sloupci, aby se výňatek nelepil na fotku pod ním. Pod 601 px zůstává seznam s náhledem z web.css (.tipy-prehled). */
+@media (min-width: 601px) {
+  .kl-tiles { row-gap: 0; }
+  .kl-tiles > li,
+  .kl-tiles .tip { display: grid; grid-row: span 4; grid-template-rows: subgrid; grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 601px) and (max-width: 1100px) { .kl-tiles > li:nth-child(n + 3) { margin-top: 40px; } }
+@media (min-width: 1101px) { .kl-tiles > li:nth-child(n + 5) { margin-top: 56px; } }
 
 /* ---------- DETAIL DESTINACE JAKO CELÁ STRÁNKA /kam-letet/<slug> ----------
    Čtecí sloupec uprostřed (záhlaví, text, přepínání destinací), galerie široká jako obsah stránky, tedy širší než text
@@ -38,15 +49,32 @@
 .kl-pager-prev:hover .kl-pager-dir svg { transform: rotate(180deg) translateX(2px); }
 .kl-pager-link:focus-visible { outline: 2px solid var(--grafit); outline-offset: 4px; }
 
+/* ---------- MEZITITULKY TEXTU DESTINACE (úprava 35 z auditu) ----------
+   Na celé stránce jsou mezititulky h2 (pod h1), v okně h3 (pod h2 okna). Vzhled stejný jako h3 v .prose (web.css),
+   h2 by jinak dostal větší .prose h2. První mezititulek bez horního okraje jako každý první prvek .prose. */
+.dest-text .prose h2 { font: 700 21px/1.3 var(--f-sans); letter-spacing: -.005em; margin-top: 1.6em; }
+.dest-text .prose > h2:first-child { margin-top: 0; }
+
 /* ---------- TIP PRO PILOTY (detail na stránce i v okně) ----------
    Honzův tip pod textem destinace (texty ze 14. 10. 2026): krátký blok oddělený vlasovou linkou, štítek verzálkami jako
    popisky údajů (label-sm, jako Požadavky na piloty u výletu) a Honzův text v serifu o stupeň menší než text destinace
    (v podkladu je tip menším písmem). Bez plochy, rámečku a polohové tabule (DESIGN.md, The One Location Sign Rule).
-   Šířka jako sloupec .prose (34 em při 20 px). */
+   Šířka jako sloupec .prose (34 em při 20 px). Štítek je na celé stránce h2, v okně h3 (úprava 35), vzhled stejný. */
 .kl-tip { margin-top: 36px; padding-top: 18px; border-top: var(--linka) solid var(--papir-t); max-width: 680px; }
-.kl-tip h3 { font: 700 12px/1.3 var(--f-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--s600); margin-bottom: 10px; }
+.kl-tip :is(h2, h3) { font: 700 12px/1.3 var(--f-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--s600); margin-bottom: 10px; }
 .kl-tip p { font: 400 18px/1.6 var(--f-serif); }
-.kl-tip + .dest-todo { margin-top: 20px; }
+
+/* ---------- VÝLETY A POPTÁVKA POD TEXTEM DESTINACE (DestinationTrips, úprava 11 z auditu) ----------
+   Náš text v Overpassu: na kterých výletech se sem letí (odkazy na výlety) a textový odkaz Poptat termín. Oddělený
+   vlasovou linkou jako Tip pro piloty, bez plochy, žluté výzvy a polohové tabule (v okně je jediný tabulový prvek kód
+   letiště, na celé stránce drobečky). Šířka jako Tip pro piloty. */
+.kl-trips { margin-top: 36px; padding-top: 18px; border-top: var(--linka) solid var(--papir-t); max-width: 680px; }
+.kl-trips-text { font: 400 18px/1.55 var(--f-sans); }
+/* Název výletu jako odkaz se nezalomí („Florida | Week & Fly“), nejdelší se vejde i do 288 px (telefon 320 px). */
+.kl-trips-text a { font-weight: 600; color: var(--grafit); text-decoration: underline var(--linka); text-underline-offset: .2em; white-space: nowrap; }
+.kl-trips-text a:hover { text-decoration-thickness: 2px; }
+.kl-trips-text a:focus-visible { outline: 2px solid var(--grafit); outline-offset: 2px; }
+.kl-trips-text + .kl-trips-ask { margin-top: 14px; }
 
 /* Jedna fotka v galerii (Kissimmee): nejvýš 370 px, nezvětšuje se nad soubor 580 px. Dvě třídy kvůli
    .dest-gal:not(.dest-gal--2) z web.css (601-960 px), které by jinak fotku stáhlo na třetinu šířky. */
@@ -114,8 +142,8 @@
 @media (max-width: 600px) {
   .kl-pager { margin-top: 48px; gap: 16px; }
   .kl-pager-name { font-size: 17px; }
-  .kl-tip { margin-top: 28px; }
-  .kl-tip p { font-size: 17px; }
+  .kl-tip, .kl-trips { margin-top: 28px; }
+  .kl-tip p, .kl-trips-text { font-size: 17px; }
 
   /* Okno přes celou obrazovku, lišta jako hlavička webu na mobilu */
   .kl-dialog { width: 100%; height: 100%; max-height: none; margin: 0; }

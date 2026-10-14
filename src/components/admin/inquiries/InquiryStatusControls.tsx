@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { toast } from "sonner";
 import { setInquiryStatus } from "@/app/admin/(dashboard)/poptavky/actions";
 import {
@@ -18,9 +19,17 @@ export function InquiryStatusControls({ id, status }: { id: string; status: Inqu
 
   function change(next: InquiryStatus) {
     startTransition(async () => {
-      const result = await setInquiryStatus(id, next);
-      if (result.ok) toast.success(`Stav změněn: ${INQUIRY_STATUS_LABELS[next]}`);
-      else toast.error(result.error);
+      try {
+        const result = await setInquiryStatus(id, next);
+        if (result.ok) toast.success(`Stav změněn: ${INQUIRY_STATUS_LABELS[next]}`);
+        else toast.error(result.error);
+      } catch (err) {
+        // Výpadek sítě nebo chyba serveru: hláška místo chybové stránky
+        // (rozepsaná poznámka vedle tak zůstane).
+        unstable_rethrow(err);
+        console.warn("[admin] změna stavu poptávky selhala", err);
+        toast.error("Stav se nepodařilo změnit. Zkontrolujte připojení a zkuste to znovu.");
+      }
     });
   }
 
@@ -35,7 +44,7 @@ export function InquiryStatusControls({ id, status }: { id: string; status: Inqu
             aria-pressed={current}
             disabled={pending || current}
             onClick={() => change(s)}
-            className={`cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-default ${
+            className={`min-h-11 cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-default sm:min-h-0 pointer-coarse:min-h-11 ${
               current
                 ? "border-foreground bg-foreground text-white"
                 : "border-gray-300 bg-white text-foreground hover:border-foreground disabled:opacity-50"

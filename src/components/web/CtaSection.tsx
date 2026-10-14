@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Arrow } from "@/components/web/ArrowSymbol";
+import { ContactList } from "@/components/web/ContactList";
 import { inquiryHref } from "@/components/web/nav";
-import { FA_EMAIL, FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 
 /**
  * Výzva k poptávce na konci stránky („Napište, kdy chcete letět.“), doslova
@@ -23,14 +23,7 @@ export function CtaSection({ id }: { /** Kotva sekce, na úvodu "poptat". */ id?
             <span className="t">Poptat termín</span>
             <Arrow />
           </Link>
-          <ul className="contact-list">
-            <li>
-              <span className="k">Telefon</span> <a href={FA_PHONE_HREF}>{FA_PHONE.replaceAll(" ", " ")}</a>
-            </li>
-            <li>
-              <span className="k">E-mail</span> <a href={`mailto:${FA_EMAIL}`}>{FA_EMAIL}</a>
-            </li>
-          </ul>
+          <ContactList />
         </div>
       </div>
     </section>

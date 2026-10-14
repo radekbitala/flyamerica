@@ -9,15 +9,15 @@ import { PilotRequirements } from "@/components/web/PilotRequirements";
 import { SectionSign } from "@/components/web/SectionSign";
 import { inquiryHref } from "@/components/web/nav";
 import { photos } from "@/data/photos";
-import { TRIPS, formatTripSubtitle, tripFact, type Trip } from "@/data/trips";
-import { isoDate, yearOf } from "@/lib/dates";
+import { PRICE_EXCLUDES, TRIPS, cheapestTrip, formatTripSubtitle, tripFact, type Trip } from "@/data/trips";
 import { pageMetadata } from "@/lib/metadata";
 import { postDisplayTitle } from "@/lib/post-title";
+import { postYear } from "@/lib/post-year";
 import { getLatestPublishedPosts } from "@/lib/public-posts";
 import { ROUTES, destinationPath, postPath, tripPath } from "@/lib/routes";
 import { FA_PHONE, FA_PHONE_HREF } from "@/lib/site";
 import { NBSP, czechNbspText } from "@/lib/typography";
-import { TRIP_MEDIA } from "./letecke-vylety/_data/trip-media";
+import { TripCardPhoto } from "./letecke-vylety/_components/TripCardPhoto";
 
 // Úvodní stránka podle prototyp/index.html. Texty doslova z modelu, sekce
 // Z cest bere nejnovější publikované články z databáze.
@@ -35,8 +35,11 @@ export const metadata = pageMetadata({
   path: "/",
 });
 
-/** sizes dlaždice tipu v .grid-4 (4 / 2 / 1 sloupec). Model ji vkládá bez srcset. */
-const TIP_SIZES = "(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 270px";
+/**
+ * sizes dlaždice tipu v .grid-4 (4 / 2 sloupce, pod 601 px seznam s náhledem
+ * 112 px vlevo jako na stránce Kam letět, home.css). Model ji vkládá bez srcset.
+ */
+const TIP_SIZES = "(max-width: 600px) 112px, (max-width: 1100px) 50vw, 270px";
 
 /** sizes fotky karty výletu (.pkgs: 2 sloupce, pod 601 px jeden). */
 const CARD_SIZES = "(max-width: 600px) 100vw, 580px";
@@ -78,7 +81,9 @@ export default function HomePage() {
             <p className="lead">O&nbsp;veškerou organizaci a&nbsp;servis se postaráme a&nbsp;v&nbsp;kabině vás bude doprovázet zkušený mentor.</p>
             <div className="cta-row on-dark">
               <Link className="fa-dir" href={inquiryHref()}><span className="t">Poptat termín</span><Arrow /></Link>
-              <a className="fa-link" href="#vylety">Výlety od $7&nbsp;400&nbsp;USD <Arrow /></a>
+              {/* Cena nejlevnějšího výletu z trips.ts (úprava 15 a 20, rozhodnutí 14. 10. 2026). „za osobu“ jako v poznámce
+                   pod cenou, „při 2 pilotech“ už ne: na 320 a 375 px by se odkaz zalomil na dva řádky. */}
+              <a className="fa-link" href="#vylety">Výlety od {czechNbspText(cheapestTrip().price.from)} za&nbsp;osobu <Arrow /></a>
             </div>
           </div>
         </div>
@@ -131,7 +136,7 @@ export default function HomePage() {
               <HomeTripCard key={trip.slug} trip={trip} />
             ))}
           </div>
-          <p className="pkgs-note">Cena nezahrnuje letenky, ubytování, stravu ani správní poplatek FAA za validaci průkazu.</p>
+          <p className="pkgs-note">{czechNbspText(PRICE_EXCLUDES)}</p>
         </div>
       </section>
 
@@ -141,7 +146,7 @@ export default function HomePage() {
         <div className="fa-wrap">
           <div className="sec-head">
             <div><h2 id="postup-nadpis">Průběh přípravy</h2></div>
-            <p>Od ověření licence po letový program, podle výletu Florida Week &amp; Fly.</p>
+            <p>Od ověření licence po letový program, podle výletu Florida Week&nbsp;&amp;&nbsp;Fly.</p>
           </div>
           <ol className="fa-steps" style={{ "--n": "3" } as CSSProperties}>
             <li><span className="fa-step-n" aria-hidden="true">01</span><h3>6-8&nbsp;týdnů před odletem</h3><p>Zahájíme ověření zahraniční pilotní licence u&nbsp;FAA (Foreign Pilot Verification).</p></li>
@@ -161,7 +166,10 @@ export default function HomePage() {
       </section>
 
       {/* ===== KAM LETĚT (texty doslova z Honzova „Výběru destinací“, kódy letišť tak, jak je uvádí).
-           Dlaždice vedou na /kam-letet/<slug>: z webu se detail otevře v okně nad stránkou (@modal), přímá adresa je celá stránka. ===== */}
+           Dlaždice vedou na /kam-letet/<slug>: z webu se detail otevře v okně nad stránkou (@modal), přímá adresa je celá stránka.
+           Fotky (úprava 9, rozhodnutí 14. 10. 2026): letiště a letadla místo pláže. Merritt Island je dráha raketoplánů
+           na Cape Canaveral z výšky, Key West & Everglades naše Cessna 182 před Everglades Airpark (photos-destinations.ts).
+           Pod 601 px seznam s náhledem jako na stránce Kam letět, Honzův výňatek jen na tabletu a počítači (home.css, R12). ===== */}
       <section className="sec sec--white" id="kam-letet" aria-labelledby="kam-letet-nadpis">
         <div className="fa-wrap">
           <div className="sec-head">
@@ -182,13 +190,13 @@ export default function HomePage() {
               <p>Přiblížení s&nbsp;výhledem na nedaleké mrakodrapy a&nbsp;tyrkysovou hladinu zálivu je nezapomenutelný zážitek.</p>
             </Link>
             <Link className="tip" href={destinationPath("merritt-island")}>
-              <div className="tip-img"><Photo photo="merritt-island-pristani" sizes={TIP_SIZES} /></div>
+              <div className="tip-img"><Photo photo="kam-letet/destinace-cape-canaveral-13" sizes={TIP_SIZES} /></div>
               <h3>Merritt Island</h3>
               <div className="route">FA83 <Arrow /> KCOI</div>
               <p>Je to ideální a&nbsp;nejbližší letecká brána pro cca půldenní exkurzi do Kennedy Space Center.</p>
             </Link>
             <Link className="tip" href={destinationPath("key-west-everglades")}>
-              <div className="tip-img"><Photo photo="key-west-plaz" sizes={TIP_SIZES} /></div>
+              <div className="tip-img"><Photo photo="everglades-airpark" sizes={TIP_SIZES} /></div>
               <h3>Key&nbsp;West &amp; Everglades</h3>
               <div className="route">FA83 <Arrow /> EYW</div>
               <p>Přistání na Key Westu nabízí ikonické panorama korálových ostrovů a&nbsp;tyrkysového moře pod křídly.</p>
@@ -224,24 +232,20 @@ export default function HomePage() {
  * Karta výletu z modelu (.pkg): fotka destinace (TRIP_MEDIA, stejná jako na
  * přehledu výletů), název, Honzův podtitul, text karty, délka a nálet
  * z přehledu programu, cena „od“ a odkaz na detail. Texty doslova ze
- * src/data/trips.ts, pevné mezery doplní czechNbspText().
+ * src/data/trips.ts, pevné mezery doplní czechNbspText(). Na detail vede
+ * nadpis, fotka (mimo pořadí Tab, TripCardPhoto) a „Detail výletu“, karta
+ * se celá odkazem nepřekrývá (úprava 28, styly .pkg v trips.css).
  */
 function HomeTripCard({ trip }: { trip: Trip }) {
   const headingId = `pkg-${trip.slug}`;
-  const card = TRIP_MEDIA[trip.slug].card;
   const length = tripFact(trip, "length");
   const hours = tripFact(trip, "hours");
   return (
     <article className="pkg" aria-labelledby={headingId}>
-      <div className="pkg-img">
-        <Photo
-          photo={card.photo}
-          alt={card.alt}
-          sizes={CARD_SIZES}
-          style={card.position ? { objectPosition: card.position } : undefined}
-        />
-      </div>
-      <h3 id={headingId}>{czechNbspText(trip.name)}</h3>
+      <TripCardPhoto trip={trip} sizes={CARD_SIZES} />
+      <h3 id={headingId}>
+        <Link href={tripPath(trip.slug)}>{czechNbspText(trip.name)}</Link>
+      </h3>
       <p className="sub">{formatTripSubtitle(trip.subtitle)}</p>
       <p>{czechNbspText(trip.teaser)}</p>
       <dl className="pkg-data">
@@ -260,19 +264,22 @@ function HomeTripCard({ trip }: { trip: Trip }) {
 
 /**
  * Šířky varianty úvodní fotky pro mobil (model: 800w, 1900w a 2400w). Pod
- * 640 px je fotka na mobilu zbytečně malá (vykreslená je asi 940 px široká),
- * nad 2400 px by telefon se 3x displejem stahoval celý originál.
+ * 640 px je fotka na mobilu zbytečně malá (vykreslená je asi 940 px široká).
+ * Strop 1920 px (úprava 32, krok 1, rozhodnutí 14. 10. 2026, dřív 2400):
+ * telefon s 2x i 3x displejem stáhne variantu 1920 px místo 2400 px, na
+ * pomalé síti je úvod dřív vidět a fotka pod textem je pořád ostrá.
  */
 const HERO_MOBILE_MIN_WIDTH = 640;
-const HERO_MOBILE_MAX_WIDTH = 2400;
+const HERO_MOBILE_MAX_WIDTH = 1920;
 
 /**
  * Úvodní fotka přes celou šířku jako <picture> z modelu, s variantami od
  * next/image (getImageProps). Fotka je ořezaná (object-fit: cover), na
  * mobilu je vykreslená asi 940 px široká podle výšky úvodu, ne podle šířky
- * okna. Mobil má vlastní sadu jen do 2400 px, aby telefon se 3x displejem
- * nestahoval celý originál. Počítač a tablet dostanou i originál 3110 px pro
- * retina displej. První fotka stránky: bez líného načítání, vysoká priorita.
+ * okna. Mobil má vlastní sadu jen do HERO_MOBILE_MAX_WIDTH, aby telefon
+ * s 3x displejem nestahoval velkou variantu. Počítač a tablet dostanou
+ * i originál 3110 px pro retina displej. Výřez na mobilu posouvá home.css.
+ * První fotka stránky: bez líného načítání, vysoká priorita.
  */
 function HeroPicture() {
   const photo = photos["uvod-jezera-lake-wales"];
@@ -320,11 +327,16 @@ function limitSrcSet(srcSet: string | undefined, min: number, max: number): stri
  * jistý (Oblet Ameriky je psaný ve třetí osobě) a stránka Z cest ho také nemá.
  * Název sekce je polohová tabule v řádku s rokem (poslední tabule stránky:
  * od Kam letět i od FA83 v patičce je dál než výška obrazovky).
+ *
+ * Rok u obou článků je rok cesty (postYear(), úprava 33, rozhodnutí
+ * 14. 10. 2026): pole Rok cesty z administrace, jinak rok ze štítku titulku,
+ * jinak rok publikace. Článek 2022 vyšel v listopadu 2023.
  */
 async function HomeDiary() {
   const [latest, older] = await getLatestPublishedPosts(2);
   if (!latest) return null;
   const image = latest.image;
+  const year = postYear(latest);
   return (
     // ===== Z CEST: nejnovější článek =====
     <section className="sec sec--line" id="z-cest" aria-labelledby="z-cest-nadpis">
@@ -339,12 +351,12 @@ async function HomeDiary() {
           />
         ) : null}
         <div>
-          <div className="meta"><SectionSign as="span">Z&nbsp;cest</SectionSign><time className="date" dateTime={isoDate(latest.publishedAt)}>{yearOf(latest.publishedAt)}</time></div>
+          <div className="meta"><SectionSign as="span">Z&nbsp;cest</SectionSign><time className="date" dateTime={year}>{year}</time></div>
           <h2 id="z-cest-nadpis">{czechNbspText(postDisplayTitle(latest.title))}</h2>
           {latest.perex ? <p className="voice">{czechNbspText(latest.perex)}</p> : null}
           <p className="sec-more diary-more"><Link className="fa-link" href={postPath(latest.slug)}>Číst celý článek <Arrow /></Link></p>
           {older ? (
-            <p className="diary-older">Starší článek: <Link href={postPath(older.slug)}>{czechNbspText(`${postDisplayTitle(older.title)}, ${yearOf(older.publishedAt)}`)}</Link><span className="dot" aria-hidden="true"></span><Link href={ROUTES.posts}>Všechny články</Link></p>
+            <p className="diary-older">Starší článek: <Link href={postPath(older.slug)}>{czechNbspText(`${postDisplayTitle(older.title)}, ${postYear(older)}`)}</Link><span className="dot" aria-hidden="true"></span><Link href={ROUTES.posts}>Všechny články</Link></p>
           ) : (
             <p className="diary-older"><Link href={ROUTES.posts}>Všechny články</Link></p>
           )}

@@ -22,6 +22,7 @@ import {
   POST_LIMITS,
   postSchema,
   slugify,
+  todoMarkErrors,
   type PostFormState,
   type PostInput,
 } from "@/lib/post-form";
@@ -34,6 +35,9 @@ const SLUG_TAKEN: PostFormState = {
 };
 
 const SIGNED_OUT: PostFormState = { status: "error", formError: SESSION_EXPIRED_MESSAGE };
+
+const FOREIGN_IMAGE_MESSAGE =
+  "Text obsahuje obrázek z jiného webu, v editoru je označený. Před publikováním ho smažte a fotku nahrajte tlačítkem Fotka.";
 
 /**
  * Hlášky pro chyby, ke kterým schéma nemá vlastní text. Týkají se hlavně
@@ -82,6 +86,7 @@ function read(formData: FormData) {
       .filter((value) => typeof value === "string"),
     newCategories: json(formData, "newCategories"),
     status: str("status"),
+    tripYear: str("tripYear"),
   };
 }
 
@@ -175,14 +180,16 @@ function parse(formData: FormData): Parsed {
     }
   }
 
-  // Obrázek zkopírovaný s textem z jiného webu by se načítal odtamtud
-  // a po zániku starého webu by zmizel. Tiše ho nezahazujeme (ani http,
-  // který by čištění HTML odstranilo), Honza by nevěděl, kam fotka zmizela.
-  if (contentImageUrls(data.content).some((url) => !isAllowedImageUrl(url))) {
-    return fail({
-      content:
-        "Text obsahuje obrázek z jiného webu. Odeberte ho a fotku nahrajte tlačítkem Fotka do textu.",
-    });
+  // Obrázek zkopírovaný s textem z jiného webu by se na webu načítal
+  // odtamtud a po zániku cizího webu by zmizel. Koncept s ním jde uložit
+  // (rozepsaný text se neztratí, editor obrázek označí k nahrazení, na webu
+  // koncept není), publikaci zablokuje hláška. Obrázek přes http čištění
+  // HTML z konceptu odstraní, editor ho proto označí stejně.
+  if (
+    data.status === "published" &&
+    contentImageUrls(data.content).some((url) => !isAllowedImageUrl(url))
+  ) {
+    return fail({ content: FOREIGN_IMAGE_MESSAGE });
   }
 
   const content = prepareContent(
@@ -191,6 +198,11 @@ function parse(formData: FormData): Parsed {
   );
   if (data.status === "published" && !hasContent(content)) {
     return fail({ content: "Před publikováním napište text článku." });
+  }
+  // Značka [doplnit…] z podkladů by se na webu ukázala jako žlutý rámeček.
+  if (data.status === "published") {
+    const marks = todoMarkErrors({ title: data.title, perex: data.perex, content });
+    if (Object.keys(marks).length > 0) return fail(marks);
   }
   return { ok: true, data, content };
 }
@@ -210,7 +222,16 @@ function toRow(data: PostInput, content: string) {
     videoUrl: data.videoUrl ?? null,
     gallery: data.gallery,
     status: data.status,
+    tripYear: data.tripYear ?? null,
   };
+}
+
+/**
+ * Seznam článků s hláškou po publikaci. Adresa článku jde do hlášky jako
+ * odkaz „Zobrazit na webu“ (ToastOnParam).
+ */
+function publishedToast(toast: "post-published" | "post-updated", slug: string): string {
+  return `/admin/posts?${new URLSearchParams({ toast, clanek: slug })}`;
 }
 
 /** Slug musí být volný, jinak by zápis spadl na chybu z databáze. */
@@ -347,7 +368,7 @@ export async function createPost(
   // Koncept se po uložení dál píše, publikovaný článek je hotový.
   redirect(
     data.status === "published"
-      ? "/admin/posts?toast=post-published"
+      ? publishedToast("post-published", data.slug)
       : `/admin/posts/${id}/edit?toast=post-draft`,
   );
 }
@@ -380,7 +401,7 @@ export async function updatePost(
         .update(posts)
         .set({
           ...row,
-          // Datum první publikace zůstává i po vrácení do konceptů.
+          // Datum první publikace zůstává i po stažení z webu.
           publishedAt:
             data.status === "published" && !current.publishedAt
               ? new Date()
@@ -412,7 +433,7 @@ export async function updatePost(
 
   const wasPublished = current.status === "published";
   if (data.status === "published") {
-    redirect(`/admin/posts?toast=${wasPublished ? "post-updated" : "post-published"}`);
+    redirect(publishedToast(wasPublished ? "post-updated" : "post-published", data.slug));
   }
   redirect(
     `/admin/posts/${id}/edit?toast=${wasPublished ? "post-unpublished" : "post-draft"}`,
