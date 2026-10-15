@@ -3,7 +3,8 @@
 /* ---------- Co za vás zařídíme (#sluzba, 12. 10. 2026) ----------
    Řádky jako letištní tabule: název vlevo, popis vpravo, grafitová linka nad prvním řádkem a linky Papír tlumený mezi
    řádky (stejně jako tabulky a údaje v kartě výletu). Popisy jsou různě dlouhé, výška řádku roste jen s textem.
-   Vlevo jedna fotka Honzy 3 : 4 se jménem a odkazem „Kdo je Honza“ místo malého portrétu .who u položky mentora.
+   Vlevo jedna fotka Honzy 3 : 4 se jménem, rolí „Váš mentor v kabině“ (15. 10. 2026) a odkazem „Kdo je Honza“ místo
+   malého portrétu .who u položky mentora.
    Pod 1101 px název nad popisem, pod 961 px užší fotka, pod 601 px jeden sloupec: nadpis, řádky, fotka 4 : 3. */
 .home-svc {
   display: grid;
@@ -30,7 +31,7 @@
 
 .home-svc-who { grid-area: who; align-self: start; margin: 0; }
 .home-svc-who img { width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; background: var(--papir-t); }
-/* Jméno a odkaz jako u malého portrétu (.who-name z web.css) */
+/* Jméno, role a odkaz jako u malého portrétu (HonzaIntro: .who-name z web.css, .who-role ze site.css) */
 .home-svc-who figcaption { display: grid; gap: 4px; justify-items: start; margin-top: 14px; }
 
 /* ---------- Požadavky na piloty v Průběhu přípravy (#postup, .req z web.css) ----------

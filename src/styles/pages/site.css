@@ -1,6 +1,6 @@
-/* Styly pro všechny stránky webu: hlavička a mobilní menu, výběr textu, zalamování. Patří oblasti Globální prvky
-   (úpravy z auditu 13. 10. 2026). Načítá se v layoutu (web) a v global-not-found.tsx jako poslední, po web.css
-   a stylech stránek. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
+/* Styly pro všechny stránky webu: hlavička a mobilní menu, výběr textu, zalamování, seznam kontaktů, role Honzy u fotky.
+   Patří oblasti Globální prvky (úpravy z auditu 13. 10. 2026). Načítá se v layoutu (web) a v global-not-found.tsx jako
+   poslední, po web.css a stylech stránek. Barvy a písma jen z tokenů (fa-tokeny.css, aliasy z web.css). */
 
 /* ---------- Mobilní menu na nízkém okně (úprava 26, WCAG 1.4.10 a 2.4.11) ----------
    Rozbalené menu je uvnitř přilepené hlavičky, takže na telefonu otočeném na šířku (844 x 340) nebo při zvětšení
@@ -44,3 +44,9 @@ dd, li, figcaption, td { text-wrap: pretty; }
    Víc ne: v panelu Poptávka u výletu na 320 px by se e-mail zalomil pod štítek (řádek má 246 px, e-mail 158 px).
    Sloupec kontaktů na stránce Kontakt má vlastní šířku 96 px (.kt-side .contact-list .k ve web.css). */
 .contact-list .k { min-width: 80px; }
+
+/* ---------- Honza: jméno, role a odkaz (HonzaIntro v HonzaWho.tsx, 15. 10. 2026) ----------
+   Řádek role „Váš mentor v kabině“ pod jménem (.who-name z web.css) ve stylu Caption z DESIGN.md (popisky fotek,
+   400 14 px, Šedá 600), bez verzálek: štítek .lbl patří nad nadpisy. Stejně u malého portrétu v panelu Poptávka
+   u výletu (.who) i pod velkou fotkou v „Co za vás zařídíme“ na úvodu (.home-svc-who figcaption). */
+.who-role { font: 400 14px/1.45 var(--f-sans); color: var(--s600); }

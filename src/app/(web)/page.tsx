@@ -4,6 +4,7 @@ import { getImageProps } from "next/image";
 import { Arrow } from "@/components/web/ArrowSymbol";
 import { CtaSection } from "@/components/web/CtaSection";
 import { Figure } from "@/components/web/Figure";
+import { HonzaIntro } from "@/components/web/HonzaWho";
 import { Photo } from "@/components/web/Photo";
 import { PilotRequirements } from "@/components/web/PilotRequirements";
 import { SectionSign } from "@/components/web/SectionSign";
@@ -97,7 +98,17 @@ export default function HomePage() {
               Krátký i dlouhý popis drží stejnou osu, výška řádku roste jen s textem, nikde nezůstane prázdná buňka. VYBRÁNO.
            B) Dva sloupce s vyrovnanými řádky (grid-auto-rows: 1fr): pět položek dá 3 + 2, jedna buňka zůstane prázdná
               a krátké popisy („Včetně rezervace a paliva“) nechají v řádku díru stejně jako dosavadní mřížka 3 + 2.
-           Malý portrét u položky mentora (HonzaWho) nahradila jedna fotka Honzy u Cessny 182 se jménem a odkazem. ===== */}
+           Malý portrét u položky mentora (HonzaWho) nahradila jedna fotka Honzy u Cessny 182 se jménem a odkazem.
+           Role u fotky (15. 10. 2026, Radek: návštěvník neví, kdo je na fotce a proč tam je), zvažované varianty:
+           1) Nadtitulek „Váš mentor“ štítkem .lbl nad jménem: pořadí jako položka menu a nadpis sekce níž, ale verzálky
+              jsou v DESIGN.md navigační orientace nad nadpisem (The Label Rule), tahle sekce je výslovně bez štítku
+              a v panelu Poptávka u výletu by byl druhý štítek hned pod štítkem „Poptávka“.
+           2) Jméno a pod ním řádek role „Váš mentor v kabině“ ve stylu Caption (14 px, Šedá 600, popisky fotek): žádná
+              další vrstva verzálek, „v kabině“ říká, proč tam fotka je (první řádek „Pilot-mentor a doprovod“, perex
+              úvodu), slova jen z textů webu. Stejně u malého portrétu v panelu Poptávka (HonzaIntro). VYBRÁNO.
+           3) Role přímo ve jménu „Váš mentor Honza Čermák“: o tři sekce níž by se doslova opakoval nadpis sekce Váš mentor
+              a tučný řádek jména by u malého portrétu v panelu Poptávka byl dvakrát delší.
+           Role je uvnitř figcaption, čtečka přečte jméno, roli a pak odkaz. ===== */}
       <section className="sec sec--tight sec--white" id="sluzba" aria-labelledby="sluzba-nadpis">
         <div className="fa-wrap home-svc">
           <h2 className="home-svc-title" id="sluzba-nadpis">Co za vás zařídíme</h2>
@@ -112,8 +123,7 @@ export default function HomePage() {
           <figure className="home-svc-who">
             <Photo photo="uvod/honza-death-valley-02" sizes={SERVICE_PHOTO_SIZES} />
             <figcaption>
-              <span className="who-name">Honza Čermák</span>
-              <Link className="fa-link" href={ROUTES.mentor}>Kdo je Honza <Arrow /></Link>
+              <HonzaIntro />
             </figcaption>
           </figure>
         </div>
