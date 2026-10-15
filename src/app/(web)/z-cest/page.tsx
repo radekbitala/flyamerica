@@ -59,7 +59,6 @@ export default async function PostsPage() {
                 {latest?.image ? <SectionSign>Archiv</SectionSign> : <span className="lbl">Archiv</span>}
                 <h2 id="starsi">Starší články</h2>
               </div>
-              <p>Články z&nbsp;původního webu flyamerica.cz.</p>
             </div>
             <div className="grid-3 dn-posts">
               {older.map((post) => (
