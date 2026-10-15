@@ -4,6 +4,8 @@
    zarovnané se sloupcem, fotky v textu a galerie širší než text. Na obrazovkách od 1200 px je obsah článku „V článku“ přilepený
    v levém okraji vedle textu a široké fotky se rozšiřují doprava až k okraji kontejneru (do levého okraje by vjely pod obsah).
    Článek bez obsahu a menší obrazovky: široké fotky přes celou šířku kontejneru na obě strany, obsah sbalený nad textem.
+   Výjimka Váš mentor (15. 10. 2026): fakta „V kostce“ stojí od 1200 px v pravém okraji vedle textu O mně (text nemá široké
+   fotky a nejde o navigaci, levý okraj zůstává obsahu článků), menší obrazovky je mají jako bílý panel nad textem.
    Šířku kontejneru znají široké prvky z jednotek cqi (.read-body je kontejner), ne ze 100vw: 100vw počítá i posuvník
    a stránka by přetekla do strany. Bez stínů, zaoblení a přechodů. */
 
@@ -84,6 +86,47 @@
 .mentor-posts > .lbl { display: block; margin-bottom: 16px; }
 .mentor-posts > h2 { margin-bottom: 28px; }
 .mentor-posts .sec-more { margin-top: 28px; }
+
+/* ---------- Váš mentor: fakta „V kostce“ u textu O mně (podnět Radka 15. 10. 2026) ----------
+   Údaje z Honzova textu (MENTOR_FACTS ve vas-mentor/page.tsx) jako boční panel .aside se štítkem .lbl a řádky .dest-data
+   z web.css. Pod štítkem grafitová linka, řádky oddělené linkou Papír tlumený (pravidlo Tabulek v DESIGN.md). Velká čísla
+   (nálet, roky) jsou všechna stejně velká, ve stylu ceny „od“ (Price: 700, lining a tabulkové číslice) ve velikosti Title
+   velký 28 px, na telefonu 24 px. Malé „přes“ a „hodin“ jako „od“ u ceny výletu (.pkg-price .from). Bez tabule, žluté,
+   stínu a nové barvy.
+   - do 600 px: panel s okrajem 24/20 px jako panel s cenou, popisek nad hodnotou, roky (.mentor-facts-pair) vedle sebe,
+   - 601-1199 px: panel ve sloupci textu nad textem, řádky jako přehled programu výletu (popisek vlevo 168 px, hodnota vpravo),
+   - od 1200 px: bez panelu jako okrajová poznámka v pravém okraji (třetí sloupec mřížky, zrcadlo .read-body--toc), 40 px od
+     textu, na oknech dost vysokých pro celý blok přilepená pod hlavičkou. Na Váš mentor je to pravý okraj, levý patří obsahu
+     článků „V článku“, aby se oba vzory nepletly.
+   Komentář o panelu „V číslech“ ve web.css (O Honzovi, .honza-grid) je zastaralý, web.css se neupravuje. */
+.read-body > .mentor-facts { max-width: var(--read-col); margin: 0 auto 40px; }
+.mentor-facts .dest-data { border-top: var(--linka) solid var(--grafit); }
+.mentor-facts-num { font: 700 28px/1.2 var(--f-sans); letter-spacing: -.01em; font-variant-numeric: tabular-nums lining-nums; }
+.mentor-facts-unit { font: 600 15px/1.4 var(--f-sans); color: var(--s600); }
+@media (min-width: 601px) and (max-width: 1199px) {
+  .mentor-facts .dest-data > div { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 20px; align-items: baseline; }
+  .mentor-facts .dest-data dt { margin: 0; }
+}
+@media (min-width: 1200px) {
+  .read-body--facts { display: grid; grid-template-columns: minmax(0, 1fr) var(--read-col) minmax(0, 1fr); align-items: start; }
+  .read-body--facts > .prose { grid-column: 2; grid-row: 1; margin: 0; }
+  .read-body--facts > .mentor-facts { grid-column: 3; grid-row: 1; max-width: none; margin: 0 0 0 40px; padding: 0; background: none; border: 0; }
+  /* Text údajů v úzkém okraji 15 px jako okrajová poznámka článku (.dn-toc), méně zalomených řádků */
+  .read-body--facts > .mentor-facts dd { font-size: 15px; line-height: 1.45; }
+}
+/* Přilepení jen na okně, kam se vejde celý blok pod hlavičku: blok má na 1200 px s posuvníkem (okraj 189 px, nejvíc řádků)
+   686 px, s 104 px odshora končí na 790 px, práh 840 px nechává rezervu 50 px (změřeno 15. 10. 2026, na 1440 px blok 664 px).
+   Po přidání nebo změně údajů přeměřit. Na nižším okně blok stojí vedle nadpisu O mně a jede s textem. */
+@media (min-width: 1200px) and (min-height: 840px) {
+  .read-body--facts > .mentor-facts { position: sticky; top: calc(var(--hdr) + 24px); }
+}
+@media (max-width: 600px) {
+  .read-body > .mentor-facts { padding: 24px 20px; margin-bottom: 32px; }
+  .mentor-facts-num { font-size: 24px; }
+  .mentor-facts .dest-data { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  .mentor-facts .dest-data > div { grid-column: 1 / -1; }
+  .mentor-facts .dest-data > .mentor-facts-pair { grid-column: auto; }
+}
 
 /* ---------- Galerie článku: náhledy 4 : 3 bez popisků ----------
    Úprava 12 a rozhodnutí R7 z auditu 13. 10. 2026 (ukázka 5): PostGalleryGrid dává mřížce třídu gallery--nahledy a nevykresluje

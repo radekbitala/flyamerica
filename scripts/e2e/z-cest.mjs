@@ -2,7 +2,8 @@
  * e2e testy oblasti Z cest: seznam, článek s galerií a zvětšení fotky,
  * články ze starého webu (import), galerie v náhledech, obsah článku na
  * tabletu, článek bez titulní fotky, rok cesty a dlouhá adresa v textu
- * (úpravy 6, 12, 33, 34, 37 z auditu 13. 10. 2026).
+ * (úpravy 6, 12, 33, 34, 37 z auditu 13. 10. 2026). Fakta „V kostce“ na Váš
+ * mentor (15. 10. 2026, stejné čtecí rozložení jako články).
  */
 import { BASE_URL, assert, database, fetchManual, login, plainText, test } from "./_lib.mjs";
 
@@ -454,3 +455,75 @@ test(
   { viewport: { width: 1440, height: 900 } },
 );
 
+
+/**
+ * Váš mentor: fakta „V kostce“ u Honzova textu O mně (podnět Radka 15. 10. 2026,
+ * MENTOR_FACTS ve vas-mentor/page.tsx, article.css). Seznam dt/dd v pořadí
+ * údajů, žádné „instruktor“ ani „výcvik“. Od 1200 px v pravém okraji v řádku
+ * s nadpisem O mně, na vysokém okně přilepený celý pod hlavičkou, na nízkém
+ * stojí. Pod 1200 px panel nad textem, na telefonu roky vedle sebe.
+ */
+test(
+  "Váš mentor: fakta V kostce u textu O mně",
+  async (page) => {
+    await page.goto(`${BASE_URL}/vas-mentor`);
+    const facts = page.getByRole("complementary", { name: "V kostce" });
+    await facts.waitFor();
+    const labels = (await facts.locator("dt").allInnerTexts()).map((text) => text.replace(/\s+/g, " ").trim().toLowerCase());
+    const expected = ["celkový nálet", "létá od", "profesně od", "kvalifikace", "doložky", "zkušenosti", "přelety a dodávky"];
+    assert(JSON.stringify(labels) === JSON.stringify(expected), `Údaje V kostce: ${labels.join(", ")}`);
+    const text = await plainText(facts);
+    assert(text.includes("přes 6 000 hodin"), `Nálet ve V kostce: "${text.slice(0, 120)}"`);
+    assert(!/instrukt|výcvik/i.test(text), "Ve V kostce je „instruktor“ nebo „výcvik“, Honza je v našich textech mentor.");
+
+    const layout = () =>
+      page.evaluate(() => {
+        const box = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON();
+        const pairs = [...document.querySelectorAll(".mentor-facts-pair")].map((el) => el.getBoundingClientRect().toJSON());
+        return {
+          facts: box(".mentor-facts"),
+          prose: box(".read-body--facts > .prose"),
+          heading: box("#omne-nadpis"),
+          pairs,
+          position: getComputedStyle(document.querySelector(".mentor-facts")).position,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+
+    // 1440 x 900: pravý okraj, horní hrana s nadpisem O mně, přilepený blok celý pod hlavičkou.
+    let box = await layout();
+    assert(box.facts.left >= box.prose.right + 39, `V kostce na 1440 px není vpravo vedle textu: ${JSON.stringify(box.facts)}`);
+    assert(Math.abs(box.facts.top - box.heading.top) <= 2, `V kostce na 1440 px nezačíná u nadpisu O mně (${box.facts.top} / ${box.heading.top}).`);
+    assert(box.position === "sticky", `V kostce na 1440 x 900: position ${box.position}`);
+    // Nadpis O mně k hornímu okraji okna: blok je přilepený pod hlavičkou.
+    await page.evaluate(() => {
+      const heading = document.querySelector("#omne-nadpis");
+      window.scrollTo({ top: heading.getBoundingClientRect().top + window.scrollY, behavior: "instant" });
+    });
+    await page.waitForTimeout(200);
+    box = await layout();
+    const viewport = page.viewportSize();
+    assert(box.facts.top >= 100 && box.facts.top <= 108, `Blok V kostce na 1440 x 900 není přilepený pod hlavičkou (${box.facts.top}).`);
+    assert(box.facts.bottom <= viewport.height, `Přilepený blok V kostce na 1440 x 900 končí pod oknem (${box.facts.bottom}).`);
+
+    // 1440 x 800: blok stojí (celý by se pod hlavičku nevešel).
+    await page.setViewportSize({ width: 1440, height: 800 });
+    box = await layout();
+    assert(box.position === "static", `V kostce na 1440 x 800: position ${box.position}`);
+
+    // 1024: bílý panel ve sloupci textu nad nadpisem O mně.
+    await page.setViewportSize({ width: 1024, height: 768 });
+    box = await layout();
+    assert(box.facts.bottom <= box.heading.top && Math.round(box.facts.width) === Math.round(box.prose.width), `V kostce na 1024 px: ${JSON.stringify(box.facts)}`);
+
+    // 375 a 320: panel nad textem, roky vedle sebe, nic nepřetéká.
+    for (const width of [375, 320]) {
+      await page.setViewportSize({ width, height: 812 });
+      box = await layout();
+      assert(box.facts.bottom <= box.heading.top, `V kostce na ${width} px není nad textem.`);
+      assert(box.pairs.length === 2 && Math.abs(box.pairs[0].top - box.pairs[1].top) < 1 && box.pairs[1].left > box.pairs[0].right, `Roky na ${width} px nejsou vedle sebe.`);
+      assert(box.overflow <= 0, `Váš mentor na ${width} px přetéká o ${box.overflow} px.`);
+    }
+  },
+  { viewport: { width: 1440, height: 900 } },
+);
