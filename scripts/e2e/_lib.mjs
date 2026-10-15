@@ -86,6 +86,40 @@ export async function waitMinFill(loadedAt) {
 export const overflowX = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
+/**
+ * Změní velikost okna a počká, až se rozložení ustálí. Logo v hlavičce je <picture>
+ * (SiteHeader: pod 601 px menší soubor 167 x 24 místo 226 x 32) a prohlížeč po změně
+ * šířky vymění obrázek až po načtení nového zdroje. Do té doby má hlavička rozměry
+ * staršího loga a stránka chvíli přetéká (na 375 px o 14 px, jen v testu po
+ * page.setViewportSize, telefon šířku okna nemění). Čeká se na logo podle aktuální
+ * šířky okna a pak na dva snímky (requestAnimationFrame) beze změny šířky stránky
+ * a hlavičky. Kontroly po ní platí pro ustálenou stránku, nic se nezmírňuje.
+ */
+export async function resizeAndSettle(page, size) {
+  await page.setViewportSize(size);
+  await page.waitForFunction(() => {
+    const img = document.querySelector(".fa-logo picture img");
+    if (!img) return true;
+    const source = [...img.parentElement.querySelectorAll("source")].find((el) => matchMedia(el.media).matches);
+    const src = new URL(source ? source.srcset : img.getAttribute("src"), location.href).href;
+    const width = Number((source ?? img).getAttribute("width"));
+    return img.complete && img.currentSrc === src && Math.round(img.getBoundingClientRect().width) === width;
+  });
+  await page.evaluate(async () => {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    const snapshot = () =>
+      `${document.documentElement.scrollWidth} ${document.querySelector(".hdr-in")?.scrollWidth ?? 0}`;
+    let last = snapshot();
+    // Nejvýš 60 snímků (asi 1 s), pak rozhodnou kontroly testu.
+    for (let stable = 0, frames = 0; stable < 2 && frames < 60; frames++) {
+      await frame();
+      const now = snapshot();
+      stable = now === last ? stable + 1 : 0;
+      last = now;
+    }
+  });
+}
+
 /** Odpověď bez následování přesměrování. */
 export const fetchManual = (url) => fetch(`${BASE_URL}${url}`, { redirect: "manual" });
 

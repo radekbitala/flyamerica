@@ -64,14 +64,21 @@ type MentorFact = {
   figure?: { before?: string; value: string; after?: string };
   /** Na telefonu dva údaje vedle sebe. Párové údaje jdou vždy po dvou hned za sebou. */
   pair?: boolean;
+  /**
+   * Zvýrazněný text (Kvalifikace, Radek ji chtěl zvýraznit): Overpass 600 18 px.
+   * Hierarchie bloku: nálet a roky velká čísla, kvalifikace zvýrazněná, ostatní běžný text.
+   */
+  strong?: boolean;
 };
 
 /**
  * Fakta o Honzovi pro blok „V kostce“, jediný zdroj. Jen údaje z jeho textu O mně
  * (podklady-od-Honzy/2026-10-10_o-mne-v2.md), zkrácené naše formulace bez nových
  * tvrzení. Nikdy „instruktor“ ani „výcvik“ (v našich textech je Honza mentor)
- * a žádné FAA, EASA, CPL ani EU, které Honza nenapsal. Když Honza text O mně změní,
- * upravit i tady. Blok dát Honzovi ke schválení.
+ * a žádné zkratky, které Honza nenapsal (FAA, EASA). „EU i USA“ u doložek je převod
+ * jeho „evropské i americké“. CPL Honza píše jen jako rozsah výcviku pilotů („od PPL
+ * a CPL“), ne jako svou licenci, proto v bloku není, Kvalifikace je jeho „obchodní
+ * pilot“. Když Honza text O mně změní, upravit i tady. Blok dát Honzovi ke schválení.
  *
  * Blok nahradil skrytý panel „V číslech“. Čísla, která Honza zatím neposlal, mají
  * místo na konci pole (zakomentované). Až přijdou, přidat je jako údaje s `figure`
@@ -82,8 +89,12 @@ const MENTOR_FACTS: readonly MentorFact[] = [
   { label: "Celkový nálet", figure: { before: "přes", value: "6 000", after: "hodin" } },
   { label: "Létá od", figure: { value: "1995" }, pair: true },
   { label: "Profesně od", figure: { value: "2010" }, pair: true },
-  { label: "Kvalifikace", text: "Obchodní pilot" },
-  { label: "Doložky", text: "Evropské i americké pro jednomotorové i vícemotorové letouny, IFR a vrtulníky" },
+  { label: "Kvalifikace", text: "Obchodní pilot", strong: true },
+  // Honza: „evropské i americké doložky pro jednomotorové i vícemotorové letouny, přístrojové
+  // létání (IFR) a vrtulníky“. „EU i USA“ v popisku a „Jedno- i vícemotorové“ zkracují hodnotu
+  // na dva řádky v úzkém okraji od 1200 px (dřív čtyři, s „Jednomotorové i vícemotorové“
+  // zůstávalo první slovo samo na řádku). Změřeno na 1200, 1280 a 1440 px i s posuvníkem.
+  { label: "Doložky EU i USA", text: "Jedno- i vícemotorové letouny, IFR, vrtulníky" },
   { label: "Zkušenosti", text: "Malé pístové stroje, vrtulníky záchranné služby (HEMS), proudové letouny" },
   { label: "Přelety a dodávky", text: "Letadla majitelům po Evropě, USA a Blízkém východě" },
   // Až Honza pošle (BACKLOG-po-spusteni.md, otázka 10), neodhadovat ani nedopočítávat:
@@ -207,6 +218,8 @@ function MentorFacts() {
                   <span className="mentor-facts-num">{czechNbspText(fact.figure.value)}</span>
                   {fact.figure.after ? <span className="mentor-facts-unit">&nbsp;{fact.figure.after}</span> : null}
                 </>
+              ) : fact.strong ? (
+                <span className="mentor-facts-strong">{czechNbspText(fact.text ?? "")}</span>
               ) : (
                 czechNbspText(fact.text ?? "")
               )}

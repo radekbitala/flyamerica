@@ -91,9 +91,13 @@
    Údaje z Honzova textu (MENTOR_FACTS ve vas-mentor/page.tsx) jako boční panel .aside se štítkem .lbl a řádky .dest-data
    z web.css. Pod štítkem grafitová linka, řádky oddělené linkou Papír tlumený (pravidlo Tabulek v DESIGN.md). Velká čísla
    (nálet, roky) jsou všechna stejně velká, ve stylu ceny „od“ (Price: 700, lining a tabulkové číslice) ve velikosti Title
-   velký 28 px, na telefonu 24 px. Malé „přes“ a „hodin“ jako „od“ u ceny výletu (.pkg-price .from). Bez tabule, žluté,
+   velký 28 px, na telefonu 24 px. Malé „přes“ a „hodin“ jako „od“ u ceny výletu (.pkg-price .from). Kvalifikace (Radek ji
+   chtěl zvýraznit) je Overpass 600 18 px jako názvy v „Co za vás zařídíme“ na úvodu (.mentor-facts-strong), ostatní údaje
+   běžný text 16 px (v okraji 15 px). Hierarchie: velká čísla, zvýrazněná kvalifikace, běžný text. Bez tabule, žluté,
    stínu a nové barvy.
-   - do 600 px: panel s okrajem 24/20 px jako panel s cenou, popisek nad hodnotou, roky (.mentor-facts-pair) vedle sebe,
+   - do 600 px: panel s okrajem 24/20 px jako panel s cenou, popisek nad hodnotou, roky (.mentor-facts-pair) vedle sebe.
+     Sloupce mřížky jsou bez mezery a odsazení 16 px má až druhý rok, aby linka nad roky vedla přes celou šířku panelu
+     jako u ostatních řádků (s column-gap by byla rozdělená na dva kusy),
    - 601-1199 px: panel ve sloupci textu nad textem, řádky jako přehled programu výletu (popisek vlevo 168 px, hodnota vpravo),
    - od 1200 px: bez panelu jako okrajová poznámka v pravém okraji (třetí sloupec mřížky, zrcadlo .read-body--toc), 40 px od
      textu, na oknech dost vysokých pro celý blok přilepená pod hlavičkou. Na Váš mentor je to pravý okraj, levý patří obsahu
@@ -103,6 +107,7 @@
 .mentor-facts .dest-data { border-top: var(--linka) solid var(--grafit); }
 .mentor-facts-num { font: 700 28px/1.2 var(--f-sans); letter-spacing: -.01em; font-variant-numeric: tabular-nums lining-nums; }
 .mentor-facts-unit { font: 600 15px/1.4 var(--f-sans); color: var(--s600); }
+.mentor-facts-strong { font: 600 18px/1.35 var(--f-sans); }
 @media (min-width: 601px) and (max-width: 1199px) {
   .mentor-facts .dest-data > div { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 20px; align-items: baseline; }
   .mentor-facts .dest-data dt { margin: 0; }
@@ -115,17 +120,19 @@
   .read-body--facts > .mentor-facts dd { font-size: 15px; line-height: 1.45; }
 }
 /* Přilepení jen na okně, kam se vejde celý blok pod hlavičku: blok má na 1200 px s posuvníkem (okraj 189 px, nejvíc řádků)
-   686 px, s 104 px odshora končí na 790 px, práh 840 px nechává rezervu 50 px (změřeno 15. 10. 2026, na 1440 px blok 664 px).
-   Po přidání nebo změně údajů přeměřit. Na nižším okně blok stojí vedle nadpisu O mně a jede s textem. */
+   645 px, s 104 px odshora končí na 749 px, práh 840 px nechává rezervu 91 px (přeměřeno 15. 10. 2026 po zvýraznění
+   kvalifikace a zkrácení doložek, na 1440 px blok 623 px). Po přidání nebo změně údajů přeměřit. Na nižším okně blok stojí
+   vedle nadpisu O mně a jede s textem. */
 @media (min-width: 1200px) and (min-height: 840px) {
   .read-body--facts > .mentor-facts { position: sticky; top: calc(var(--hdr) + 24px); }
 }
 @media (max-width: 600px) {
   .read-body > .mentor-facts { padding: 24px 20px; margin-bottom: 32px; }
   .mentor-facts-num { font-size: 24px; }
-  .mentor-facts .dest-data { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  .mentor-facts .dest-data { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 0; }
   .mentor-facts .dest-data > div { grid-column: 1 / -1; }
   .mentor-facts .dest-data > .mentor-facts-pair { grid-column: auto; }
+  .mentor-facts .dest-data > .mentor-facts-pair + .mentor-facts-pair { padding-left: 16px; }
 }
 
 /* ---------- Galerie článku: náhledy 4 : 3 bez popisků ----------

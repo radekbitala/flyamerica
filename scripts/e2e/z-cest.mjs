@@ -5,7 +5,7 @@
  * (úpravy 6, 12, 33, 34, 37 z auditu 13. 10. 2026). Fakta „V kostce“ na Váš
  * mentor (15. 10. 2026, stejné čtecí rozložení jako články).
  */
-import { BASE_URL, assert, database, fetchManual, login, plainText, test } from "./_lib.mjs";
+import { BASE_URL, assert, database, fetchManual, login, plainText, resizeAndSettle, test } from "./_lib.mjs";
 
 /** Fotka v otevřeném zvětšení: bod mimo vykreslenou fotku (object-fit: contain) a její střed. */
 function lightboxPoints(page) {
@@ -459,9 +459,12 @@ test(
 /**
  * Váš mentor: fakta „V kostce“ u Honzova textu O mně (podnět Radka 15. 10. 2026,
  * MENTOR_FACTS ve vas-mentor/page.tsx, article.css). Seznam dt/dd v pořadí
- * údajů, žádné „instruktor“ ani „výcvik“. Od 1200 px v pravém okraji v řádku
- * s nadpisem O mně, na vysokém okně přilepený celý pod hlavičkou, na nízkém
- * stojí. Pod 1200 px panel nad textem, na telefonu roky vedle sebe.
+ * údajů, žádné „instruktor“ ani „výcvik“, kvalifikace zvýrazněná (Overpass 600
+ * 18 px). Od 1200 px v pravém okraji v řádku s nadpisem O mně, na vysokém okně
+ * přilepený celý pod hlavičkou, na nízkém stojí. Pod 1200 px panel nad textem,
+ * na telefonu roky vedle sebe s linkou nad nimi přes celou šířku panelu.
+ * Velikost okna mění resizeAndSettle (_lib.mjs): hned po page.setViewportSize
+ * má hlavička chvíli rozměry staršího loga a stránka by na 375 px přetékala.
  */
 test(
   "Váš mentor: fakta V kostce u textu O mně",
@@ -470,18 +473,32 @@ test(
     const facts = page.getByRole("complementary", { name: "V kostce" });
     await facts.waitFor();
     const labels = (await facts.locator("dt").allInnerTexts()).map((text) => text.replace(/\s+/g, " ").trim().toLowerCase());
-    const expected = ["celkový nálet", "létá od", "profesně od", "kvalifikace", "doložky", "zkušenosti", "přelety a dodávky"];
+    const expected = ["celkový nálet", "létá od", "profesně od", "kvalifikace", "doložky eu i usa", "zkušenosti", "přelety a dodávky"];
     assert(JSON.stringify(labels) === JSON.stringify(expected), `Údaje V kostce: ${labels.join(", ")}`);
     const text = await plainText(facts);
     assert(text.includes("přes 6 000 hodin"), `Nálet ve V kostce: "${text.slice(0, 120)}"`);
     assert(!/instrukt|výcvik/i.test(text), "Ve V kostce je „instruktor“ nebo „výcvik“, Honza je v našich textech mentor.");
+    // Kvalifikace zvýrazněná: Overpass 600 18 px, ostatní textové údaje běžným písmem.
+    const qualification = await facts.locator(".mentor-facts-strong").evaluateAll((els) =>
+      els.map((el) => ({ text: el.textContent.replace(/\s+/g, " ").trim(), weight: getComputedStyle(el).fontWeight, size: getComputedStyle(el).fontSize })),
+    );
+    assert(
+      qualification.length === 1 && qualification[0].text === "Obchodní pilot" && qualification[0].weight === "600" && qualification[0].size === "18px",
+      `Kvalifikace ve V kostce není zvýrazněná: ${JSON.stringify(qualification)}`,
+    );
 
     const layout = () =>
       page.evaluate(() => {
         const box = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON();
-        const pairs = [...document.querySelectorAll(".mentor-facts-pair")].map((el) => el.getBoundingClientRect().toJSON());
+        const pairs = [...document.querySelectorAll(".mentor-facts-pair")].map((el) => ({
+          ...el.getBoundingClientRect().toJSON(),
+          border: parseFloat(getComputedStyle(el).borderTopWidth),
+        }));
+        const years = [...document.querySelectorAll(".mentor-facts-pair .mentor-facts-num")].map((el) => el.getBoundingClientRect().toJSON());
         return {
           facts: box(".mentor-facts"),
+          list: box(".mentor-facts .dest-data"),
+          years,
           prose: box(".read-body--facts > .prose"),
           heading: box("#omne-nadpis"),
           pairs,
@@ -507,21 +524,31 @@ test(
     assert(box.facts.bottom <= viewport.height, `Přilepený blok V kostce na 1440 x 900 končí pod oknem (${box.facts.bottom}).`);
 
     // 1440 x 800: blok stojí (celý by se pod hlavičku nevešel).
-    await page.setViewportSize({ width: 1440, height: 800 });
+    await resizeAndSettle(page, { width: 1440, height: 800 });
     box = await layout();
     assert(box.position === "static", `V kostce na 1440 x 800: position ${box.position}`);
 
     // 1024: bílý panel ve sloupci textu nad nadpisem O mně.
-    await page.setViewportSize({ width: 1024, height: 768 });
+    await resizeAndSettle(page, { width: 1024, height: 768 });
     box = await layout();
     assert(box.facts.bottom <= box.heading.top && Math.round(box.facts.width) === Math.round(box.prose.width), `V kostce na 1024 px: ${JSON.stringify(box.facts)}`);
 
-    // 375 a 320: panel nad textem, roky vedle sebe, nic nepřetéká.
+    // 375 a 320: panel nad textem, roky vedle sebe, linka nad nimi vcelku přes šířku panelu, nic nepřetéká.
     for (const width of [375, 320]) {
-      await page.setViewportSize({ width, height: 812 });
+      await resizeAndSettle(page, { width, height: 812 });
       box = await layout();
       assert(box.facts.bottom <= box.heading.top, `V kostce na ${width} px není nad textem.`);
-      assert(box.pairs.length === 2 && Math.abs(box.pairs[0].top - box.pairs[1].top) < 1 && box.pairs[1].left > box.pairs[0].right, `Roky na ${width} px nejsou vedle sebe.`);
+      const [first, second] = box.pairs;
+      assert(
+        box.pairs.length === 2 && Math.abs(first.top - second.top) < 1 && box.years[1].left >= box.years[0].right + 16,
+        `Roky na ${width} px nejsou vedle sebe.`,
+      );
+      // Buňky roků na sebe navazují a vyplní celou šířku seznamu, jejich horní linky jsou tak jedna linka.
+      assert(
+        first.border > 0 && second.border > 0 && Math.abs(first.left - box.list.left) < 1 &&
+          Math.abs(second.left - first.right) < 1 && Math.abs(second.right - box.list.right) < 1,
+        `Linka nad roky na ${width} px nevede přes celou šířku panelu: ${JSON.stringify({ list: box.list, pairs: box.pairs })}`,
+      );
       assert(box.overflow <= 0, `Váš mentor na ${width} px přetéká o ${box.overflow} px.`);
     }
   },
